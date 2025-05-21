@@ -23,7 +23,7 @@ function getDirname(filepath: string): string {
 }
 
 export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
-  const [showHiddenFiles, setShowHiddenFiles] = useState(false);
+  const [showHiddenFiles, setShowHiddenFiles] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
   
