@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MantineProvider, AppShell, Title, Container, Center, Paper, Text, ThemeIcon, Group, Stack, createTheme, rem, Select, Button, Modal, TextInput } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { ProjectList } from './components/ProjectList';
+import { ProjectView } from './components/ProjectView';
 import { Project } from '../types/Project';
 import { IconFolder, IconPlus, IconTrash } from '@tabler/icons-react';
 
@@ -129,40 +130,46 @@ const App: React.FC = () => {
         padding="md"
         style={{ minHeight: '100vh' }}
       >
-        <AppShell.Header p="xs" style={{ display: 'flex', alignItems: 'center', paddingLeft: rem(20), gap: rem(20) }}>
-          <ThemeIcon size="lg" radius="md">
-            <IconFolder size={20} />
-          </ThemeIcon>
-          <Title order={2} style={{ marginRight: rem(20) }}>AEM Starter</Title>
-          <Select
-            placeholder={projects.length === 0 ? 'No projects' : 'Select project'}
-            data={projects.map(p => ({ value: p.id, label: p.name }))}
-            value={selectedProject?.id || null}
-            onChange={handleDropdownChange}
-            clearable
-            searchable
-            maxDropdownHeight={200}
-            style={{ minWidth: 220 }}
-          />
-          <Button
-            variant="subtle"
-            color="red"
-            size="compact-md"
-            px={8}
-            style={{ marginLeft: rem(4), marginRight: rem(8) }}
-            disabled={!selectedProject}
-            onClick={() => setDeleteDialogOpen(true)}
-            title="Delete selected project"
-          >
-            <IconTrash size={16} />
-          </Button>
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={() => setModalOpen(true)}
-            style={{ marginLeft: rem(4) }}
-          >
-            New Project
-          </Button>
+        <AppShell.Header p="xs" style={{ paddingLeft: rem(20), paddingRight: rem(20) }}>
+          <Group justify="space-between" align="center" style={{ width: '100%' }}>
+            <Group align="center" gap={8}>
+              <ThemeIcon size="lg" radius="md">
+                <IconFolder size={20} />
+              </ThemeIcon>
+              <Title order={2}>
+                {selectedProject ? selectedProject.name : 'AEM Starter'}
+              </Title>
+            </Group>
+            <Group align="center" gap={8}>
+              <Select
+                placeholder={projects.length === 0 ? 'No projects' : 'Select project'}
+                data={projects.map(p => ({ value: p.id, label: p.name }))}
+                value={selectedProject?.id || null}
+                onChange={handleDropdownChange}
+                clearable
+                searchable
+                maxDropdownHeight={200}
+                style={{ minWidth: 220 }}
+              />
+              <Button
+                variant="subtle"
+                color="red"
+                size="compact-md"
+                px={8}
+                disabled={!selectedProject}
+                onClick={() => setDeleteDialogOpen(true)}
+                title="Delete selected project"
+              >
+                <IconTrash size={16} />
+              </Button>
+              <Button
+                leftSection={<IconPlus size={16} />}
+                onClick={() => setModalOpen(true)}
+              >
+                New Project
+              </Button>
+            </Group>
+          </Group>
         </AppShell.Header>
 
         {/* Delete confirmation dialog */}
@@ -214,9 +221,7 @@ const App: React.FC = () => {
 
         <AppShell.Main>
           {selectedProject ? (
-            <Container size="xl" py="md">
-              <ProjectList onProjectSelect={handleProjectListChange} selectedProject={selectedProject} />
-            </Container>
+            <ProjectView project={selectedProject} />
           ) : (
             <Container size="xl" py="md">
               <Stack gap="lg" align="center">
