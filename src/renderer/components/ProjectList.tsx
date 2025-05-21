@@ -22,18 +22,6 @@ interface ProjectListProps {
   selectedProject: Project | null;
 }
 
-declare global {
-  interface Window {
-    electronAPI: {
-      getAllProjects: () => Promise<Project[]>;
-      createProject: (name: string, folderPath: string) => Promise<Project>;
-      loadProject: (id: string) => Promise<Project | undefined>;
-      deleteProject: (id: string) => Promise<boolean>;
-      showOpenDialog: (options: any) => Promise<Electron.OpenDialogReturnValue>;
-    };
-  }
-}
-
 export const ProjectList: React.FC<ProjectListProps> = ({ onProjectSelect, selectedProject }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newProjectName, setNewProjectName] = useState('');
@@ -52,8 +40,10 @@ export const ProjectList: React.FC<ProjectListProps> = ({ onProjectSelect, selec
     if (!newProjectName.trim()) return;
 
     const result = await window.electronAPI.showOpenDialog({
-      properties: ['openDirectory'],
-      title: 'Select Project Folder'
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Select Project Folder',
+      buttonLabel: 'Select Folder',
+      message: 'Select a folder for your project or create a new one'
     });
 
     if (!result.canceled && result.filePaths.length > 0) {

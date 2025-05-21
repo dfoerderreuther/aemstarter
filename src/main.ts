@@ -3,6 +3,10 @@ import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { ProjectManager } from './services/ProjectManager';
 
+// Declare Vite environment variables
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
+declare const MAIN_WINDOW_VITE_NAME: string;
+
 // Initialize auto-updates
 const { updateElectronApp } = require('update-electron-app');
 updateElectronApp({
@@ -59,6 +63,15 @@ ipcMain.handle('update-project', async (_, { id, updates }) => {
 
 ipcMain.handle('delete-project', async (_, id) => {
   return projectManager.deleteProject(id);
+});
+
+ipcMain.handle('set-last-project-id', async (_, id) => {
+  projectManager.setLastProjectId(id);
+  return true;
+});
+
+ipcMain.handle('get-last-project-id', async () => {
+  return projectManager.getLastProjectId();
 });
 
 ipcMain.handle('show-open-dialog', async (_, options) => {

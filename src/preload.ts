@@ -18,6 +18,10 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('update-project', { id, updates }),
     deleteProject: (id: string) => 
       ipcRenderer.invoke('delete-project', id),
+    setLastProjectId: (id: string | null) =>
+      ipcRenderer.invoke('set-last-project-id', id),
+    getLastProjectId: () =>
+      ipcRenderer.invoke('get-last-project-id'),
     
     // Dialog
     showOpenDialog: (options: any) => 
