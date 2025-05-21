@@ -8,8 +8,8 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld(
   'electronAPI', {
     // Project management
-    createProject: (name: string, folderPath: string) => 
-      ipcRenderer.invoke('create-project', { name, folderPath }),
+    createProject: (name: string, folderPath: string, aemSdkPath: string, licensePath: string) => 
+      ipcRenderer.invoke('create-project', { name, folderPath, aemSdkPath, licensePath }),
     loadProject: (id: string) => 
       ipcRenderer.invoke('load-project', id),
     getAllProjects: () => 

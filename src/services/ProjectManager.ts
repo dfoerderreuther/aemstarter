@@ -72,11 +72,29 @@ export class ProjectManager {
     }
   }
 
-  createProject(name: string, folderPath: string): Project {
+  createProject(name: string, folderPath: string, aemSdkPath: string, licensePath: string): Project {
+    // Validate file types
+    if (!aemSdkPath.toLowerCase().endsWith('.zip')) {
+      throw new Error('AEM SDK path must be a .zip file');
+    }
+    if (!licensePath.toLowerCase().endsWith('.properties')) {
+      throw new Error('License path must be a .properties file');
+    }
+
+    // Validate files exist
+    if (!fs.existsSync(aemSdkPath)) {
+      throw new Error('AEM SDK file does not exist');
+    }
+    if (!fs.existsSync(licensePath)) {
+      throw new Error('License file does not exist');
+    }
+
     const project: Project = {
       id: uuidv4(),
       name,
       folderPath,
+      aemSdkPath,
+      licensePath,
       createdAt: new Date(),
       lastModified: new Date()
     };

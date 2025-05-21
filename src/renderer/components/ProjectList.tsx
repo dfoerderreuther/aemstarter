@@ -3,19 +3,16 @@ import { Project } from '../../types/Project';
 import {
   Title,
   Button,
-  TextInput,
   Card,
   Text,
   Group,
   Stack,
   ActionIcon,
-  Modal,
   Box,
   SimpleGrid,
   ThemeIcon,
-  rem,
 } from '@mantine/core';
-import { IconTrash, IconFolder, IconPlus } from '@tabler/icons-react';
+import { IconTrash, IconFolder } from '@tabler/icons-react';
 
 interface ProjectListProps {
   onProjectSelect: (project: Project | null) => void;
@@ -24,8 +21,6 @@ interface ProjectListProps {
 
 export const ProjectList: React.FC<ProjectListProps> = ({ onProjectSelect, selectedProject }) => {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     loadProjects();
@@ -34,28 +29,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({ onProjectSelect, selec
   const loadProjects = async () => {
     const loadedProjects = await window.electronAPI.getAllProjects();
     setProjects(loadedProjects);
-  };
-
-  const handleCreateProject = async () => {
-    if (!newProjectName.trim()) return;
-
-    const result = await window.electronAPI.showOpenDialog({
-      properties: ['openDirectory', 'createDirectory'],
-      title: 'Select Project Folder',
-      buttonLabel: 'Select Folder',
-      message: 'Select a folder for your project or create a new one'
-    });
-
-    if (!result.canceled && result.filePaths.length > 0) {
-      const project = await window.electronAPI.createProject(
-        newProjectName,
-        result.filePaths[0]
-      );
-      setProjects([...projects, project]);
-      setNewProjectName('');
-      setIsCreating(false);
-      onProjectSelect(project);
-    }
   };
 
   const handleDeleteProject = async (id: string) => {
@@ -71,15 +44,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({ onProjectSelect, selec
   if (selectedProject) {
     return (
       <Stack gap="md">
-        <Group justify="space-between">
-          <Title order={3} mb="md">Your Projects</Title>
-          <Button 
-            leftSection={<IconPlus size={16} />}
-            onClick={() => setIsCreating(true)}
-          >
-            New Project
-          </Button>
-        </Group>
+        <Title order={3} mb="md">Your Projects</Title>
         <SimpleGrid cols={3}>
           {projects.map((project) => (
             <Card
@@ -129,51 +94,12 @@ export const ProjectList: React.FC<ProjectListProps> = ({ onProjectSelect, selec
   }
 
   return (
-    <>
-      <Button 
-        size="lg"
-        leftSection={<IconPlus size={20} />}
-        onClick={() => setIsCreating(true)}
-      >
-        Create New Project
-      </Button>
-
-      <Modal
-        opened={isCreating}
-        onClose={() => {
-          setIsCreating(false);
-          setNewProjectName('');
-        }}
-        title="Create New Project"
-        centered
-        overlayProps={{
-          opacity: 0.55,
-          blur: 3,
-        }}
-      >
-        <Stack gap="md">
-          <TextInput
-            label="Project Name"
-            placeholder="Enter project name"
-            value={newProjectName}
-            onChange={(e) => setNewProjectName(e.target.value)}
-            size="md"
-            required
-            autoFocus
-          />
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => {
-              setIsCreating(false);
-              setNewProjectName('');
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateProject}>
-              Create
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
-    </>
+    <Button 
+      size="lg"
+      leftSection={<IconFolder size={20} />}
+      onClick={() => onProjectSelect(projects[0])}
+    >
+      Select a Project
+    </Button>
   );
 }; 

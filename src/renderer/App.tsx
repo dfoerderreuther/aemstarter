@@ -27,6 +27,8 @@ const App: React.FC = () => {
   const [newProjectName, setNewProjectName] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [aemSdkPath, setAemSdkPath] = useState('');
+  const [licensePath, setLicensePath] = useState('');
 
   // Load all projects and last selected project on startup
   useEffect(() => {
@@ -76,7 +78,7 @@ const App: React.FC = () => {
 
   // Handle new project creation
   const handleCreateProject = async () => {
-    if (!newProjectName.trim()) return;
+    if (!newProjectName.trim() || !aemSdkPath || !licensePath) return;
     setCreating(true);
     try {
       const result = await window.electronAPI.showOpenDialog({
@@ -88,7 +90,9 @@ const App: React.FC = () => {
       if (!result.canceled && result.filePaths.length > 0) {
         const project = await window.electronAPI.createProject(
           newProjectName,
-          result.filePaths[0]
+          result.filePaths[0],
+          aemSdkPath,
+          licensePath
         );
         const allProjects = await window.electronAPI.getAllProjects();
         setProjects(allProjects);
@@ -96,9 +100,40 @@ const App: React.FC = () => {
         await window.electronAPI.setLastProjectId(project.id);
         setModalOpen(false);
         setNewProjectName('');
+        setAemSdkPath('');
+        setLicensePath('');
       }
+    } catch (error) {
+      // Show error message to user
+      console.error('Failed to create project:', error);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleSelectAemSdk = async () => {
+    const result = await window.electronAPI.showOpenDialog({
+      properties: ['openFile'],
+      title: 'Select AEM SDK',
+      buttonLabel: 'Select File',
+      message: 'Select the AEM SDK zip file',
+      filters: [{ name: 'ZIP Files', extensions: ['zip'] }]
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      setAemSdkPath(result.filePaths[0]);
+    }
+  };
+
+  const handleSelectLicense = async () => {
+    const result = await window.electronAPI.showOpenDialog({
+      properties: ['openFile'],
+      title: 'Select License File',
+      buttonLabel: 'Select File',
+      message: 'Select the license properties file',
+      filters: [{ name: 'Properties Files', extensions: ['properties'] }]
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      setLicensePath(result.filePaths[0]);
     }
   };
 
@@ -192,7 +227,12 @@ const App: React.FC = () => {
 
         <Modal
           opened={modalOpen}
-          onClose={() => { setModalOpen(false); setNewProjectName(''); }}
+          onClose={() => { 
+            setModalOpen(false); 
+            setNewProjectName('');
+            setAemSdkPath('');
+            setLicensePath('');
+          }}
           title="Create New Project"
           centered
           overlayProps={{ opacity: 0.55, blur: 3 }}
@@ -208,11 +248,58 @@ const App: React.FC = () => {
               autoFocus
               disabled={creating}
             />
+            <Group>
+              <TextInput
+                label="AEM SDK"
+                placeholder="Select AEM SDK zip file"
+                value={aemSdkPath}
+                readOnly
+                style={{ flex: 1 }}
+                disabled={creating}
+              />
+              <Button 
+                onClick={handleSelectAemSdk}
+                disabled={creating}
+                style={{ marginTop: 'auto' }}
+              >
+                Browse
+              </Button>
+            </Group>
+            <Group>
+              <TextInput
+                label="License File"
+                placeholder="Select license properties file"
+                value={licensePath}
+                readOnly
+                style={{ flex: 1 }}
+                disabled={creating}
+              />
+              <Button 
+                onClick={handleSelectLicense}
+                disabled={creating}
+                style={{ marginTop: 'auto' }}
+              >
+                Browse
+              </Button>
+            </Group>
             <Group justify="flex-end">
-              <Button variant="default" onClick={() => { setModalOpen(false); setNewProjectName(''); }} disabled={creating}>
+              <Button 
+                variant="default" 
+                onClick={() => { 
+                  setModalOpen(false); 
+                  setNewProjectName('');
+                  setAemSdkPath('');
+                  setLicensePath('');
+                }} 
+                disabled={creating}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleCreateProject} loading={creating}>
+              <Button 
+                onClick={handleCreateProject} 
+                loading={creating}
+                disabled={!newProjectName.trim() || !aemSdkPath || !licensePath}
+              >
                 Create
               </Button>
             </Group>
@@ -230,6 +317,13 @@ const App: React.FC = () => {
                   Select a project to get started or create a new one.
                 </Text>
                 <ProjectList onProjectSelect={handleProjectListChange} selectedProject={selectedProject} />
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  onClick={() => setModalOpen(true)}
+                  size="lg"
+                >
+                  Create New Project
+                </Button>
               </Stack>
             </Container>
           )}

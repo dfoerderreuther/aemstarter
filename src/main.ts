@@ -45,8 +45,8 @@ const createWindow = () => {
 };
 
 // Project management IPC handlers
-ipcMain.handle('create-project', async (_, { name, folderPath }) => {
-  return projectManager.createProject(name, folderPath);
+ipcMain.handle('create-project', async (_, { name, folderPath, aemSdkPath, licensePath }) => {
+  return projectManager.createProject(name, folderPath, aemSdkPath, licensePath);
 });
 
 ipcMain.handle('load-project', async (_, id) => {
