@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MantineProvider, AppShell, Title, Container, Center, Paper, Text, ThemeIcon, Group, Stack, createTheme, rem, Select, Button, Modal, TextInput } from '@mantine/core';
 import '@mantine/core/styles.css';
-import { ProjectList } from './components/ProjectList';
 import { ProjectView } from './components/ProjectView';
 import { Project } from '../types/Project';
 import { IconFolder, IconPlus, IconTrash } from '@tabler/icons-react';
@@ -314,9 +313,8 @@ const App: React.FC = () => {
               <Stack gap="lg" align="center">
                 <Title order={2}>Welcome to AEM Starter</Title>
                 <Text size="lg" c="dimmed" ta="center" maw={400} py="md">
-                  Select a project to get started or create a new one.
+                  Select or create a project.
                 </Text>
-                <ProjectList onProjectSelect={handleProjectListChange} selectedProject={selectedProject} />
                 <Button
                   leftSection={<IconPlus size={16} />}
                   onClick={() => setModalOpen(true)}
