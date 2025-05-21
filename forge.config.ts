@@ -13,6 +13,18 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'YOUR_GITHUB_USERNAME',
+          name: 'YOUR_REPOSITORY_NAME'
+        },
+        prerelease: false
+      }
+    }
+  ],
   plugins: [
     new VitePlugin({
       // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.

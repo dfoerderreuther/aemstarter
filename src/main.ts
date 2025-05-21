@@ -2,6 +2,12 @@ import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
+// Initialize auto-updates
+const { updateElectronApp } = require('update-electron-app');
+updateElectronApp({
+  repo: 'YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME'
+});
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
