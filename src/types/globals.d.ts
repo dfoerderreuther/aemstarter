@@ -21,6 +21,9 @@ declare global {
       }>>;
       checkFileExists: (filePath: string) => Promise<boolean>;
       readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
+      createDirectory: (dirPath: string) => Promise<void>;
+      copyFile: (sourcePath: string, targetPath: string) => Promise<void>;
+      unzipFile: (zipPath: string, targetPath: string) => Promise<void>;
     };
   }
 } 

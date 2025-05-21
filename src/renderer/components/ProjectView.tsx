@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppShell, Tabs, Group, Button, Text, Switch, Box, ScrollArea, Code, Divider, Stack } from '@mantine/core';
+import { AppShell, Tabs, Group, Button, Text, Switch, Box, ScrollArea, Code, Divider, Stack, Modal } from '@mantine/core';
 import { IconPlayerPlay, IconPlayerStop, IconDownload, IconFolder, IconEye, IconExternalLink } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { FileTreeView } from './FileTreeView';
@@ -26,6 +26,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
   const [showHiddenFiles, setShowHiddenFiles] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
+  const [showInstallConfirm, setShowInstallConfirm] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
   
   const handleFileSelect = async (filePath: string) => {
     setSelectedFile(filePath);
@@ -55,6 +57,69 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
     } catch (error) {
       console.error('Error in handleFileSelect:', error);
       setFileContent(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleInstall = async () => {
+    setShowInstallConfirm(true);
+  };
+
+  const confirmInstall = async () => {
+    try {
+      setIsInstalling(true);
+      setShowInstallConfirm(false);
+
+      // Check if license.properties exists
+      const licensePath = project.licensePath;
+      const licenseExists = await window.electronAPI.checkFileExists(licensePath);
+      if (!licenseExists) {
+        throw new Error('license.properties file not found ' + licensePath);
+      }
+
+      // Check if SDK package exists
+      const sdkPath = project.aemSdkPath;
+      const sdkExists = await window.electronAPI.checkFileExists(sdkPath);
+      if (!sdkExists) {
+        throw new Error('aem-sdk.zip file not found in project folder');
+      }
+
+      // Create required folders
+      const folders = ['author', 'publish', 'dispatcher', 'install'];
+      for (const folder of folders) {
+        const folderPath = `${project.folderPath}/${folder}`;
+        try {
+          await window.electronAPI.createDirectory(folderPath);
+        } catch (error) {
+          console.error(`Error creating directory ${folder}:`, error);
+          // Continue with other folders even if one fails
+        }
+      }
+
+      // Copy license.properties to author and publish
+      try {
+        await window.electronAPI.copyFile(licensePath, `${project.folderPath}/author/license.properties`);
+        await window.electronAPI.copyFile(licensePath, `${project.folderPath}/publish/license.properties`);
+      } catch (error) {
+        console.error('Error copying license file:', error);
+        throw new Error('Failed to copy license.properties to author and publish folders');
+      }
+
+      // Unzip SDK package to install folder
+      try {
+        await window.electronAPI.unzipFile(sdkPath, `${project.folderPath}/install`);
+      } catch (error) {
+        console.error('Error unzipping SDK:', error);
+        throw new Error('Failed to unzip SDK package');
+      }
+
+      // Show success message or refresh the file tree
+      // You might want to add a notification system here
+    } catch (error) {
+      console.error('Installation failed:', error);
+      // Show error message to user
+      setFileContent(`Installation failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsInstalling(false);
     }
   };
 
@@ -129,6 +194,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               size="xs"
               leftSection={<IconDownload size={16} />}
               styles={{ root: { height: 30 } }}
+              onClick={handleInstall}
+              loading={isInstalling}
             >
               Install
             </Button>
@@ -189,6 +256,36 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           </Box>
         </Stack>
       </AppShell.Main>
+
+      <Modal
+        opened={showInstallConfirm}
+        onClose={() => setShowInstallConfirm(false)}
+        title="Confirm Installation"
+        size="md"
+      >
+        <Stack>
+          <Text size="sm">
+            This action will:
+          </Text>
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            <li>Delete existing folders (if any)</li>
+            <li>Create new folders: author, publish, dispatcher, install</li>
+            <li>Copy license.properties to author and publish folders</li>
+            <li>Unzip SDK package to install folder</li>
+          </ul>
+          <Text size="sm" c="red" mt="md">
+            Are you sure you want to proceed?
+          </Text>
+          <Group justify="flex-end" mt="md">
+            <Button variant="outline" onClick={() => setShowInstallConfirm(false)}>
+              Cancel
+            </Button>
+            <Button color="red" onClick={confirmInstall}>
+              Proceed with Installation
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </AppShell>
   );
 }; 

@@ -34,5 +34,11 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('check-file-exists', filePath),
     readFile: (filePath: string) =>
       ipcRenderer.invoke('read-file', filePath),
+    createDirectory: (dirPath: string) =>
+      ipcRenderer.invoke('create-directory', dirPath),
+    copyFile: (sourcePath: string, targetPath: string) =>
+      ipcRenderer.invoke('copy-file', sourcePath, targetPath),
+    unzipFile: (zipPath: string, targetPath: string) =>
+      ipcRenderer.invoke('unzip-file', zipPath, targetPath),
   }
 );

@@ -3,6 +3,7 @@ import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { ProjectManager } from './services/ProjectManager';
 import fs from 'fs';
+import AdmZip from 'adm-zip';
 
 // Declare Vite environment variables
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -123,6 +124,34 @@ ipcMain.handle('read-file', async (_, filePath) => {
   } catch (error: any) {
     console.error('Error reading file:', error);
     return { error: `Error reading file: ${error.message}` };
+  }
+});
+
+ipcMain.handle('create-directory', async (_, dirPath) => {
+  try {
+    await fs.promises.mkdir(dirPath, { recursive: true });
+  } catch (error) {
+    console.error('Error creating directory:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('copy-file', async (_, sourcePath, targetPath) => {
+  try {
+    await fs.promises.copyFile(sourcePath, targetPath);
+  } catch (error) {
+    console.error('Error copying file:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('unzip-file', async (_, zipPath, targetPath) => {
+  try {
+    const zip = new AdmZip(zipPath);
+    zip.extractAllTo(targetPath, true);
+  } catch (error) {
+    console.error('Error unzipping file:', error);
+    throw error;
   }
 });
 
