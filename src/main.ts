@@ -1,6 +1,7 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { ProjectManager } from './services/ProjectManager';
 
 // Initialize auto-updates
 const { updateElectronApp } = require('update-electron-app');
@@ -13,13 +14,18 @@ if (started) {
   app.quit();
 }
 
+// Initialize project manager
+const projectManager = new ProjectManager();
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
   });
 
@@ -33,6 +39,31 @@ const createWindow = () => {
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
+
+// Project management IPC handlers
+ipcMain.handle('create-project', async (_, { name, folderPath }) => {
+  return projectManager.createProject(name, folderPath);
+});
+
+ipcMain.handle('load-project', async (_, id) => {
+  return projectManager.loadProject(id);
+});
+
+ipcMain.handle('get-all-projects', async () => {
+  return projectManager.getAllProjects();
+});
+
+ipcMain.handle('update-project', async (_, { id, updates }) => {
+  return projectManager.updateProject(id, updates);
+});
+
+ipcMain.handle('delete-project', async (_, id) => {
+  return projectManager.deleteProject(id);
+});
+
+ipcMain.handle('show-open-dialog', async (_, options) => {
+  return dialog.showOpenDialog(options);
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
