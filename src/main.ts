@@ -155,6 +155,15 @@ ipcMain.handle('unzip-file', async (_, zipPath, targetPath) => {
   }
 });
 
+ipcMain.handle('delete-directory', async (_, dirPath) => {
+  try {
+    await fs.promises.rm(dirPath, { recursive: true, force: true });
+  } catch (error) {
+    console.error('Error deleting directory:', error);
+    throw error;
+  }
+});
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

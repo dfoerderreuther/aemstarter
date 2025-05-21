@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { AppShell, Tabs, Group, Button, Text, Switch, Box, ScrollArea, Code, Divider, Stack, Modal } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconDownload, IconFolder, IconEye, IconExternalLink } from '@tabler/icons-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { AppShell, Tabs, Group, Button, Text, Switch, Box, ScrollArea, Code, Divider, Stack, Modal, ActionIcon } from '@mantine/core';
+import { IconPlayerPlay, IconPlayerStop, IconDownload, IconFolder, IconEye, IconExternalLink, IconTrash, IconRefresh } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
-import { FileTreeView } from './FileTreeView';
+import { FileTreeView, FileTreeViewRef } from './FileTreeView';
+import { InstallService } from '../services/installService';
+import { ClearService } from '../services/clearService';
 
 interface ProjectViewProps {
   project: Project;
@@ -27,7 +29,10 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [showInstallConfirm, setShowInstallConfirm] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const fileTreeRef = useRef<FileTreeViewRef>(null);
   
   const handleFileSelect = async (filePath: string) => {
     setSelectedFile(filePath);
@@ -68,58 +73,29 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
     try {
       setIsInstalling(true);
       setShowInstallConfirm(false);
-
-      // Check if license.properties exists
-      const licensePath = project.licensePath;
-      const licenseExists = await window.electronAPI.checkFileExists(licensePath);
-      if (!licenseExists) {
-        throw new Error('license.properties file not found ' + licensePath);
-      }
-
-      // Check if SDK package exists
-      const sdkPath = project.aemSdkPath;
-      const sdkExists = await window.electronAPI.checkFileExists(sdkPath);
-      if (!sdkExists) {
-        throw new Error('aem-sdk.zip file not found in project folder');
-      }
-
-      // Create required folders
-      const folders = ['author', 'publish', 'dispatcher', 'install'];
-      for (const folder of folders) {
-        const folderPath = `${project.folderPath}/${folder}`;
-        try {
-          await window.electronAPI.createDirectory(folderPath);
-        } catch (error) {
-          console.error(`Error creating directory ${folder}:`, error);
-          // Continue with other folders even if one fails
-        }
-      }
-
-      // Copy license.properties to author and publish
-      try {
-        await window.electronAPI.copyFile(licensePath, `${project.folderPath}/author/license.properties`);
-        await window.electronAPI.copyFile(licensePath, `${project.folderPath}/publish/license.properties`);
-      } catch (error) {
-        console.error('Error copying license file:', error);
-        throw new Error('Failed to copy license.properties to author and publish folders');
-      }
-
-      // Unzip SDK package to install folder
-      try {
-        await window.electronAPI.unzipFile(sdkPath, `${project.folderPath}/install`);
-      } catch (error) {
-        console.error('Error unzipping SDK:', error);
-        throw new Error('Failed to unzip SDK package');
-      }
-
-      // Show success message or refresh the file tree
-      // You might want to add a notification system here
+      await InstallService.installAEM(project);
     } catch (error) {
       console.error('Installation failed:', error);
-      // Show error message to user
       setFileContent(`Installation failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsInstalling(false);
+    }
+  };
+
+  const handleClear = () => {
+    setShowClearConfirm(true);
+  };
+
+  const confirmClear = async () => {
+    try {
+      setIsClearing(true);
+      setShowClearConfirm(false);
+      await ClearService.clearAEM(project);
+    } catch (error) {
+      console.error('Clearing failed:', error);
+      setFileContent(`Clearing failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -139,26 +115,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       }}
     >
       <AppShell.Navbar p={0} bg="#25262b">
-        <Group p="xs" justify="space-between">
-          <Group gap="xs">
-            <IconFolder size={16} />
-            <Text size="sm" fw={500}>Project Files</Text>
-          </Group>
-          <Switch 
-            size="xs"
-            onLabel={<IconEye size={12} />}
-            offLabel={<IconEye size={12} />}
-            checked={showHiddenFiles}
-            onChange={(event) => setShowHiddenFiles(event.currentTarget.checked)}
-            label="Show hidden"
-            labelPosition="left"
-          />
-        </Group>
+
         <ScrollArea h="calc(100vh - 36px)" scrollbarSize={6}>
           <Box>
             <FileTreeView 
               rootPath={project.folderPath} 
-              showHidden={showHiddenFiles}
               onFileSelect={handleFileSelect}
             />
           </Box>
@@ -198,6 +159,18 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               loading={isInstalling}
             >
               Install
+            </Button>
+
+            <Button 
+              color="red" 
+              variant="outline" 
+              size="xs"
+              leftSection={<IconTrash size={16} />}
+              styles={{ root: { height: 30 } }}
+              onClick={handleClear}
+              loading={isClearing}
+            >
+              Clear
             </Button>
           </Group>
           
@@ -282,6 +255,34 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             </Button>
             <Button color="red" onClick={confirmInstall}>
               Proceed with Installation
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        title="Confirm Clearing"
+        size="md"
+      >
+        <Stack>
+          <Text size="sm">
+            This action will:
+          </Text>
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            <li>Delete all AEM folders: author, publish, dispatcher, install</li>
+            <li>This action cannot be undone</li>
+          </ul>
+          <Text size="sm" c="red" mt="md">
+            Are you sure you want to proceed?
+          </Text>
+          <Group justify="flex-end" mt="md">
+            <Button variant="outline" onClick={() => setShowClearConfirm(false)}>
+              Cancel
+            </Button>
+            <Button color="red" onClick={confirmClear}>
+              Proceed with Clearing
             </Button>
           </Group>
         </Stack>

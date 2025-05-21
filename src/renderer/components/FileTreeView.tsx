@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Collapse, Group, Text, Box, Stack, Loader, UnstyledButton } from '@mantine/core';
-import { IconFolder, IconFolderOpen, IconFile, IconChevronRight, IconChevronDown } from '@tabler/icons-react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { Collapse, Group, Text, Box, Stack, Loader, UnstyledButton, ActionIcon } from '@mantine/core';
+import { IconFolder, IconFolderOpen, IconFile, IconChevronRight, IconChevronDown, IconRefresh, IconEye, IconEyeOff } from '@tabler/icons-react';
 
 export interface FileSystemEntry {
   name: string;
@@ -22,6 +22,10 @@ interface FileTreeViewProps {
   rootPath: string;
   showHidden: boolean;
   onFileSelect?: (filePath: string) => void;
+}
+
+export interface FileTreeViewRef {
+  refresh: () => Promise<void>;
 }
 
 const FileTreeEntry: React.FC<FileTreeEntryProps> = ({ 
@@ -127,30 +131,35 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
   );
 };
 
-export const FileTreeView: React.FC<FileTreeViewProps> = ({ rootPath, showHidden, onFileSelect }) => {
+export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ rootPath, onFileSelect }, ref) => {
   const [rootEntries, setRootEntries] = useState<FileSystemEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [showHidden, setShowHidden] = useState(true);
+  
+  const loadRootEntries = async () => {
+    setIsLoading(true);
+    try {
+      const entries = await window.electronAPI.readDirectory(rootPath, showHidden);
+      // Sort directories first, then files alphabetically
+      entries.sort((a, b) => {
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      setRootEntries(entries);
+    } catch (error) {
+      console.error('Error reading root directory:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useImperativeHandle(ref, () => ({
+    refresh: loadRootEntries
+  }));
   
   useEffect(() => {
-    const loadRootEntries = async () => {
-      setIsLoading(true);
-      try {
-        const entries = await window.electronAPI.readDirectory(rootPath, showHidden);
-        // Sort directories first, then files alphabetically
-        entries.sort((a, b) => {
-          if (a.isDirectory && !b.isDirectory) return -1;
-          if (!a.isDirectory && b.isDirectory) return 1;
-          return a.name.localeCompare(b.name);
-        });
-        setRootEntries(entries);
-      } catch (error) {
-        console.error('Error reading root directory:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     loadRootEntries();
   }, [rootPath, showHidden]);
   
@@ -171,6 +180,26 @@ export const FileTreeView: React.FC<FileTreeViewProps> = ({ rootPath, showHidden
   
   return (
     <Stack gap={0}>
+      <Group p="xs" justify="space-between">
+        <Group gap="xs">
+          <IconFolder size={16} />
+          <Text size="sm" fw={500}>Project Files</Text>
+          <ActionIcon 
+            variant="subtle" 
+            onClick={loadRootEntries}
+            title="Refresh directory"
+          >
+            <IconRefresh size={16} />
+          </ActionIcon>
+          <ActionIcon 
+            variant="subtle"
+            onClick={() => setShowHidden(!showHidden)}
+            title={showHidden ? "Hide hidden files" : "Show hidden files"}
+          >
+            {showHidden ? <IconEye size={16} /> : <IconEyeOff size={16} />}
+          </ActionIcon>
+        </Group>
+      </Group>
       {rootEntries.map((entry) => (
         <FileTreeEntry 
           key={entry.path} 
@@ -183,4 +212,4 @@ export const FileTreeView: React.FC<FileTreeViewProps> = ({ rootPath, showHidden
       ))}
     </Stack>
   );
-}; 
+}); 

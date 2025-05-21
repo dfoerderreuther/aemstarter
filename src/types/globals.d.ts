@@ -24,6 +24,7 @@ declare global {
       createDirectory: (dirPath: string) => Promise<void>;
       copyFile: (sourcePath: string, targetPath: string) => Promise<void>;
       unzipFile: (zipPath: string, targetPath: string) => Promise<void>;
+      deleteDirectory: (dirPath: string) => Promise<void>;
     };
   }
 } 

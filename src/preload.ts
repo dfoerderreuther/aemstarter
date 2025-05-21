@@ -40,5 +40,7 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('copy-file', sourcePath, targetPath),
     unzipFile: (zipPath: string, targetPath: string) =>
       ipcRenderer.invoke('unzip-file', zipPath, targetPath),
+    deleteDirectory: (dirPath: string) =>
+      ipcRenderer.invoke('delete-directory', dirPath),
   }
 );
