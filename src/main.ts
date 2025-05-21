@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { ProjectManager } from './services/ProjectManager';
+import fs from 'fs';
 
 // Declare Vite environment variables
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -76,6 +77,53 @@ ipcMain.handle('get-last-project-id', async () => {
 
 ipcMain.handle('show-open-dialog', async (_, options) => {
   return dialog.showOpenDialog(options);
+});
+
+// File system operations
+ipcMain.handle('read-directory', async (_, dirPath, showHidden = false) => {
+  try {
+    const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
+    return entries
+      .filter(entry => showHidden || !entry.name.startsWith('.'))
+      .map(entry => ({
+        name: entry.name,
+        path: path.join(dirPath, entry.name),
+        isDirectory: entry.isDirectory(),
+        isFile: entry.isFile(),
+        isSymlink: entry.isSymbolicLink()
+      }));
+  } catch (error) {
+    console.error('Error reading directory:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('check-file-exists', async (_, filePath) => {
+  try {
+    await fs.promises.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+});
+
+ipcMain.handle('read-file', async (_, filePath) => {
+  try {
+    const stat = await fs.promises.stat(filePath);
+    
+    // Only read text files under 5MB to avoid performance issues
+    const isLargeFile = stat.size > 5 * 1024 * 1024;
+    if (isLargeFile) {
+      return { error: 'File is too large to read (>5MB)' };
+    }
+    
+    // Read the file as UTF-8 text
+    const content = await fs.promises.readFile(filePath, 'utf-8');
+    return { content };
+  } catch (error: any) {
+    console.error('Error reading file:', error);
+    return { error: `Error reading file: ${error.message}` };
+  }
 });
 
 // This method will be called when Electron has finished

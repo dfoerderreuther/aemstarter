@@ -26,5 +26,13 @@ contextBridge.exposeInMainWorld(
     // Dialog
     showOpenDialog: (options: any) => 
       ipcRenderer.invoke('show-open-dialog', options),
+      
+    // File system operations
+    readDirectory: (dirPath: string, showHidden: boolean = false) =>
+      ipcRenderer.invoke('read-directory', dirPath, showHidden),
+    checkFileExists: (filePath: string) =>
+      ipcRenderer.invoke('check-file-exists', filePath),
+    readFile: (filePath: string) =>
+      ipcRenderer.invoke('read-file', filePath),
   }
 );

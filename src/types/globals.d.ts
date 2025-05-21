@@ -10,6 +10,17 @@ declare global {
       setLastProjectId: (id: string | null) => Promise<boolean>;
       getLastProjectId: () => Promise<string | undefined>;
       showOpenDialog: (options: any) => Promise<Electron.OpenDialogReturnValue>;
+      
+      // File system operations
+      readDirectory: (dirPath: string, showHidden?: boolean) => Promise<Array<{
+        name: string;
+        path: string;
+        isDirectory: boolean;
+        isFile: boolean;
+        isSymlink: boolean;
+      }>>;
+      checkFileExists: (filePath: string) => Promise<boolean>;
+      readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
     };
   }
 } 
