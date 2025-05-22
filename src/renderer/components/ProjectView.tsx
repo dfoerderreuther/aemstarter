@@ -128,6 +128,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               rootPath={project.folderPath} 
               showHidden={showHiddenFiles}
               onFileSelect={handleFileSelect}
+              ref={fileTreeRef}
             />
           </Box>
         </ScrollArea>
