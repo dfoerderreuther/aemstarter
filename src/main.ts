@@ -2,9 +2,8 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { ProjectManager } from './main/services/ProjectManager';
-import { Installer } from './main/services/Installer';
+import { Installer } from './main/installer/Installer';
 import fs from 'fs';
-import AdmZip from 'adm-zip';
 import { Project } from './types/Project';
 
 // Declare Vite environment variables
