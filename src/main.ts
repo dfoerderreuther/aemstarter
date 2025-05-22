@@ -101,15 +101,6 @@ ipcMain.handle('read-directory', async (_, dirPath, showHidden = false) => {
   }
 });
 
-ipcMain.handle('check-file-exists', async (_, filePath) => {
-  try {
-    await fs.promises.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-});
-
 ipcMain.handle('read-file', async (_, filePath) => {
   try {
     const stat = await fs.promises.stat(filePath);
@@ -129,42 +120,7 @@ ipcMain.handle('read-file', async (_, filePath) => {
   }
 });
 
-ipcMain.handle('create-directory', async (_, dirPath) => {
-  try {
-    await fs.promises.mkdir(dirPath, { recursive: true });
-  } catch (error) {
-    console.error('Error creating directory:', error);
-    throw error;
-  }
-});
 
-ipcMain.handle('copy-file', async (_, sourcePath, targetPath) => {
-  try {
-    await fs.promises.copyFile(sourcePath, targetPath);
-  } catch (error) {
-    console.error('Error copying file:', error);
-    throw error;
-  }
-});
-
-ipcMain.handle('unzip-file', async (_, zipPath, targetPath) => {
-  try {
-    const zip = new AdmZip(zipPath);
-    zip.extractAllTo(targetPath, true);
-  } catch (error) {
-    console.error('Error unzipping file:', error);
-    throw error;
-  }
-});
-
-ipcMain.handle('delete-directory', async (_, dirPath) => {
-  try {
-    await fs.promises.rm(dirPath, { recursive: true, force: true });
-  } catch (error) {
-    console.error('Error deleting directory:', error);
-    throw error;
-  }
-});
 
 // AEM Installation
 ipcMain.handle('install-aem', async (_, project: Project) => {
@@ -174,6 +130,17 @@ ipcMain.handle('install-aem', async (_, project: Project) => {
     return true;
   } catch (error) {
     console.error('Error installing AEM:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('delete-aem', async (_, project: Project) => {
+  try {
+    const installer = new Installer(project);
+    await installer.delete();
+    return true;
+  } catch (error) {
+    console.error('Error deleting AEM:', error);
     throw error;
   }
 });

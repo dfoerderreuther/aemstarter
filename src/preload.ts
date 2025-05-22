@@ -31,19 +31,12 @@ contextBridge.exposeInMainWorld(
     // File system operations
     readDirectory: (dirPath: string, showHidden: boolean = false) =>
       ipcRenderer.invoke('read-directory', dirPath, showHidden),
-    checkFileExists: (filePath: string) =>
-      ipcRenderer.invoke('check-file-exists', filePath),
     readFile: (filePath: string) =>
       ipcRenderer.invoke('read-file', filePath),
-    createDirectory: (dirPath: string) =>
-      ipcRenderer.invoke('create-directory', dirPath),
-    copyFile: (sourcePath: string, targetPath: string) =>
-      ipcRenderer.invoke('copy-file', sourcePath, targetPath),
-    unzipFile: (zipPath: string, targetPath: string) =>
-      ipcRenderer.invoke('unzip-file', zipPath, targetPath),
-    deleteDirectory: (dirPath: string) =>
-      ipcRenderer.invoke('delete-directory', dirPath),
+
     installAEM: (project: Project) =>
       ipcRenderer.invoke('install-aem', project),
+    deleteAEM: (project: Project) =>
+      ipcRenderer.invoke('delete-aem', project),
   }
 );

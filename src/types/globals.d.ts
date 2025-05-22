@@ -19,13 +19,9 @@ declare global {
         isFile: boolean;
         isSymlink: boolean;
       }>>;
-      checkFileExists: (filePath: string) => Promise<boolean>;
-      readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
-      createDirectory: (dirPath: string) => Promise<void>;
-      copyFile: (sourcePath: string, targetPath: string) => Promise<void>;
-      unzipFile: (zipPath: string, targetPath: string) => Promise<void>;
-      deleteDirectory: (dirPath: string) => Promise<void>;
+
       installAEM: (project: Project) => Promise<boolean>;
+      deleteAEM: (project: Project) => Promise<boolean>;
     };
   }
 } 
