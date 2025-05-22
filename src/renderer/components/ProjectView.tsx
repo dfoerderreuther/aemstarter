@@ -180,13 +180,6 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               Clear
             </Button>
 
-            <ActionIcon 
-              variant="subtle"
-              onClick={() => setShowHiddenFiles(!showHiddenFiles)}
-              title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
-            >
-              {showHiddenFiles ? <IconEye size={16} /> : <IconEyeOff size={16} />}
-            </ActionIcon>
           </Group>
           
           <Box style={{ flex: '0 0 40%', overflow: 'auto' }}>
