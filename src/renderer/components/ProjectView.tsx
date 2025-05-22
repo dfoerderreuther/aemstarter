@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppShell, Tabs, Group, Button, Text, Switch, Box, ScrollArea, Code, Divider, Stack, Modal, ActionIcon } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconDownload, IconFolder, IconEye, IconExternalLink, IconTrash, IconRefresh } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconDownload, IconFolder, IconEye, IconExternalLink, IconTrash, IconRefresh, IconEyeOff } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { FileTreeView, FileTreeViewRef } from './FileTreeView';
 import { InstallService } from '../services/installService';
@@ -74,6 +74,9 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       setIsInstalling(true);
       setShowInstallConfirm(false);
       await InstallService.installAEM(project);
+      // Add a small delay to ensure file system operations are complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await fileTreeRef.current?.refresh();
     } catch (error) {
       console.error('Installation failed:', error);
       setFileContent(`Installation failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -91,6 +94,9 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       setIsClearing(true);
       setShowClearConfirm(false);
       await ClearService.clearAEM(project);
+      // Add a small delay to ensure file system operations are complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await fileTreeRef.current?.refresh();
     } catch (error) {
       console.error('Clearing failed:', error);
       setFileContent(`Clearing failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -120,6 +126,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           <Box>
             <FileTreeView 
               rootPath={project.folderPath} 
+              showHidden={showHiddenFiles}
               onFileSelect={handleFileSelect}
             />
           </Box>
@@ -172,6 +179,14 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             >
               Clear
             </Button>
+
+            <ActionIcon 
+              variant="subtle"
+              onClick={() => setShowHiddenFiles(!showHiddenFiles)}
+              title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
+            >
+              {showHiddenFiles ? <IconEye size={16} /> : <IconEyeOff size={16} />}
+            </ActionIcon>
           </Group>
           
           <Box style={{ flex: '0 0 40%', overflow: 'auto' }}>

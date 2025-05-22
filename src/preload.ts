@@ -2,6 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from 'electron';
+import { Project } from './types/Project';
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
@@ -42,5 +43,7 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('unzip-file', zipPath, targetPath),
     deleteDirectory: (dirPath: string) =>
       ipcRenderer.invoke('delete-directory', dirPath),
+    installAEM: (project: Project) =>
+      ipcRenderer.invoke('install-aem', project),
   }
 );

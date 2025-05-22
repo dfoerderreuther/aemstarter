@@ -25,6 +25,7 @@ declare global {
       copyFile: (sourcePath: string, targetPath: string) => Promise<void>;
       unzipFile: (zipPath: string, targetPath: string) => Promise<void>;
       deleteDirectory: (dirPath: string) => Promise<void>;
+      installAEM: (project: Project) => Promise<boolean>;
     };
   }
 } 

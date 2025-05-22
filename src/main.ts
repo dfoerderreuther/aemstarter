@@ -1,9 +1,11 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import { ProjectManager } from './services/ProjectManager';
+import { ProjectManager } from './main/services/ProjectManager';
+import { Installer } from './main/services/Installer';
 import fs from 'fs';
 import AdmZip from 'adm-zip';
+import { Project } from './types/Project';
 
 // Declare Vite environment variables
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -160,6 +162,18 @@ ipcMain.handle('delete-directory', async (_, dirPath) => {
     await fs.promises.rm(dirPath, { recursive: true, force: true });
   } catch (error) {
     console.error('Error deleting directory:', error);
+    throw error;
+  }
+});
+
+// AEM Installation
+ipcMain.handle('install-aem', async (_, project: Project) => {
+  try {
+    const installer = new Installer(project);
+    await installer.install();
+    return true;
+  } catch (error) {
+    console.error('Error installing AEM:', error);
     throw error;
   }
 });

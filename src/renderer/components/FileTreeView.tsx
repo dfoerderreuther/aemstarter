@@ -131,11 +131,10 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
   );
 };
 
-export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ rootPath, onFileSelect }, ref) => {
+export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ rootPath, showHidden, onFileSelect }, ref) => {
   const [rootEntries, setRootEntries] = useState<FileSystemEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [showHidden, setShowHidden] = useState(true);
   
   const loadRootEntries = async () => {
     setIsLoading(true);
@@ -190,13 +189,6 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
             title="Refresh directory"
           >
             <IconRefresh size={16} />
-          </ActionIcon>
-          <ActionIcon 
-            variant="subtle"
-            onClick={() => setShowHidden(!showHidden)}
-            title={showHidden ? "Hide hidden files" : "Show hidden files"}
-          >
-            {showHidden ? <IconEye size={16} /> : <IconEyeOff size={16} />}
           </ActionIcon>
         </Group>
       </Group>
