@@ -12,6 +12,7 @@ declare global {
       showOpenDialog: (options: any) => Promise<Electron.OpenDialogReturnValue>;
       
       // File system operations
+      readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
       readDirectory: (dirPath: string, showHidden?: boolean) => Promise<Array<{
         name: string;
         path: string;

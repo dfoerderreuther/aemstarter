@@ -20,7 +20,6 @@ interface FileTreeEntryProps {
 
 interface FileTreeViewProps {
   rootPath: string;
-  showHidden: boolean;
   onFileSelect?: (filePath: string) => void;
 }
 

@@ -5,6 +5,7 @@ import { Project } from '../../types/Project';
 import { FileTreeView, FileTreeViewRef } from './FileTreeView';
 import { InstallService } from '../services/installService';
 import { ClearService } from '../services/clearService';
+import { AemInstanceView } from './AemInstanceView';
 
 interface ProjectViewProps {
   project: Project;
@@ -25,7 +26,6 @@ function getDirname(filepath: string): string {
 }
 
 export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
-  const [showHiddenFiles, setShowHiddenFiles] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [showInstallConfirm, setShowInstallConfirm] = useState(false);
@@ -105,9 +105,6 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
     }
   };
 
-  useEffect(() => {
-    setFileContent("Initial test content - This should display when the component first loads.");
-  }, []);
 
   return (
     <AppShell
@@ -126,7 +123,6 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           <Box>
             <FileTreeView 
               rootPath={project.folderPath} 
-              showHidden={showHiddenFiles}
               onFileSelect={handleFileSelect}
               ref={fileTreeRef}
             />
@@ -195,11 +191,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               </Tabs.List>
               
               <Tabs.Panel value="author" p="md">
-                Author content
+                <AemInstanceView instance="author" project={project} />
               </Tabs.Panel>
               
               <Tabs.Panel value="publisher" p="md">
-                Publisher content
+                <AemInstanceView instance="publisher" project={project} />
               </Tabs.Panel>
               
               <Tabs.Panel value="dispatcher" p="md">
