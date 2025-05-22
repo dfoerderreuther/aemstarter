@@ -26,7 +26,7 @@ export class AemInstanceManager {
     jvmOpts: string,
     debugPort?: number
   ): Promise<void> {
-    const instanceDir = path.join(this.project.folderPath, instanceType);
+    const instanceDir = path.join(this.project.folderPath, instanceType === 'author' ? 'author' : 'publish');
     const jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
 
     if (!fs.existsSync(jarPath)) {
