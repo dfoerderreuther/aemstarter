@@ -78,7 +78,17 @@ export class Installer {
             const { execSync } = require('child_process');
             execSync(`chmod +x ${installDir}/${dispatcherScript}`);
             execSync(`${installDir}/${dispatcherScript}`);
+
+            const files = fs.readdirSync(`${this.project.folderPath}/dispatcher`);
+            const dispatcherDir = files.find(file => file.startsWith('dispatcher-sdk'));
+            console.log('dispatcherDir', dispatcherDir);
+            if (dispatcherDir) {
+                fs.symlinkSync(
+                    `${this.project.folderPath}/dispatcher/${dispatcherDir}`,
+                    `${this.project.folderPath}/dispatcher/dispatcher-sdk`
+                );
+            }
         }
-        
+        console.log('Installation complete');
     }
 }
