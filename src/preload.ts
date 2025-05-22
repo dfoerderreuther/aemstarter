@@ -34,9 +34,31 @@ contextBridge.exposeInMainWorld(
     readFile: (filePath: string) =>
       ipcRenderer.invoke('read-file', filePath),
 
+    // AEM Installation
     installAEM: (project: Project) =>
       ipcRenderer.invoke('install-aem', project),
     deleteAEM: (project: Project) =>
       ipcRenderer.invoke('delete-aem', project),
+
+    // AEM Instance Management
+    startAemInstance: (
+      project: Project,
+      instanceType: 'author' | 'publisher',
+      options: {
+        port: number;
+        runmode: string;
+        jvmOpts: string;
+        debugPort?: number;
+      }
+    ) => ipcRenderer.invoke('start-aem-instance', project, instanceType, options),
+    
+    stopAemInstance: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('stop-aem-instance', project, instanceType),
+    
+    isAemInstanceRunning: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('is-aem-instance-running', project, instanceType),
+    
+    getAemInstanceOutput: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('get-aem-instance-output', project, instanceType),
   }
 );

@@ -72,6 +72,14 @@ export class ProjectManager {
     }
   }
 
+  getProject(id: string): Project | undefined {
+    return this.projects.find(p => p.id === id);
+  }
+
+  getAllProjects(): Project[] {
+    return this.projects;
+  }
+
   createProject(name: string, folderPath: string, aemSdkPath: string, licensePath: string): Project {
     // Validate file types
     if (!aemSdkPath.toLowerCase().endsWith('.zip')) {
@@ -104,20 +112,15 @@ export class ProjectManager {
     return project;
   }
 
-  loadProject(id: string): Project | undefined {
-    return this.projects.find(p => p.id === id);
-  }
-
-  getAllProjects(): Project[] {
-    return [...this.projects];
-  }
-
   updateProject(id: string, updates: Partial<Project>): Project | undefined {
     const index = this.projects.findIndex(p => p.id === id);
-    if (index === -1) return undefined;
+    if (index === -1) {
+      return undefined;
+    }
 
+    const project = this.projects[index];
     const updatedProject = {
-      ...this.projects[index],
+      ...project,
       ...updates,
       lastModified: new Date()
     };
@@ -128,26 +131,26 @@ export class ProjectManager {
   }
 
   deleteProject(id: string): boolean {
-    const initialLength = this.projects.length;
-    this.projects = this.projects.filter(p => p.id !== id);
-    
-    if (this.projects.length !== initialLength) {
-      this.saveProjects();
-      
-      // If we're deleting the last selected project, clear the setting
-      if (this.settings.lastProjectId === id) {
-        this.settings.lastProjectId = undefined;
-        this.saveSettings();
-      }
-      
-      return true;
+    const index = this.projects.findIndex(p => p.id === id);
+    if (index === -1) {
+      return false;
     }
-    return false;
+
+    this.projects.splice(index, 1);
+    this.saveProjects();
+
+    if (this.settings.lastProjectId === id) {
+      this.settings.lastProjectId = undefined;
+      this.saveSettings();
+    }
+
+    return true;
   }
 
-  setLastProjectId(id: string | undefined): void {
-    this.settings.lastProjectId = id;
+  setLastProjectId(id: string | null): boolean {
+    this.settings.lastProjectId = id || undefined;
     this.saveSettings();
+    return true;
   }
 
   getLastProjectId(): string | undefined {

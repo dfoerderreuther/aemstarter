@@ -3,6 +3,7 @@ import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { ProjectManager } from './main/services/ProjectManager';
 import { Installer } from './main/installer/Installer';
+import { AemInstanceManager } from './main/services/AemInstanceManager';
 import fs from 'fs';
 import { Project } from './types/Project';
 
@@ -24,6 +25,9 @@ if (started) {
 // Initialize project manager
 const projectManager = new ProjectManager();
 
+// Store AEM instance managers
+const instanceManagers = new Map<string, AemInstanceManager>();
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -33,7 +37,25 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: true,
     },
+  });
+
+  // Set Content Security Policy
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self';",
+          "script-src 'self';",
+          "style-src 'self' 'unsafe-inline';",
+          "font-src 'self' data:;",
+          "img-src 'self' data:;",
+          "connect-src 'self';",
+        ].join(' ')
+      }
+    });
   });
 
   // and load the index.html of the app.
@@ -53,7 +75,7 @@ ipcMain.handle('create-project', async (_, { name, folderPath, aemSdkPath, licen
 });
 
 ipcMain.handle('load-project', async (_, id) => {
-  return projectManager.loadProject(id);
+  return projectManager.getProject(id);
 });
 
 ipcMain.handle('get-all-projects', async () => {
@@ -69,8 +91,7 @@ ipcMain.handle('delete-project', async (_, id) => {
 });
 
 ipcMain.handle('set-last-project-id', async (_, id) => {
-  projectManager.setLastProjectId(id);
-  return true;
+  return projectManager.setLastProjectId(id);
 });
 
 ipcMain.handle('get-last-project-id', async () => {
@@ -102,24 +123,13 @@ ipcMain.handle('read-directory', async (_, dirPath, showHidden = false) => {
 
 ipcMain.handle('read-file', async (_, filePath) => {
   try {
-    const stat = await fs.promises.stat(filePath);
-    
-    // Only read text files under 5MB to avoid performance issues
-    const isLargeFile = stat.size > 5 * 1024 * 1024;
-    if (isLargeFile) {
-      return { error: 'File is too large to read (>5MB)' };
-    }
-    
-    // Read the file as UTF-8 text
     const content = await fs.promises.readFile(filePath, 'utf-8');
     return { content };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error reading file:', error);
-    return { error: `Error reading file: ${error.message}` };
+    return { error: error instanceof Error ? error.message : String(error) };
   }
 });
-
-
 
 // AEM Installation
 ipcMain.handle('install-aem', async (_, project: Project) => {
@@ -142,6 +152,54 @@ ipcMain.handle('delete-aem', async (_, project: Project) => {
     console.error('Error deleting AEM:', error);
     throw error;
   }
+});
+
+// AEM Instance Management
+ipcMain.handle('start-aem-instance', async (_, project: Project, instanceType: 'author' | 'publisher', options: { port: number; runmode: string; jvmOpts: string; debugPort?: number }) => {
+  try {
+    let manager = instanceManagers.get(project.id);
+    if (!manager) {
+      manager = new AemInstanceManager(project);
+      instanceManagers.set(project.id, manager);
+    }
+
+    await manager.startInstance(
+      instanceType,
+      options.port,
+      options.runmode,
+      options.jvmOpts,
+      options.debugPort
+    );
+    return true;
+  } catch (error) {
+    console.error('Error starting AEM instance:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('stop-aem-instance', async (_, project: Project, instanceType: 'author' | 'publisher') => {
+  try {
+    const manager = instanceManagers.get(project.id);
+    if (!manager) {
+      return false;
+    }
+
+    await manager.stopInstance(instanceType);
+    return true;
+  } catch (error) {
+    console.error('Error stopping AEM instance:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('is-aem-instance-running', (_, project: Project, instanceType: 'author' | 'publisher') => {
+  const manager = instanceManagers.get(project.id);
+  return manager ? manager.isInstanceRunning(instanceType) : false;
+});
+
+ipcMain.handle('get-aem-instance-output', (_, project: Project, instanceType: 'author' | 'publisher') => {
+  const manager = instanceManagers.get(project.id);
+  return manager ? manager.getInstanceOutput(instanceType) : { stdout: [], stderr: [] };
 });
 
 // This method will be called when Electron has finished

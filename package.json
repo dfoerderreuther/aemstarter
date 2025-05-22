@@ -52,6 +52,8 @@
     "@types/react": "^19.1.5",
     "@types/react-dom": "^19.1.5",
     "@types/uuid": "^10.0.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
     "adm-zip": "^0.5.10",
     "electron-squirrel-startup": "^1.0.1",
     "extract-zip": "^2.0.1",
@@ -59,6 +61,8 @@
     "react-dom": "^19.1.0",
     "update-electron-app": "^3.1.1",
     "uuid": "^11.1.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
     "zip-a-folder": "^3.1.9"
   }
 }

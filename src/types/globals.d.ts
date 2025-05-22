@@ -21,8 +21,30 @@ declare global {
         isSymlink: boolean;
       }>>;
 
+      // AEM Installation
       installAEM: (project: Project) => Promise<boolean>;
       deleteAEM: (project: Project) => Promise<boolean>;
+
+      // AEM Instance Management
+      startAemInstance: (
+        project: Project,
+        instanceType: 'author' | 'publisher',
+        options: {
+          port: number;
+          runmode: string;
+          jvmOpts: string;
+          debugPort?: number;
+        }
+      ) => Promise<boolean>;
+      
+      stopAemInstance: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
+      
+      isAemInstanceRunning: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
+      
+      getAemInstanceOutput: (project: Project, instanceType: 'author' | 'publisher') => Promise<{
+        stdout: string[];
+        stderr: string[];
+      }>;
     };
   }
 } 
