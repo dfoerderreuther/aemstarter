@@ -1,7 +1,6 @@
 import { Project } from "../../types/Project";
 
 import fs from 'fs';
-import path from 'path';
 import extract from 'extract-zip';
 import process from 'process';
 
@@ -21,6 +20,7 @@ export class Installer {
             const folderPath = `${this.project.folderPath}/${folder}`;
             fs.rmSync(folderPath, { force: true, recursive: true });
         }
+        console.log('Deletion complete');
     }
 
     async install() {
