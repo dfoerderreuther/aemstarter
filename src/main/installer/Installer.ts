@@ -105,10 +105,10 @@ export class Installer {
         );
         if (type === 'author') {
             console.log('writing env.sh for author');
-            fs.writeFileSync(`${instanceDir}/env.sh`, AUTHOR_ENV_TEMPLATE);
+            //fs.writeFileSync(`${instanceDir}/env.sh`, AUTHOR_ENV_TEMPLATE);
         } else if (type === 'publish') {
             console.log('writing env.sh for publish');
-            fs.writeFileSync(`${instanceDir}/env.sh`, PUBLISH_ENV_TEMPLATE);
+            //fs.writeFileSync(`${instanceDir}/env.sh`, PUBLISH_ENV_TEMPLATE);
         }
     }
 
