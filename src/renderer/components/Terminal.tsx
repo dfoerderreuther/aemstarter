@@ -23,35 +23,54 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
       fontSize: 14,
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       cursorBlink: true,
+      rows: 24,
+      cols: 80,
     });
 
     // Initialize fit addon
     const fitAddon = new FitAddon();
     xterm.loadAddon(fitAddon);
 
-    // Open terminal
-    xterm.open(terminalRef.current);
-    fitAddon.fit();
-
     // Store ref
     xtermRef.current = xterm;
 
-    // Call onReady callback if provided
-    if (onReady) {
-      onReady(xterm);
-    }
+    // Delay opening to ensure container is ready
+    requestAnimationFrame(() => {
+      if (!terminalRef.current) return;
+      
+      // Open terminal
+      xterm.open(terminalRef.current);
 
-    // Handle window resize
-    const handleResize = () => {
-      fitAddon.fit();
-    };
-    window.addEventListener('resize', handleResize);
+      // Delay fit to ensure dimensions are calculated
+      setTimeout(() => {
+        try {
+          fitAddon.fit();
+          
+          // Call onReady callback if provided
+          if (onReady) {
+            onReady(xterm);
+          }
 
-    // Cleanup
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      xterm.dispose();
-    };
+          // Handle window resize
+          const handleResize = () => {
+            try {
+              fitAddon.fit();
+            } catch (error) {
+              console.warn('Failed to fit terminal:', error);
+            }
+          };
+          window.addEventListener('resize', handleResize);
+
+          // Store cleanup function
+          return () => {
+            window.removeEventListener('resize', handleResize);
+            xterm.dispose();
+          };
+        } catch (error) {
+          console.warn('Failed to initialize terminal:', error);
+        }
+      }, 50);
+    });
   }, [onReady]);
 
   return (
@@ -62,7 +81,8 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
         height: '100%',
         backgroundColor: '#1a1b1e',
         padding: '8px',
-        borderRadius: '4px'
+        borderRadius: '4px',
+        position: 'relative',
       }} 
     />
   );
