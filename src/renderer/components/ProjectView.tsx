@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppShell, Tabs, Stack } from '@mantine/core';
+import { Tabs, Stack } from '@mantine/core';
 import { Project } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './FilesView';
@@ -14,59 +14,52 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
   const [activeTab, setActiveTab] = useState<string | null>('author');
 
   return (
-    <AppShell
-      padding={0}
-      styles={{
-        main: {
-          backgroundColor: '#1A1B1E',
-          padding: 0,
-          display: 'flex',
-          flexDirection: 'column'
-        }
+    <Stack 
+      gap={0} 
+      style={{ 
+        height: 'calc(100vh - 60px)', // Subtract header height
+        minHeight: 'calc(100vh - 60px)',
+        backgroundColor: '#1A1B1E'
       }}
     >
-      <AppShell.Main>
-        <Stack gap={0} style={{ height: '100vh', minHeight: '100vh' }}>
-          <MainActionsView project={project} />
+      <MainActionsView project={project} />
 
-          <Tabs 
-            defaultValue="author" 
-            style={{ flex: 1 }}
-            onChange={setActiveTab}
-          >
-            <Tabs.List>
-              <Tabs.Tab value="author">Author</Tabs.Tab>
-              <Tabs.Tab value="publish">Publish</Tabs.Tab>
-              <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
-              <Tabs.Tab value="files">Files</Tabs.Tab>
-            </Tabs.List>
+      <Tabs 
+        defaultValue="author" 
+        style={{ flex: 1 }}
+        onChange={setActiveTab}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="author">Author</Tabs.Tab>
+          <Tabs.Tab value="publish">Publish</Tabs.Tab>
+          <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
+          <Tabs.Tab value="files">Files</Tabs.Tab>
+        </Tabs.List>
 
-            <Tabs.Panel value="author">
-              <AemInstanceView 
-                instance="author" 
-                project={project} 
-                visible={activeTab === 'author'}
-              />
-            </Tabs.Panel>
+        <Tabs.Panel value="author">
+          <AemInstanceView 
+            instance="author" 
+            project={project} 
+            visible={activeTab === 'author'}
+          />
+        </Tabs.Panel>
 
-            <Tabs.Panel value="publish">
-              <AemInstanceView 
-                instance="publisher" 
-                project={project} 
-                visible={activeTab === 'publish'}
-              />
-            </Tabs.Panel>
+        <Tabs.Panel value="publish">
+          <AemInstanceView 
+            instance="publisher" 
+            project={project} 
+            visible={activeTab === 'publish'}
+          />
+        </Tabs.Panel>
 
-            <Tabs.Panel value="dispatcher">
-              <DispatcherView />
-            </Tabs.Panel>
+        <Tabs.Panel value="dispatcher">
+          <DispatcherView />
+        </Tabs.Panel>
 
-            <Tabs.Panel value="files" p="md">
-              <FilesView rootPath={project.folderPath} />
-            </Tabs.Panel>
-          </Tabs>
-        </Stack>
-      </AppShell.Main>
-    </AppShell>
+        <Tabs.Panel value="files" p="md">
+          <FilesView rootPath={project.folderPath} />
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
   );
 }; 

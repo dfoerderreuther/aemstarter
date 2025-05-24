@@ -186,7 +186,7 @@ const App: React.FC = () => {
     <MantineProvider theme={theme} defaultColorScheme="dark">
       <AppShell
         header={{ height: 60 }}
-        padding="md"
+        padding={0}
         style={{ minHeight: '100vh' }}
       >
         <AppShell.Header p="xs" style={{ paddingLeft: rem(20), paddingRight: rem(20) }}>
