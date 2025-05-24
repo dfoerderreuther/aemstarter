@@ -63,6 +63,7 @@ export class Installer {
             const folderPath = `${this.project.folderPath}/${folder}`;
             fs.rmSync(folderPath, { force: true, recursive: true });
         }
+        fs.rmSync(`${this.project.folderPath}/README.md`, { force: true });
         console.log('Deletion complete');
     }
 
