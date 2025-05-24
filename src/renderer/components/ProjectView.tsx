@@ -116,20 +116,16 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           
           <Box style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
             <Tabs 
-              defaultValue="files" 
+              defaultValue="author" 
               variant="outline"
               style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
             >
               <Tabs.List>
-                <Tabs.Tab value="files">Files</Tabs.Tab>
                 <Tabs.Tab value="author">Author</Tabs.Tab>
                 <Tabs.Tab value="publisher">Publisher</Tabs.Tab>
                 <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
+                <Tabs.Tab value="files">Files</Tabs.Tab>
               </Tabs.List>
-              
-              <Tabs.Panel value="files" p="md">
-                <FilesView rootPath={project.folderPath} />
-              </Tabs.Panel>
               
               <Tabs.Panel value="author" p="md">
                 <AemInstanceView instance="author" project={project} />
@@ -141,6 +137,10 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               
               <Tabs.Panel value="dispatcher" p="md">
                 <DispatcherView />
+              </Tabs.Panel>
+              
+              <Tabs.Panel value="files" p="md">
+                <FilesView rootPath={project.folderPath} />
               </Tabs.Panel>
             </Tabs>
           </Box>

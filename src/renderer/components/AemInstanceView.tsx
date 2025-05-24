@@ -1,9 +1,9 @@
 import { Project } from "../../types/Project";
-import { Grid, TextInput, NumberInput, Switch, Button, Group, Stack, Paper, Text } from '@mantine/core';
+import { Grid, TextInput, NumberInput, Switch, Button, Group, Stack, Paper, Text, Collapse } from '@mantine/core';
 import { useState, useRef, useEffect } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal } from './Terminal';
-import { IconPlayerPlay, IconPlayerStop, IconBug } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconBug, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -18,6 +18,7 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
   const [debugPort, setDebugPort] = useState(30303);
   const [isDebugEnabled, setIsDebugEnabled] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const terminalRef = useRef<XTerm | null>(null);
 
   // Check instance status on mount
@@ -117,60 +118,24 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
   };
 
   return (
-    <Grid gutter="md">
-      {/* Left Column - Form */}
-      <Grid.Col span={6}>
-        <Paper shadow="xs" p="md">
-          <Stack gap="md">
+    <Stack gap="md">
+      {/* Form Section */}
+      <Paper shadow="xs" p="md">
+        <Stack gap="md">
+          <Group justify="space-between">
             <Text fw={500} size="lg">{instance.charAt(0).toUpperCase() + instance.slice(1)} Instance Settings</Text>
-            
-            <NumberInput
-              label="CQ Port"
-              description="The port on which the AEM instance will run"
-              value={port}
-              onChange={(val) => setPort(Number(val))}
-              min={1024}
-              max={65535}
-              disabled={isRunning}
-            />
+            <Button 
+              variant="subtle" 
+              onClick={() => setIsExpanded(!isExpanded)}
+              rightSection={isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+            >
+              {isExpanded ? 'Show Less' : 'Show More'}
+            </Button>
+          </Group>
 
-            <TextInput
-              label="CQ Runmode"
-              description="Comma-separated list of runmodes"
-              value={runmode}
-              onChange={(e) => setRunmode(e.target.value)}
-              placeholder="author,local,nosample"
-              disabled={isRunning}
-            />
-
-            <TextInput
-              label="CQ JVM Options"
-              description="Java Virtual Machine options"
-              value={jvmOpts}
-              onChange={(e) => setJvmOpts(e.target.value)}
-              disabled={isRunning}
-            />
-
-            <Switch
-              label="Enable Debug"
-              checked={isDebugEnabled}
-              onChange={(e) => setIsDebugEnabled(e.target.checked)}
-              disabled={isRunning}
-            />
-
-            {isDebugEnabled && (
-              <NumberInput
-                label="Debug Port"
-                description="Port for remote debugging"
-                value={debugPort}
-                onChange={(val) => setDebugPort(Number(val))}
-                min={1024}
-                max={65535}
-                disabled={isRunning}
-              />
-            )}
-
-            <Group justify="flex-start" gap="sm">
+          {/* Always visible controls */}
+          <Group grow>
+            <Group gap="sm">
               <Button
                 color="green"
                 leftSection={<IconPlayerPlay size={16} />}
@@ -187,27 +152,77 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
               >
                 Stop
               </Button>
+            </Group>
+
+            <Group gap="sm">
+              <Switch
+                label="Enable Debug"
+                checked={isDebugEnabled}
+                onChange={(e) => setIsDebugEnabled(e.target.checked)}
+                disabled={isRunning}
+              />
               {isDebugEnabled && (
-                <Button
-                  color="blue"
-                  leftSection={<IconBug size={16} />}
-                  onClick={handleDebug}
-                  disabled={isRunning}
-                >
-                  Debug
-                </Button>
+                <>
+                  <NumberInput
+                    label="Debug Port"
+                    value={debugPort}
+                    onChange={(val) => setDebugPort(Number(val))}
+                    min={1024}
+                    max={65535}
+                    disabled={isRunning}
+                    style={{ width: '120px' }}
+                  />
+                  <Button
+                    color="blue"
+                    leftSection={<IconBug size={16} />}
+                    onClick={handleDebug}
+                    disabled={isRunning}
+                  >
+                    Debug
+                  </Button>
+                </>
               )}
             </Group>
-          </Stack>
-        </Paper>
-      </Grid.Col>
+          </Group>
 
-      {/* Right Column - Terminal View */}
-      <Grid.Col span={6}>
-        <Paper shadow="xs" style={{ height: '400px', backgroundColor: '#1a1b1e', overflow: 'hidden' }}>
-          <Terminal onReady={handleTerminalReady} />
-        </Paper>
-      </Grid.Col>
-    </Grid>
+          {/* Collapsible section */}
+          <Collapse in={isExpanded}>
+            <Stack gap="md">
+              <NumberInput
+                label="CQ Port"
+                description="The port on which the AEM instance will run"
+                value={port}
+                onChange={(val) => setPort(Number(val))}
+                min={1024}
+                max={65535}
+                disabled={isRunning}
+              />
+
+              <TextInput
+                label="CQ Runmode"
+                description="Comma-separated list of runmodes"
+                value={runmode}
+                onChange={(e) => setRunmode(e.target.value)}
+                placeholder="author,local,nosample"
+                disabled={isRunning}
+              />
+
+              <TextInput
+                label="CQ JVM Options"
+                description="Java Virtual Machine options"
+                value={jvmOpts}
+                onChange={(e) => setJvmOpts(e.target.value)}
+                disabled={isRunning}
+              />
+            </Stack>
+          </Collapse>
+        </Stack>
+      </Paper>
+
+      {/* Terminal Section */}
+      <Paper shadow="xs" style={{ height: '400px', backgroundColor: '#1a1b1e', overflow: 'hidden' }}>
+        <Terminal onReady={handleTerminalReady} />
+      </Paper>
+    </Stack>
   );
 };
