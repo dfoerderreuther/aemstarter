@@ -35,19 +35,19 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               <Tabs.Tab value="files">Files</Tabs.Tab>
             </Tabs.List>
 
-            <Tabs.Panel value="author" style={{ height: 'calc(100vh - 120px)' }}>
+            <Tabs.Panel value="author" p="md">
               <AemInstanceView instance="author" project={project} />
             </Tabs.Panel>
 
-            <Tabs.Panel value="publish" style={{ height: 'calc(100vh - 120px)' }}>
+            <Tabs.Panel value="publish" p="md">
               <AemInstanceView instance="publisher" project={project} />
             </Tabs.Panel>
 
-            <Tabs.Panel value="dispatcher" style={{ height: 'calc(100vh - 120px)' }}>
+            <Tabs.Panel value="dispatcher" p="md">
               <DispatcherView />
             </Tabs.Panel>
 
-            <Tabs.Panel value="files" style={{ height: 'calc(100vh - 120px)' }}>
+            <Tabs.Panel value="files" p="md">
               <FilesView rootPath={project.folderPath} />
             </Tabs.Panel>
           </Tabs>
