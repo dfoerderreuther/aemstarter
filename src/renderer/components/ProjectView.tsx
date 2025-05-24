@@ -6,6 +6,7 @@ import { InstallService } from '../services/installService';
 import { ClearService } from '../services/clearService';
 import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './FilesView';
+import { DispatcherView } from './DispatcherView';
 
 interface ProjectViewProps {
   project: Project;
@@ -126,7 +127,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
                 <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
               </Tabs.List>
               
-              <Tabs.Panel value="files" style={{ flex: 1, minHeight: 0 }}>
+              <Tabs.Panel value="files" p="md">
                 <FilesView rootPath={project.folderPath} />
               </Tabs.Panel>
               
@@ -139,7 +140,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               </Tabs.Panel>
               
               <Tabs.Panel value="dispatcher" p="md">
-                Dispatcher content
+                <DispatcherView />
               </Tabs.Panel>
             </Tabs>
           </Box>

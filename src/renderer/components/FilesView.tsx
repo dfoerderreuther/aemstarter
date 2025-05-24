@@ -27,6 +27,11 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath }) => {
     }
   };
 
+  const handleClose = () => {
+    setSelectedFile(null);
+    setFileContent(null);
+  };
+
   const handleSave = async (content: string) => {
     if (!selectedFile) return;
     
@@ -62,6 +67,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath }) => {
           selectedFile={selectedFile}
           initialContent={fileContent}
           onSave={handleSave}
+          onClose={handleClose}
         />
       </Grid.Col>
     </Grid>

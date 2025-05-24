@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Group, Text, ActionIcon, Tooltip } from '@mantine/core';
-import { IconDeviceFloppy } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconX } from '@tabler/icons-react';
 import Editor, { useMonaco, loader } from "@monaco-editor/react";
 
 // Configure Monaco Editor to use local files
@@ -14,12 +14,14 @@ interface EditorViewProps {
   selectedFile: string | null;
   initialContent: string | null;
   onSave: (content: string) => Promise<void>;
+  onClose: () => void;
 }
 
 export const EditorView: React.FC<EditorViewProps> = ({ 
   selectedFile, 
   initialContent,
-  onSave 
+  onSave,
+  onClose 
 }) => {
   const [fileContent, setFileContent] = useState<string | null>(initialContent);
   const [isSaving, setIsSaving] = useState(false);
@@ -97,25 +99,46 @@ export const EditorView: React.FC<EditorViewProps> = ({
   };
 
   return (
-    <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <>
       <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
-        <Group justify="space-between">
+        <Group justify="space-between" align="center">
           <Text size="xs" fw={700} c="dimmed">FILE CONTENT</Text>
-          <Group gap="xs">
+          <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
             {selectedFile && (
               <>
                 <Text size="xs" fw={500}>
                   {getBasename(selectedFile)}
                 </Text>
-                <Tooltip label="Save (⌘S)">
+                <Tooltip 
+                  label="Save (⌘S)" 
+                  withArrow 
+                  withinPortal
+                  position="bottom"
+                >
                   <ActionIcon 
                     variant="subtle" 
                     color="blue"
                     onClick={handleSave}
                     loading={isSaving}
                     disabled={!fileContent}
+                    size="sm"
                   >
                     <IconDeviceFloppy size={16} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip 
+                  label="Close file" 
+                  withArrow 
+                  withinPortal
+                  position="bottom"
+                >
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={onClose}
+                    size="sm"
+                  >
+                    <IconX size={16} />
                   </ActionIcon>
                 </Tooltip>
               </>
@@ -123,10 +146,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
           </Group>
         </Group>
       </Box>
-      <Box style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+      <Box style={{ height: 'calc(100vh - 45px)' }}>
         {fileContent ? (
           <Editor
             height="100%"
+            className="monaco-editor-container"
+            style={{  height: '100%' }}
             language={selectedFile ? getFileLanguage(selectedFile) : 'plaintext'}
             value={fileContent}
             onChange={(value) => setFileContent(value || null)}
@@ -155,6 +180,6 @@ export const EditorView: React.FC<EditorViewProps> = ({
           </Text>
         )}
       </Box>
-    </Box>
+    </>
   );
 }; 
