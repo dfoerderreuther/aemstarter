@@ -217,6 +217,21 @@ ipcMain.handle('is-aem-instance-running', (_, project: Project, instanceType: 'a
   return manager ? manager.isInstanceRunning(instanceType) : false;
 });
 
+ipcMain.handle('kill-all-aem-instances', async (_, project: Project) => {
+  try {
+    const manager = instanceManagers.get(project.id);
+    if (!manager) {
+      return false;
+    }
+
+    await manager.killAllInstances();
+    return true;
+  } catch (error) {
+    console.error('Error killing all AEM instances:', error);
+    throw error;
+  }
+});
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

@@ -66,6 +66,9 @@ contextBridge.exposeInMainWorld(
     isAemInstanceRunning: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('is-aem-instance-running', project, instanceType),
 
+    killAllAemInstances: (project: Project) =>
+      ipcRenderer.invoke('kill-all-aem-instances', project),
+
     // Log streaming
     onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => {
       ipcRenderer.on('aem-log-data', (_, data) => callback(data));

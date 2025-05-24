@@ -46,6 +46,8 @@ declare global {
       
       isAemInstanceRunning: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
       
+      killAllAemInstances: (project: Project) => Promise<boolean>;
+      
       // Log streaming
       onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => void;
       removeAemLogDataListener: () => void;

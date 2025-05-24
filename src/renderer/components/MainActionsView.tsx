@@ -10,6 +10,7 @@ interface MainActionsViewProps {
 
 export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => {
   const [showInstallConfirm, setShowInstallConfirm] = useState(false);
+  const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
 
   const handleInstall = () => {
@@ -27,6 +28,19 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
       console.error('Installation failed:', error);
     } finally {
       setIsInstalling(false);
+    }
+  };
+
+  const handleKillAll = () => {
+    setShowKillAllConfirm(true);
+  };
+
+  const confirmKillAll = async () => {
+    try {
+      await window.electronAPI.killAllAemInstances(project);
+      setShowKillAllConfirm(false);
+    } catch (error) {
+      console.error('Failed to kill all instances:', error);
     }
   };
 
@@ -86,6 +100,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   variant="filled" 
                   size="xs"
                   styles={buttonStyles}
+                  onClick={handleKillAll}
                 >
                   <IconSkull size={16} />
                 </Button>
@@ -255,6 +270,34 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             </Button>
             <Button color="red" onClick={confirmInstall}>
               Proceed with Installation
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={showKillAllConfirm}
+        onClose={() => setShowKillAllConfirm(false)}
+        title="Confirm Kill All Instances"
+        size="md"
+      >
+        <Stack>
+          <Text size="sm">
+            This action will:
+          </Text>
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            <li>Hard kill all processes containing "quickstart" in their name</li>
+            <li>This will affect all AEM instances or other processes with "quickstart" in their name, regardless of who started them</li>
+          </ul>
+          <Text size="sm" c="red" mt="md">
+            Are you sure you want to proceed?
+          </Text>
+          <Group justify="flex-end" mt="md">
+            <Button variant="outline" onClick={() => setShowKillAllConfirm(false)}>
+              Cancel
+            </Button>
+            <Button color="red" onClick={confirmKillAll}>
+              Kill All Instances
             </Button>
           </Group>
         </Stack>

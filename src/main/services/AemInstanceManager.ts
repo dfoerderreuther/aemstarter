@@ -320,6 +320,30 @@ export class AemInstanceManager {
     }
   }
 
+  async killAllInstances() {
+    // Kill all processes using pkill
+    const cmd = process.platform === 'win32'
+      ? `pkill -9 -f quickstart`
+      : `pkill -9 -f quickstart`;
+
+    exec(cmd, (error) => {
+      if (error) {
+        console.error(`Error killing all instances:`, error);
+      }
+    });
+
+    // Reset all instance tracking
+    for (const [instanceType, instance] of this.instances.entries()) {
+      if (instance.tailProcess) {
+        instance.tailProcess.kill();
+        instance.tailProcess = null;
+      }
+      instance.process = null;
+      instance.pid = null;
+    }
+    this.instances.clear();
+  }
+
   isInstanceRunning(instanceType: 'author' | 'publisher'): boolean {
     const instance = this.instances.get(instanceType);
     if (!instance) return false;
