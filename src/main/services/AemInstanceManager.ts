@@ -60,16 +60,14 @@ export class AemInstanceManager {
   }
 
   private async waitForLogFile(logPath: string, maxWaitSeconds: number = 60): Promise<boolean> {
-    console.log(`Waiting for log file to appear at: ${logPath}`);
     const startTime = Date.now();
     while (!fs.existsSync(logPath)) {
       if (Date.now() - startTime > maxWaitSeconds * 1000) {
-        console.log(`Timeout waiting for log file after ${maxWaitSeconds} seconds`);
+        console.warn(`Timeout waiting for log file after ${maxWaitSeconds} seconds: ${logPath}`);
         return false;
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    console.log(`Log file found at: ${logPath}`);
     return true;
   }
 
@@ -82,12 +80,10 @@ export class AemInstanceManager {
       'error.log'
     );
 
-    console.log(`Attempting to tail log file at: ${logPath}`);
-
     // Wait for log file to exist
     const exists = await this.waitForLogFile(logPath);
     if (!exists) {
-      console.warn(`Log file not found after waiting: ${logPath}`);
+      console.warn(`Log file not found: ${logPath}`);
       return;
     }
 
@@ -102,27 +98,20 @@ export class AemInstanceManager {
       tailProcess = spawn('tail', ['-f', '-n', '100', logPath]);
     }
     
-    console.log(`Started tail process with PID: ${tailProcess.pid}`);
     instance.tailProcess = tailProcess;
 
+    // Stream log data as it comes in
     tailProcess.stdout?.on('data', (data) => {
-      console.log(`Received tail stdout data: ${data.length} bytes`);
-      
-      // Split into lines and send immediately
       const lines = data.toString().split('\n');
-      
       lines.forEach((line: string) => {
         if (line.trim()) {
-          console.log('Streaming log line:', line.substring(0, 100) + '...');
           this.sendLogData(instanceType, line.trim());
         }
       });
     });
 
     tailProcess.stderr?.on('data', (data) => {
-      console.log(`Received tail stderr data: ${data.length} bytes`);
       const lines = data.toString().split('\n');
-      
       lines.forEach((line: string) => {
         if (line.trim()) {
           this.sendLogData(instanceType, `ERROR: ${line.trim()}`);
@@ -136,26 +125,11 @@ export class AemInstanceManager {
     });
 
     tailProcess.on('exit', (code, signal) => {
-      console.log(`Tail process exited with code ${code} and signal ${signal}`);
       if (code !== 0 && !instance.tailProcess?.killed) {
-        console.log('Attempting to restart tail process...');
+        console.warn(`Tail process exited unexpectedly, restarting...`);
         setTimeout(() => this.startTailing(instanceType, instance), 1000);
-      } else if (instance.tailProcess?.killed) {
-        console.log('Tail process was intentionally killed');
-      } else {
-        console.log('Tail process exited normally (code 0)');
       }
     });
-
-    // Add periodic health check
-    const healthCheck = setInterval(() => {
-      if (instance.tailProcess && !instance.tailProcess.killed) {
-        console.log(`Tail process health check: PID ${instance.tailProcess.pid}, streaming active`);
-      } else {
-        console.log('Tail process health check: Process not running');
-        clearInterval(healthCheck);
-      }
-    }, 30000); // Check every 30 seconds
 
     if (!tailProcess.pid) {
       console.error('Failed to start tail process');

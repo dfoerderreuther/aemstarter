@@ -118,8 +118,6 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
     const handleLogData = (data: { projectId: string; instanceType: string; data: string }) => {
       // Only process logs for this specific project and instance
       if (data.projectId === project.id && data.instanceType === instance) {
-        console.log('Streaming log data:', data.data.substring(0, 100) + '...');
-        
         // Clear terminal and show header when we get first AEM output
         if (!hasShownAemOutput) {
           terminal.clear();
@@ -134,20 +132,14 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
         
         // Auto-scroll to bottom to show latest logs
         terminal.scrollToBottom();
-        
-        if (totalLinesProcessed % 50 === 0) {
-          console.log(`Total lines streamed: ${totalLinesProcessed}`);
-        }
       }
     };
 
     // Set up the event listener
     window.electronAPI.onAemLogData(handleLogData);
-    console.log(`Started real-time log streaming for ${instance} instance`);
 
     // Cleanup function
     const cleanup = () => {
-      console.log('Cleaning up log streaming');
       window.electronAPI.removeAemLogDataListener();
     };
 
