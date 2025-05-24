@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Group, Text, ActionIcon, Tooltip } from '@mantine/core';
-import { IconDeviceFloppy, IconX } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconX, IconRefresh } from '@tabler/icons-react';
 import Editor, { useMonaco, loader } from "@monaco-editor/react";
 
 // Configure Monaco Editor to use local files
@@ -15,16 +15,19 @@ interface EditorViewProps {
   initialContent: string | null;
   onSave: (content: string) => Promise<void>;
   onClose: () => void;
+  onRefresh?: () => Promise<void>;
 }
 
 export const EditorView: React.FC<EditorViewProps> = ({ 
   selectedFile, 
   initialContent,
   onSave,
-  onClose 
+  onClose,
+  onRefresh
 }) => {
   const [fileContent, setFileContent] = useState<string | null>(initialContent);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const monaco = useMonaco();
 
   const getFileLanguage = useCallback((filePath: string) => {
@@ -70,6 +73,17 @@ export const EditorView: React.FC<EditorViewProps> = ({
     }
   };
 
+  const handleRefresh = async () => {
+    if (!onRefresh) return;
+    
+    try {
+      setIsRefreshing(true);
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Set up Monaco Editor keyboard shortcuts
   useEffect(() => {
     if (monaco) {
@@ -109,6 +123,22 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 <Text size="xs" fw={500}>
                   {getBasename(selectedFile)}
                 </Text>
+                <Tooltip 
+                  label="Refresh file" 
+                  withArrow 
+                  withinPortal
+                  position="bottom"
+                >
+                  <ActionIcon 
+                    variant="subtle" 
+                    color="blue"
+                    onClick={handleRefresh}
+                    loading={isRefreshing}
+                    size="sm"
+                  >
+                    <IconRefresh size={16} />
+                  </ActionIcon>
+                </Tooltip>
                 <Tooltip 
                   label="Save (⌘S)" 
                   withArrow 
@@ -151,7 +181,6 @@ export const EditorView: React.FC<EditorViewProps> = ({
           <Editor
             height="100%"
             className="monaco-editor-container"
-            style={{  height: '100%' }}
             language={selectedFile ? getFileLanguage(selectedFile) : 'plaintext'}
             value={fileContent}
             onChange={(value) => setFileContent(value || null)}

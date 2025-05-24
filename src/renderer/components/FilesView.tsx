@@ -12,9 +12,8 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath }) => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const fileTreeRef = useRef<FileTreeViewRef>(null);
 
-  const handleFileSelect = async (filePath: string) => {
+  const readFileContent = async (filePath: string) => {
     try {
-      setSelectedFile(filePath);
       const result = await window.electronAPI.readFile(filePath);
       if (result.error) {
         setFileContent(`Error reading file: ${result.error}`);
@@ -25,6 +24,16 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath }) => {
       console.error('Error reading file:', error);
       setFileContent(`Error reading file: ${error instanceof Error ? error.message : String(error)}`);
     }
+  };
+
+  const handleFileSelect = async (filePath: string) => {
+    // Always clear the current content first
+    setSelectedFile(null);
+    setFileContent(null);
+    
+    // Then set the new file and read its content
+    setSelectedFile(filePath);
+    await readFileContent(filePath);
   };
 
   const handleClose = () => {
@@ -68,6 +77,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath }) => {
           initialContent={fileContent}
           onSave={handleSave}
           onClose={handleClose}
+          onRefresh={selectedFile ? () => readFileContent(selectedFile) : undefined}
         />
       </Grid.Col>
     </Grid>

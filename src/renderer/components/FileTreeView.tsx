@@ -162,6 +162,7 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   }, [rootPath, showHidden]);
   
   const handleFileSelect = (filePath: string) => {
+    // Always update selected file and trigger callback, even if it's the same file
     setSelectedFile(filePath);
     if (onFileSelect) {
       onFileSelect(filePath);
