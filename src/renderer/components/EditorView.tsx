@@ -146,7 +146,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
           </Group>
         </Group>
       </Box>
-      <Box style={{ height: 'calc(100vh - 45px)' }}>
+      <Box style={{ height: 'calc(100vh - 197px)' }}>
         {fileContent ? (
           <Editor
             height="100%"

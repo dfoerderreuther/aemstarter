@@ -46,8 +46,8 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath }) => {
   };
 
   return (
-    <Grid grow style={{ height: '100%', margin: 0 }}>
-      <Grid.Col span={4} style={{ height: '100%', padding: 0 }}>
+    <Grid style={{ height: '100%', margin: 0 }}>
+      <Grid.Col style={{ height: '100%', padding: 0, width: '300px', maxWidth: '300px', flex: '0 0 300px' }}>
         <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
             <Text size="xs" fw={700} c="dimmed">FILE TREE</Text>
@@ -62,7 +62,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath }) => {
         </Box>
       </Grid.Col>
       
-      <Grid.Col span={8} style={{ height: '100%', padding: 0, borderLeft: '1px solid #2C2E33' }}>
+      <Grid.Col style={{ height: '100%', padding: 0, borderLeft: '1px solid #2C2E33', flex: 1 }}>
         <EditorView
           selectedFile={selectedFile}
           initialContent={fileContent}
