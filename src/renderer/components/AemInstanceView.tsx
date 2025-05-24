@@ -1,16 +1,17 @@
 import { Project } from "../../types/Project";
-import { Grid, TextInput, NumberInput, Switch, Button, Group, Stack, Paper, Text, Box, Tooltip, ActionIcon, Modal } from '@mantine/core';
+import { TextInput, NumberInput, Switch, Group, Stack, Paper, Text, Box, Tooltip, ActionIcon, Modal } from '@mantine/core';
 import { useState, useRef, useEffect } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal } from './Terminal';
-import { IconPlayerPlay, IconPlayerStop, IconBug, IconX, IconSettings } from '@tabler/icons-react';
+import { IconSettings } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
   project: Project;
+  visible?: boolean;
 }
 
-export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => {
+export const AemInstanceView = ({ instance, project, visible = true }: AemInstanceViewProps) => {
   const defaultPort = instance === 'publisher' ? 4503 : 4502;
   const [port, setPort] = useState(defaultPort);
   const [runmode, setRunmode] = useState('');
@@ -141,58 +142,53 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
   )
 
   return (
-
     <>
-
-    <Stack gap="0">
-      <Box p="xs" style={{ borderBottom: '1px solid #2C2E33', margin: 0 }}>
-        <Group justify="space-between" align="center">
-          <Text size="xs" fw={700} c="dimmed">
-            {instance.toUpperCase()} INSTANCE 
-          </Text>
-          <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
-          
-                <Text size="xs" fw={500}>
-                  PID: 1234567890
-                </Text>
-                
-                
-                <Tooltip 
-                  label="Settings" 
-                  withArrow 
-                  withinPortal
-                  position="bottom"
+      <Stack gap="0">
+        <Box p="xs" style={{ borderBottom: '1px solid #2C2E33', margin: 0 }}>
+          <Group justify="space-between" align="center">
+            <Text size="xs" fw={700} c="dimmed">
+              {instance.toUpperCase()} INSTANCE 
+            </Text>
+            <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
+              <Text size="xs" fw={500}>
+                PID: 1234567890
+              </Text>
+              <Tooltip 
+                label="Settings" 
+                withArrow 
+                withinPortal
+                position="bottom"
+              >
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  onClick={() => setIsSettingsOpen(true)}
                 >
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    size="sm"
-                    onClick={() => setIsSettingsOpen(true)}
-                  >
-                    <IconSettings size={16} />
-                  </ActionIcon>
-                </Tooltip>
+                  <IconSettings size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
           </Group>
-        </Group>
-      </Box>
+        </Box>
 
-      {/* Settings Modal */}
-      {modal}
+        {/* Settings Modal */}
+        {modal}
 
-      {/* Terminal Section */}
-      <Paper shadow="xs" p="md" style={{ 
-        flex: 1,
-        backgroundColor: '#1a1b1e',
-        overflow: 'hidden',
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <Terminal onReady={handleTerminalReady} />
-        </div>
-      </Paper>
-    </Stack>
+        {/* Terminal Section */}
+        <Paper shadow="xs" p="md" style={{ 
+          flex: 1,
+          backgroundColor: '#1a1b1e',
+          overflow: 'hidden',
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <Terminal onReady={handleTerminalReady} visible={visible} />
+          </div>
+        </Paper>
+      </Stack>
     </>
   );
 };

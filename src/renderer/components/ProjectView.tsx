@@ -1,5 +1,5 @@
-import React from 'react';
-import { AppShell, Tabs, Group, Text, Stack } from '@mantine/core';
+import React, { useState } from 'react';
+import { AppShell, Tabs, Stack } from '@mantine/core';
 import { Project } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './FilesView';
@@ -11,6 +11,8 @@ interface ProjectViewProps {
 }
 
 export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
+  const [activeTab, setActiveTab] = useState<string | null>('author');
+
   return (
     <AppShell
       padding={0}
@@ -27,7 +29,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         <Stack gap={0} style={{ height: '100vh', minHeight: '100vh' }}>
           <MainActionsView project={project} />
 
-          <Tabs defaultValue="author" style={{ flex: 1 }}>
+          <Tabs 
+            defaultValue="author" 
+            style={{ flex: 1 }}
+            onChange={setActiveTab}
+          >
             <Tabs.List>
               <Tabs.Tab value="author">Author</Tabs.Tab>
               <Tabs.Tab value="publish">Publish</Tabs.Tab>
@@ -36,11 +42,19 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             </Tabs.List>
 
             <Tabs.Panel value="author">
-              <AemInstanceView instance="author" project={project} />
+              <AemInstanceView 
+                instance="author" 
+                project={project} 
+                visible={activeTab === 'author'}
+              />
             </Tabs.Panel>
 
             <Tabs.Panel value="publish">
-              <AemInstanceView instance="publisher" project={project} />
+              <AemInstanceView 
+                instance="publisher" 
+                project={project} 
+                visible={activeTab === 'publish'}
+              />
             </Tabs.Panel>
 
             <Tabs.Panel value="dispatcher">

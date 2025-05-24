@@ -5,10 +5,12 @@ import '@xterm/xterm/css/xterm.css';
 
 interface TerminalProps {
   onReady?: (terminal: XTerm) => void;
+  visible?: boolean;
 }
 
-export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
+export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -26,6 +28,7 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
 
     // Initialize fit addon
     const fitAddon = new FitAddon();
+    fitAddonRef.current = fitAddon;
     xterm.loadAddon(fitAddon);
 
     // Open terminal
@@ -43,7 +46,15 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
       }
     };
 
+    // Handle visibility change
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleResize();
+      }
+    };
+
     window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Call onReady
     if (onReady) {
@@ -52,9 +63,21 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       xterm.dispose();
     };
   }, [onReady]);
+
+  // Handle tab visibility changes
+  useEffect(() => {
+    if (visible && fitAddonRef.current) {
+      try {
+        fitAddonRef.current.fit();
+      } catch (error) {
+        console.warn('Failed to fit terminal on tab visibility change:', error);
+      }
+    }
+  }, [visible]);
 
   return (
     <div 
