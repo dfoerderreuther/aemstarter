@@ -118,9 +118,9 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
   };
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Form Section */}
-      <Paper shadow="xs" p="md">
+      <Paper shadow="xs" p="md" style={{ flexShrink: 0 }}>
         <Stack gap="md">
           <Group justify="space-between">
             <Text fw={500} size="lg">{instance.charAt(0).toUpperCase() + instance.slice(1)} Instance Settings</Text>
@@ -220,8 +220,17 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
       </Paper>
 
       {/* Terminal Section */}
-      <Paper shadow="xs" style={{ height: '400px', backgroundColor: '#1a1b1e', overflow: 'hidden' }}>
-        <Terminal onReady={handleTerminalReady} />
+      <Paper shadow="xs" style={{ 
+        flex: 1,
+        backgroundColor: '#1a1b1e',
+        overflow: 'hidden',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <Terminal onReady={handleTerminalReady} />
+        </div>
       </Paper>
     </Stack>
   );

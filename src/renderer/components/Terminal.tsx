@@ -10,6 +10,7 @@ interface TerminalProps {
 export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -23,54 +24,55 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
       fontSize: 14,
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       cursorBlink: true,
-      rows: 24,
-      cols: 80,
     });
 
     // Initialize fit addon
     const fitAddon = new FitAddon();
     xterm.loadAddon(fitAddon);
+    fitAddonRef.current = fitAddon;
 
     // Store ref
     xtermRef.current = xterm;
 
-    // Delay opening to ensure container is ready
-    requestAnimationFrame(() => {
-      if (!terminalRef.current) return;
-      
-      // Open terminal
-      xterm.open(terminalRef.current);
+    // Open terminal
+    xterm.open(terminalRef.current);
 
-      // Delay fit to ensure dimensions are calculated
-      setTimeout(() => {
-        try {
-          fitAddon.fit();
-          
-          // Call onReady callback if provided
-          if (onReady) {
-            onReady(xterm);
-          }
+    // Initial fit
+    try {
+      fitAddon.fit();
+    } catch (error) {
+      console.warn('Failed to fit terminal:', error);
+    }
 
-          // Handle window resize
-          const handleResize = () => {
-            try {
-              fitAddon.fit();
-            } catch (error) {
-              console.warn('Failed to fit terminal:', error);
-            }
-          };
-          window.addEventListener('resize', handleResize);
+    // Call onReady callback if provided
+    if (onReady) {
+      onReady(xterm);
+    }
 
-          // Store cleanup function
-          return () => {
-            window.removeEventListener('resize', handleResize);
-            xterm.dispose();
-          };
-        } catch (error) {
-          console.warn('Failed to initialize terminal:', error);
+    // Handle window resize
+    const handleResize = () => {
+      try {
+        if (fitAddonRef.current) {
+          fitAddonRef.current.fit();
         }
-      }, 50);
-    });
+      } catch (error) {
+        console.warn('Failed to fit terminal:', error);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Also handle parent container resize
+    const resizeObserver = new ResizeObserver(handleResize);
+    if (terminalRef.current) {
+      resizeObserver.observe(terminalRef.current);
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
+      xterm.dispose();
+    };
   }, [onReady]);
 
   return (
@@ -81,8 +83,8 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
         height: '100%',
         backgroundColor: '#1a1b1e',
         padding: '8px',
-        borderRadius: '4px',
-        position: 'relative',
+        display: 'flex',
+        overflow: 'hidden',
       }} 
     />
   );
