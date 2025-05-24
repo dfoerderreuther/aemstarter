@@ -7,7 +7,11 @@ export class ProjectManager {
   private projects: Project[] = [];
   private readonly projectsFilePath: string;
   private readonly settingsFilePath: string;
-  private settings: { lastProjectId?: string } = {};
+  private settings: { 
+    lastProjectId?: string;
+    aemSdkPath?: string;
+    licensePath?: string;
+  } = {};
 
   constructor() {
     // Store projects in user's app data directory
@@ -155,5 +159,20 @@ export class ProjectManager {
 
   getLastProjectId(): string | undefined {
     return this.settings.lastProjectId;
+  }
+
+  setGlobalSettings(settings: { aemSdkPath?: string; licensePath?: string }): void {
+    this.settings = {
+      ...this.settings,
+      ...settings
+    };
+    this.saveSettings();
+  }
+
+  getGlobalSettings(): { aemSdkPath?: string; licensePath?: string } {
+    return {
+      aemSdkPath: this.settings.aemSdkPath,
+      licensePath: this.settings.licensePath
+    };
   }
 } 

@@ -99,6 +99,15 @@ ipcMain.handle('get-last-project-id', async () => {
   return projectManager.getLastProjectId();
 });
 
+ipcMain.handle('get-global-settings', async () => {
+  return projectManager.getGlobalSettings();
+});
+
+ipcMain.handle('set-global-settings', async (_, settings) => {
+  projectManager.setGlobalSettings(settings);
+  return true;
+});
+
 ipcMain.handle('show-open-dialog', async (_, options) => {
   return dialog.showOpenDialog(options);
 });

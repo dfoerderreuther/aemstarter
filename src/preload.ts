@@ -24,6 +24,12 @@ contextBridge.exposeInMainWorld(
     getLastProjectId: () =>
       ipcRenderer.invoke('get-last-project-id'),
     
+    // Global settings
+    getGlobalSettings: () =>
+      ipcRenderer.invoke('get-global-settings'),
+    setGlobalSettings: (settings: { aemSdkPath?: string; licensePath?: string }) =>
+      ipcRenderer.invoke('set-global-settings', settings),
+    
     // Dialog
     showOpenDialog: (options: any) => 
       ipcRenderer.invoke('show-open-dialog', options),

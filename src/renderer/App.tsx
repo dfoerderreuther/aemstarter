@@ -29,6 +29,18 @@ const App: React.FC = () => {
   const [aemSdkPath, setAemSdkPath] = useState('');
   const [licensePath, setLicensePath] = useState('');
 
+  // Load global settings when opening the modal
+  const handleOpenCreateProjectModal = async () => {
+    const globalSettings = await window.electronAPI.getGlobalSettings();
+    if (globalSettings.aemSdkPath) {
+      setAemSdkPath(globalSettings.aemSdkPath);
+    }
+    if (globalSettings.licensePath) {
+      setLicensePath(globalSettings.licensePath);
+    }
+    setModalOpen(true);
+  };
+
   // Load all projects and last selected project on startup
   useEffect(() => {
     const loadProjectsAndLast = async () => {
@@ -42,6 +54,14 @@ const App: React.FC = () => {
           if (project) {
             setSelectedProject(project);
           }
+        }
+        // Load global settings
+        const globalSettings = await window.electronAPI.getGlobalSettings();
+        if (globalSettings.aemSdkPath) {
+          setAemSdkPath(globalSettings.aemSdkPath);
+        }
+        if (globalSettings.licensePath) {
+          setLicensePath(globalSettings.licensePath);
         }
       } catch (error) {
         console.error('Failed to load projects:', error);
@@ -119,7 +139,9 @@ const App: React.FC = () => {
       filters: [{ name: 'ZIP Files', extensions: ['zip'] }]
     });
     if (!result.canceled && result.filePaths.length > 0) {
-      setAemSdkPath(result.filePaths[0]);
+      const newPath = result.filePaths[0];
+      setAemSdkPath(newPath);
+      await window.electronAPI.setGlobalSettings({ aemSdkPath: newPath });
     }
   };
 
@@ -132,7 +154,9 @@ const App: React.FC = () => {
       filters: [{ name: 'Properties Files', extensions: ['properties'] }]
     });
     if (!result.canceled && result.filePaths.length > 0) {
-      setLicensePath(result.filePaths[0]);
+      const newPath = result.filePaths[0];
+      setLicensePath(newPath);
+      await window.electronAPI.setGlobalSettings({ licensePath: newPath });
     }
   };
 
@@ -198,7 +222,7 @@ const App: React.FC = () => {
               </Button>
               <Button
                 leftSection={<IconPlus size={16} />}
-                onClick={() => setModalOpen(true)}
+                onClick={handleOpenCreateProjectModal}
               >
                 New Project
               </Button>
@@ -317,7 +341,7 @@ const App: React.FC = () => {
                 </Text>
                 <Button
                   leftSection={<IconPlus size={16} />}
-                  onClick={() => setModalOpen(true)}
+                  onClick={handleOpenCreateProjectModal}
                   size="lg"
                 >
                   Create New Project

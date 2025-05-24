@@ -11,6 +11,10 @@ declare global {
       getLastProjectId: () => Promise<string | undefined>;
       showOpenDialog: (options: any) => Promise<Electron.OpenDialogReturnValue>;
       
+      // Global settings
+      getGlobalSettings: () => Promise<{ aemSdkPath?: string; licensePath?: string }>;
+      setGlobalSettings: (settings: { aemSdkPath?: string; licensePath?: string }) => Promise<boolean>;
+      
       // File system operations
       readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
       writeFile: (filePath: string, content: string) => Promise<{ error?: string }>;
