@@ -20,6 +20,23 @@ CQ_PORT=4503
 export CQ_JVM_OPTS='-server -Xmx4096m -XX:MaxPermSize=256M -Djava.awt.headless=true'
 `;
 
+const README_TEMPLATE = `
+# AEM Installation of {{PROJECT_NAME}}
+
+## Author
+This is the author instance of the AEM installation.
+
+## Publish
+This is the publish instance of the AEM installation.
+
+## Dispatcher
+This is the dispatcher instance of the AEM installation.
+
+## Install
+This is the install files of the AEM installation.
+
+`;
+
 export class Installer {
 
     private project: Project;
@@ -68,6 +85,8 @@ export class Installer {
         await this.installAemInstance(`${this.project.folderPath}/publish`, this.installDir + '/' + quickstartFile, 'publish');
 
         await this.installDispatcherLinux(`${this.project.folderPath}/dispatcher`, this.installDir + '/' + dispatcherScript);
+
+        this.createReadme();
 
         console.log('Installation complete');
     }
@@ -131,6 +150,11 @@ export class Installer {
                 );
             }
         }
+    }
+
+    private createReadme() {
+        const readmeContent = README_TEMPLATE.replace('{{PROJECT_NAME}}', this.project.name);
+        fs.writeFileSync(`${this.project.folderPath}/README.md`, readmeContent);
     }
 
 }

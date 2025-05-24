@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { AppShell, Tabs, Group, Button, Text, Stack, Modal, Box } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconDownload, IconTrash } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconDownload } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { InstallService } from '../services/installService';
-import { ClearService } from '../services/clearService';
 import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './FilesView';
 import { DispatcherView } from './DispatcherView';
@@ -15,8 +14,6 @@ interface ProjectViewProps {
 export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstallConfirm, setShowInstallConfirm] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleInstall = () => {
     setShowInstallConfirm(true);
@@ -33,24 +30,6 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       console.error('Installation failed:', error);
     } finally {
       setIsInstalling(false);
-    }
-  };
-
-  const handleClear = () => {
-    setShowClearConfirm(true);
-  };
-
-  const confirmClear = async () => {
-    try {
-      setIsClearing(true);
-      setShowClearConfirm(false);
-      await ClearService.clearAEM(project);
-      // Add a small delay to ensure file system operations are complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } catch (error) {
-      console.error('Clearing failed:', error);
-    } finally {
-      setIsClearing(false);
     }
   };
 
@@ -100,50 +79,32 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             >
               Install
             </Button>
-
-            <Button 
-              color="red" 
-              variant="outline" 
-              size="xs"
-              leftSection={<IconTrash size={16} />}
-              styles={{ root: { height: 30 } }}
-              onClick={handleClear}
-              loading={isClearing}
-            >
-              Clear
-            </Button>
           </Group>
-          
-          <Box style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-            <Tabs 
-              defaultValue="author" 
-              variant="outline"
-              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-            >
-              <Tabs.List>
-                <Tabs.Tab value="author">Author</Tabs.Tab>
-                <Tabs.Tab value="publisher">Publisher</Tabs.Tab>
-                <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
-                <Tabs.Tab value="files">Files</Tabs.Tab>
-              </Tabs.List>
-              
-              <Tabs.Panel value="author" p="md">
-                <AemInstanceView instance="author" project={project} />
-              </Tabs.Panel>
-              
-              <Tabs.Panel value="publisher" p="md">
-                <AemInstanceView instance="publisher" project={project} />
-              </Tabs.Panel>
-              
-              <Tabs.Panel value="dispatcher" p="md">
-                <DispatcherView />
-              </Tabs.Panel>
-              
-              <Tabs.Panel value="files" p="md">
-                <FilesView rootPath={project.folderPath} />
-              </Tabs.Panel>
-            </Tabs>
-          </Box>
+
+          <Tabs defaultValue="author" style={{ flex: 1 }}>
+            <Tabs.List>
+              <Tabs.Tab value="author">Author</Tabs.Tab>
+              <Tabs.Tab value="publish">Publish</Tabs.Tab>
+              <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
+              <Tabs.Tab value="files">Files</Tabs.Tab>
+            </Tabs.List>
+
+            <Tabs.Panel value="author" style={{ height: 'calc(100vh - 120px)' }}>
+              <AemInstanceView instance="author" project={project} />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="publish" style={{ height: 'calc(100vh - 120px)' }}>
+              <AemInstanceView instance="publisher" project={project} />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="dispatcher" style={{ height: 'calc(100vh - 120px)' }}>
+              <DispatcherView />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="files" style={{ height: 'calc(100vh - 120px)' }}>
+              <FilesView rootPath={project.folderPath} />
+            </Tabs.Panel>
+          </Tabs>
         </Stack>
       </AppShell.Main>
 
@@ -172,34 +133,6 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             </Button>
             <Button color="red" onClick={confirmInstall}>
               Proceed with Installation
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
-
-      <Modal
-        opened={showClearConfirm}
-        onClose={() => setShowClearConfirm(false)}
-        title="Confirm Clearing"
-        size="md"
-      >
-        <Stack>
-          <Text size="sm">
-            This action will:
-          </Text>
-          <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            <li>Delete all AEM folders: author, publish, dispatcher, install</li>
-            <li>This action cannot be undone</li>
-          </ul>
-          <Text size="sm" c="red" mt="md">
-            Are you sure you want to proceed?
-          </Text>
-          <Group justify="flex-end" mt="md">
-            <Button variant="outline" onClick={() => setShowClearConfirm(false)}>
-              Cancel
-            </Button>
-            <Button color="red" onClick={confirmClear}>
-              Proceed with Clearing
             </Button>
           </Group>
         </Stack>
