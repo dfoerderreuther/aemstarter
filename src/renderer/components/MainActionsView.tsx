@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
 import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
@@ -12,6 +12,28 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
   const [showInstallConfirm, setShowInstallConfirm] = useState(false);
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [isAuthorRunning, setIsAuthorRunning] = useState(false);
+  const [isPublisherRunning, setIsPublisherRunning] = useState(false);
+
+  // Check instance status on mount and periodically
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const [authorRunning, publisherRunning] = await Promise.all([
+          window.electronAPI.isAemInstanceRunning(project, 'author'),
+          window.electronAPI.isAemInstanceRunning(project, 'publisher')
+        ]);
+        setIsAuthorRunning(authorRunning);
+        setIsPublisherRunning(publisherRunning);
+      } catch (error) {
+        console.error('Error checking instance status:', error);
+      }
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 5000);
+    return () => clearInterval(interval);
+  }, [project]);
 
   const handleInstall = () => {
     setShowInstallConfirm(true);
@@ -39,8 +61,88 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
     try {
       await window.electronAPI.killAllAemInstances(project);
       setShowKillAllConfirm(false);
+      setIsAuthorRunning(false);
+      setIsPublisherRunning(false);
     } catch (error) {
       console.error('Failed to kill all instances:', error);
+    }
+  };
+
+  const handleStartAll = async () => {
+    try {
+      await Promise.all([
+        window.electronAPI.startAemInstance(project, 'author', {
+          port: 4502,
+          runmode: 'author,local',
+          jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M'
+        }),
+        window.electronAPI.startAemInstance(project, 'publisher', {
+          port: 4503,
+          runmode: 'publish,local',
+          jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M'
+        })
+      ]);
+      setIsAuthorRunning(true);
+      setIsPublisherRunning(true);
+    } catch (error) {
+      console.error('Error starting all instances:', error);
+    }
+  };
+
+  const handleStopAll = async () => {
+    try {
+      await Promise.all([
+        window.electronAPI.stopAemInstance(project, 'author'),
+        window.electronAPI.stopAemInstance(project, 'publisher')
+      ]);
+      setIsAuthorRunning(false);
+      setIsPublisherRunning(false);
+    } catch (error) {
+      console.error('Error stopping all instances:', error);
+    }
+  };
+
+  const handleStartAuthor = async () => {
+    try {
+      await window.electronAPI.startAemInstance(project, 'author', {
+        port: 4502,
+        runmode: 'author,local',
+        jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M'
+      });
+      setIsAuthorRunning(true);
+    } catch (error) {
+      console.error('Error starting author instance:', error);
+    }
+  };
+
+  const handleStopAuthor = async () => {
+    try {
+      await window.electronAPI.stopAemInstance(project, 'author');
+      setIsAuthorRunning(false);
+    } catch (error) {
+      console.error('Error stopping author instance:', error);
+    }
+  };
+
+  const handleStartPublisher = async () => {
+    try {
+      await window.electronAPI.startAemInstance(project, 'publisher', {
+        port: 4503,
+        runmode: 'publish,local',
+        jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M'
+      });
+      setIsPublisherRunning(true);
+    } catch (error) {
+      console.error('Error starting publisher instance:', error);
+    }
+  };
+
+  const handleStopPublisher = async () => {
+    try {
+      await window.electronAPI.stopAemInstance(project, 'publisher');
+      setIsPublisherRunning(false);
+    } catch (error) {
+      console.error('Error stopping publisher instance:', error);
     }
   };
 
@@ -78,6 +180,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   variant="filled" 
                   size="xs"
                   styles={buttonStyles}
+                  onClick={handleStartAll}
+                  disabled={isAuthorRunning && isPublisherRunning}
                 >
                   <IconPlayerPlay size={16} />
                 </Button>
@@ -85,10 +189,12 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
               
               <Tooltip label="Stop all">
                 <Button 
-                  color="dark" 
-                  variant="outline" 
+                  color="red" 
+                  variant="filled" 
                   size="xs"
                   styles={buttonStyles}
+                  onClick={handleStopAll}
+                  disabled={!isAuthorRunning && !isPublisherRunning}
                 >
                   <IconPlayerStop size={16} />
                 </Button>
@@ -115,7 +221,9 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
           <Stack gap="xs">
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Author</Text>
-              <Badge variant="light" color="red" size="sm">232</Badge>
+              <Badge variant="light" color={isAuthorRunning ? "green" : "red"} size="sm">
+                {isAuthorRunning ? "Running" : "Stopped"}
+              </Badge>
             </Group>
             <Group gap="xs">
               <Button.Group>
@@ -125,6 +233,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                     variant="filled" 
                     size="xs"
                     styles={buttonStyles}
+                    onClick={handleStartAuthor}
+                    disabled={isAuthorRunning}
                   >
                     <IconPlayerPlay size={16} />
                   </Button>
@@ -136,12 +246,13 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                     variant="filled" 
                     size="xs"
                     styles={buttonStyles}
+                    onClick={handleStopAuthor}
+                    disabled={!isAuthorRunning}
                   >
                     <IconPlayerStop size={16} />
                   </Button>
                 </Tooltip>
               </Button.Group>
-
             </Group>
           </Stack>
         </Paper>
@@ -152,7 +263,9 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
           <Stack gap="xs">
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Publisher</Text>
-              <Badge variant="light" color="red" size="sm">232</Badge>
+              <Badge variant="light" color={isPublisherRunning ? "green" : "red"} size="sm">
+                {isPublisherRunning ? "Running" : "Stopped"}
+              </Badge>
             </Group>
             <Group gap="xs">
               <Button.Group>
@@ -162,6 +275,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                     variant="filled" 
                     size="xs"
                     styles={buttonStyles}
+                    onClick={handleStartPublisher}
+                    disabled={isPublisherRunning}
                   >
                     <IconPlayerPlay size={16} />
                   </Button>
@@ -173,51 +288,23 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                     variant="filled" 
                     size="xs"
                     styles={buttonStyles}
+                    onClick={handleStopPublisher}
+                    disabled={!isPublisherRunning}
                   >
                     <IconPlayerStop size={16} />
                   </Button>
                 </Tooltip>
               </Button.Group>
-
             </Group>
           </Stack>
         </Paper>
 
         <Divider orientation="vertical" />
 
-
         <Paper style={sectionStyles}>
           <Stack gap="xs">
-            <Group justify="space-between" align="center">
-              <Text size="sm" fw={500} c="dimmed">Dispatcher</Text>
-              <Badge variant="light" color="red" size="sm">232</Badge>
-            </Group>
-            <Group gap="xs">
-              <Button.Group>
-                <Tooltip label="Start publish">
-                  <Button 
-                    color="blue" 
-                    variant="filled" 
-                    size="xs"
-                    styles={buttonStyles}
-                  >
-                    <IconPlayerPlay size={16} />
-                  </Button>
-                </Tooltip>
-
-                <Tooltip label="Stop publish">
-                  <Button
-                    color="red" 
-                    variant="filled" 
-                    size="xs"
-                    styles={buttonStyles}
-                  >
-                    <IconPlayerStop size={16} />
-                  </Button>
-                </Tooltip>
-              </Button.Group>
-
-            </Group>
+            <Text size="sm" fw={500} c="dimmed">Dispatcher</Text>
+            <Badge variant="light" color="red" size="sm">232</Badge>
           </Stack>
         </Paper>
 
