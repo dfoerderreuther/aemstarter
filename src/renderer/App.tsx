@@ -3,7 +3,8 @@ import { MantineProvider, AppShell, Title, Container, Center, Paper, Text, Theme
 import '@mantine/core/styles.css';
 import { ProjectView } from './components/ProjectView';
 import { Project } from '../types/Project';
-import { IconFolder, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
+import AEMLogo from '../../logo/AEM.svg';
 
 const theme = createTheme({
   primaryColor: 'blue',
@@ -192,8 +193,8 @@ const App: React.FC = () => {
         <AppShell.Header p="xs" style={{ paddingLeft: rem(20), paddingRight: rem(20) }}>
           <Group justify="space-between" align="center" style={{ width: '100%' }}>
             <Group align="center" gap={8}>
-              <ThemeIcon size="lg" radius="md">
-                <IconFolder size={20} />
+              <ThemeIcon size="lg" radius="md" variant="transparent">
+                <img src={AEMLogo} alt="AEM Logo" style={{ width: 32, height: 32 }} />
               </ThemeIcon>
               <Title order={2}>
                 {selectedProject ? selectedProject.name : 'AEM Starter'}
