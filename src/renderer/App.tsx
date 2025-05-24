@@ -88,12 +88,6 @@ const App: React.FC = () => {
     handleProjectSelect(project);
   };
 
-  // When a project is created or deleted, refresh the project list
-  const handleProjectListChange = async (project: Project | null) => {
-    const allProjects = await window.electronAPI.getAllProjects();
-    setProjects(allProjects);
-    handleProjectSelect(project);
-  };
 
   // Handle new project creation
   const handleCreateProject = async () => {
@@ -121,6 +115,13 @@ const App: React.FC = () => {
         setNewProjectName('');
         setAemSdkPath('');
         setLicensePath('');
+
+        // Start the installation procedure
+        try {
+          await window.electronAPI.installAEM(project);
+        } catch (error) {
+          console.error('Failed to install AEM:', error);
+        }
       }
     } catch (error) {
       // Show error message to user
