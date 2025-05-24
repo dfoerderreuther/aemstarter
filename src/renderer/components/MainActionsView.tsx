@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Group, Button, Modal, Stack, Text } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconDownload } from '@tabler/icons-react';
+import { Group, Button, Modal, Stack, Text, Divider } from '@mantine/core';
+import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 
@@ -40,7 +40,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
           leftSection={<IconPlayerPlay size={16} />}
           styles={{ root: { height: 30 } }}
         >
-          Start
+          Start all
         </Button>
         
         <Button 
@@ -50,8 +50,64 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
           leftSection={<IconPlayerStop size={16} />}
           styles={{ root: { height: 30 } }}
         >
-          Stop
+          Stop all
         </Button>
+        
+        <Button 
+          color="orange" 
+          variant="filled" 
+          size="xs"
+          leftSection={<IconSkull size={16} />}
+          styles={{ root: { height: 30 } }}
+        >
+          Kill all
+        </Button>
+
+        <Divider orientation="vertical" />
+
+        <Button 
+          color="blue" 
+          variant="filled" 
+          size="xs"
+          leftSection={<IconPlayerPlay size={16} />}
+          styles={{ root: { height: 30 } }}
+        >
+          Start author
+        </Button>
+
+        <Button
+          color="red" 
+          variant="filled" 
+          size="xs"
+          leftSection={<IconPlayerStop size={16} />}
+          styles={{ root: { height: 30 } }}
+        >
+          Stop author
+        </Button>
+
+        <Divider orientation="vertical" />
+
+        <Button 
+          color="blue" 
+          variant="filled" 
+          size="xs"
+          leftSection={<IconPlayerPlay size={16} />}
+          styles={{ root: { height: 30 } }}
+        >
+          Start publish
+        </Button>
+
+        <Button
+          color="red" 
+          variant="filled" 
+          size="xs"
+          leftSection={<IconPlayerStop size={16} />}
+          styles={{ root: { height: 30 } }}
+        >
+          Stop publish
+        </Button>
+
+        <Divider orientation="vertical" />
         
         <Button 
           color="blue" 
