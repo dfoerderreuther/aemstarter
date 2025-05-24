@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppShell, Tabs, Group, Button, Text, Switch, Box, ScrollArea, Code, Divider, Stack, Modal, ActionIcon } from '@mantine/core';
+import { AppShell, Tabs, Group, Button, Text, Switch, Box, ScrollArea, Code, Divider, Stack, Modal, ActionIcon, Grid } from '@mantine/core';
 import { IconPlayerPlay, IconPlayerStop, IconDownload, IconFolder, IconEye, IconExternalLink, IconTrash, IconRefresh, IconEyeOff } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { FileTreeView, FileTreeViewRef } from './FileTreeView';
@@ -26,46 +26,30 @@ function getDirname(filepath: string): string {
 }
 
 export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
-  const [showInstallConfirm, setShowInstallConfirm] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [showInstallConfirm, setShowInstallConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const fileTreeRef = useRef<FileTreeViewRef>(null);
   
   const handleFileSelect = async (filePath: string) => {
-    setSelectedFile(filePath);
-    
     try {
-      const dirPath = getDirname(filePath);
-      const entries = await window.electronAPI.readDirectory(dirPath, true);
-      const fileEntry = entries.find(entry => entry.path === filePath);
-      
-      if (fileEntry && fileEntry.isFile) {
-        try {
-          const result = await window.electronAPI.readFile(filePath);
-          
-          if (result.error) {
-            console.error('Error reading file:', result.error);
-            setFileContent(`Error: ${result.error}`);
-          } else {
-            setFileContent(result.content || '');
-          }
-        } catch (readError) {
-          console.error('Exception while reading file:', readError);
-          setFileContent(`Error reading file: ${readError instanceof Error ? readError.message : String(readError)}`);
-        }
+      setSelectedFile(filePath);
+      const result = await window.electronAPI.readFile(filePath);
+      if (result.error) {
+        setFileContent(`Error reading file: ${result.error}`);
       } else {
-        setFileContent(`Selected directory: ${filePath}`);
+        setFileContent(result.content || null);
       }
     } catch (error) {
-      console.error('Error in handleFileSelect:', error);
-      setFileContent(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Error reading file:', error);
+      setFileContent(`Error reading file: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
-  const handleInstall = async () => {
+  const handleInstall = () => {
     setShowInstallConfirm(true);
   };
 
@@ -105,10 +89,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
     }
   };
 
-
   return (
     <AppShell
-      navbar={{ width: 250, breakpoint: 'sm' }}
       padding={0}
       styles={{
         main: {
@@ -117,19 +99,6 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         }
       }}
     >
-      <AppShell.Navbar p={0} bg="#25262b">
-
-        <ScrollArea h="calc(100vh - 36px)" scrollbarSize={6}>
-          <Box>
-            <FileTreeView 
-              rootPath={project.folderPath} 
-              onFileSelect={handleFileSelect}
-              ref={fileTreeRef}
-            />
-          </Box>
-        </ScrollArea>
-      </AppShell.Navbar>
-
       <AppShell.Main>
         <Stack gap={0} style={{ height: '100%' }}>
           <Group p="xs" gap="xs">
@@ -176,19 +145,62 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             >
               Clear
             </Button>
-
           </Group>
           
-          <Box style={{ flex: '0 0 40%', overflow: 'auto' }}>
+          <Box style={{ flex: 1, overflow: 'hidden' }}>
             <Tabs 
-              defaultValue="author" 
+              defaultValue="files" 
               variant="outline"
+              style={{ height: '100%' }}
             >
               <Tabs.List>
+                <Tabs.Tab value="files">Files</Tabs.Tab>
                 <Tabs.Tab value="author">Author</Tabs.Tab>
                 <Tabs.Tab value="publisher">Publisher</Tabs.Tab>
                 <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
               </Tabs.List>
+              
+              <Tabs.Panel value="files" style={{ height: 'calc(100% - 36px)' }}>
+                <Grid grow style={{ height: '100%', margin: 0 }}>
+                  <Grid.Col span={4} style={{ height: '100%', padding: 0 }}>
+                    <ScrollArea h="100%" scrollbarSize={6}>
+                      <FileTreeView 
+                        rootPath={project.folderPath} 
+                        onFileSelect={handleFileSelect}
+                        ref={fileTreeRef}
+                      />
+                    </ScrollArea>
+                  </Grid.Col>
+                  
+                  <Grid.Col span={8} style={{ height: '100%', padding: 0, borderLeft: '1px solid #2C2E33' }}>
+                    <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
+                        <Group justify="space-between">
+                          <Text size="xs" fw={700} c="dimmed">FILE CONTENT</Text>
+                          {selectedFile && (
+                            <Group>
+                              <Text size="xs" fw={500}>
+                                {getBasename(selectedFile)}
+                              </Text>
+                            </Group>
+                          )}
+                        </Group>
+                      </Box>
+                      <ScrollArea h="calc(100% - 37px)" scrollbarSize={6}>
+                        {fileContent ? (
+                          <Code block p="md" style={{ whiteSpace: 'pre-wrap' }}>
+                            {fileContent}
+                          </Code>
+                        ) : (
+                          <Text p="md" size="sm" c="dimmed">
+                            Select a file to view its content
+                          </Text>
+                        )}
+                      </ScrollArea>
+                    </Box>
+                  </Grid.Col>
+                </Grid>
+              </Tabs.Panel>
               
               <Tabs.Panel value="author" p="md">
                 <AemInstanceView instance="author" project={project} />
@@ -202,35 +214,6 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
                 Dispatcher content
               </Tabs.Panel>
             </Tabs>
-          </Box>
-          
-          <Divider my="xs" />
-          
-          <Box style={{ flex: '1 1 60%', overflow: 'auto' }}>
-            <Box p="xs">
-              <Group justify="space-between">
-                <Text size="xs" fw={700} c="dimmed">FILE CONTENT</Text>
-                {selectedFile && (
-                  <Group>
-                    <Text size="xs" fw={500}>
-                      {getBasename(selectedFile)}
-                    </Text>
-                    
-                  </Group>
-                )}
-              </Group>
-            </Box>
-            <ScrollArea h="calc(100% - 30px)">
-              {fileContent ? (
-                <Code block p="md" style={{ whiteSpace: 'pre-wrap', overflow: 'auto' }}>
-                  {fileContent}
-                </Code>
-              ) : (
-                <Text p="md" size="sm" c="dimmed">
-                  Select a file to view its content
-                </Text>
-              )}
-            </ScrollArea>
           </Box>
         </Stack>
       </AppShell.Main>
