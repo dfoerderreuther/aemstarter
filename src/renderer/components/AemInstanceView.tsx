@@ -81,99 +81,106 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
     return cleanup;
   };
 
-  return (
-    <Stack gap="md" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-    <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
-      <Group justify="space-between" align="center">
-        <Text size="xs" fw={700} c="dimmed">
-          {instance.toUpperCase()} INSTANCE 
-        </Text>
-        <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
-         
-              <Text size="xs" fw={500}>
-                PID: 1234567890
-              </Text>
-              
-              
-              <Tooltip 
-                label="Settings" 
-                withArrow 
-                withinPortal
-                position="bottom"
-              >
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="sm"
-                  onClick={() => setIsSettingsOpen(true)}
-                >
-                  <IconSettings size={16} />
-                </ActionIcon>
-              </Tooltip>
+  const modal = (
+    <Modal
+    opened={isSettingsOpen}
+    onClose={() => setIsSettingsOpen(false)}
+    title={`${instance.charAt(0).toUpperCase() + instance.slice(1)} Instance Settings`}
+    size="lg"
+    >
+      <Stack gap="md">
+        {/* Debug Configuration */}
+        <Group gap="sm">
+          <Switch
+            label="Enable Debug"
+            checked={isDebugEnabled}
+            onChange={(e) => setIsDebugEnabled(e.target.checked)}
+            disabled={isRunning}
+          />
+          <NumberInput
+            label="Debug Port"
+            value={debugPort}
+            onChange={(val) => setDebugPort(Number(val))}
+            min={1024}
+            max={65535}
+            disabled={isRunning}
+            style={{ width: '120px' }}
+          />
         </Group>
-      </Group>
-    </Box>
+
+        <Stack gap="md">
+          <NumberInput
+            label="CQ Port"
+            description="The port on which the AEM instance will run"
+            value={port}
+            onChange={(val) => setPort(Number(val))}
+            min={1024}
+            max={65535}
+            disabled={isRunning}
+          />
+
+          <TextInput
+            label="CQ Runmode"
+            description="Comma-separated list of runmodes"
+            value={runmode}
+            onChange={(e) => setRunmode(e.target.value)}
+            placeholder="author,local,nosample"
+            disabled={isRunning}
+          />
+
+          <TextInput
+            label="CQ JVM Options"
+            description="Java Virtual Machine options"
+            value={jvmOpts}
+            onChange={(e) => setJvmOpts(e.target.value)}
+            disabled={isRunning}
+          />
+        </Stack>
+      </Stack>
+    </Modal>
+  )
+
+  return (
+
+    <>
+
+    <Stack gap="0">
+      <Box p="xs" style={{ borderBottom: '1px solid #2C2E33', margin: 0 }}>
+        <Group justify="space-between" align="center">
+          <Text size="xs" fw={700} c="dimmed">
+            {instance.toUpperCase()} INSTANCE 
+          </Text>
+          <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
+          
+                <Text size="xs" fw={500}>
+                  PID: 1234567890
+                </Text>
+                
+                
+                <Tooltip 
+                  label="Settings" 
+                  withArrow 
+                  withinPortal
+                  position="bottom"
+                >
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="sm"
+                    onClick={() => setIsSettingsOpen(true)}
+                  >
+                    <IconSettings size={16} />
+                  </ActionIcon>
+                </Tooltip>
+          </Group>
+        </Group>
+      </Box>
 
       {/* Settings Modal */}
-      <Modal
-        opened={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        title={`${instance.charAt(0).toUpperCase() + instance.slice(1)} Instance Settings`}
-        size="lg"
-      >
-        <Stack gap="md">
-          {/* Debug Configuration */}
-          <Group gap="sm">
-            <Switch
-              label="Enable Debug"
-              checked={isDebugEnabled}
-              onChange={(e) => setIsDebugEnabled(e.target.checked)}
-              disabled={isRunning}
-            />
-            <NumberInput
-              label="Debug Port"
-              value={debugPort}
-              onChange={(val) => setDebugPort(Number(val))}
-              min={1024}
-              max={65535}
-              disabled={isRunning}
-              style={{ width: '120px' }}
-            />
-          </Group>
-
-          <Stack gap="md">
-            <NumberInput
-              label="CQ Port"
-              description="The port on which the AEM instance will run"
-              value={port}
-              onChange={(val) => setPort(Number(val))}
-              min={1024}
-              max={65535}
-              disabled={isRunning}
-            />
-
-            <TextInput
-              label="CQ Runmode"
-              description="Comma-separated list of runmodes"
-              value={runmode}
-              onChange={(e) => setRunmode(e.target.value)}
-              placeholder="author,local,nosample"
-              disabled={isRunning}
-            />
-
-            <TextInput
-              label="CQ JVM Options"
-              description="Java Virtual Machine options"
-              value={jvmOpts}
-              onChange={(e) => setJvmOpts(e.target.value)}
-              disabled={isRunning}
-            />
-          </Stack>
-        </Stack>
-      </Modal>
+      {modal}
 
       {/* Terminal Section */}
-      <Paper shadow="xs" style={{ 
+      <Paper shadow="xs" p="md" style={{ 
         flex: 1,
         backgroundColor: '#1a1b1e',
         overflow: 'hidden',
@@ -186,5 +193,6 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
         </div>
       </Paper>
     </Stack>
+    </>
   );
 };

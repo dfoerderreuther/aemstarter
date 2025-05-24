@@ -35,15 +35,15 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               <Tabs.Tab value="files">Files</Tabs.Tab>
             </Tabs.List>
 
-            <Tabs.Panel value="author" p="md">
+            <Tabs.Panel value="author">
               <AemInstanceView instance="author" project={project} />
             </Tabs.Panel>
 
-            <Tabs.Panel value="publish" p="md">
+            <Tabs.Panel value="publish">
               <AemInstanceView instance="publisher" project={project} />
             </Tabs.Panel>
 
-            <Tabs.Panel value="dispatcher" p="md">
+            <Tabs.Panel value="dispatcher">
               <DispatcherView />
             </Tabs.Panel>
 
