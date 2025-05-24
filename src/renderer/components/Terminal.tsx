@@ -84,7 +84,7 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) =
       ref={terminalRef} 
       style={{ 
         width: '100%', 
-        height: '100%',
+        height: '100%'
       }}
     />
   );

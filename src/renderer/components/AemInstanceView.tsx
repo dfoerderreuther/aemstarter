@@ -143,7 +143,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
 
   return (
     <>
-      <Stack gap="0">
+      <Stack gap="0" style={{ height: '100%' }}>
         <Box p="xs" style={{ borderBottom: '1px solid #2C2E33', margin: 0 }}>
           <Group justify="space-between" align="center">
             <Text size="xs" fw={700} c="dimmed">
@@ -176,13 +176,13 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
         {modal}
 
         {/* Terminal Section */}
-        <Paper shadow="xs" p="md" style={{ 
+        <Paper shadow="xs" p="sm" style={{ 
           flex: 1,
-          backgroundColor: '#1a1b1e',
           overflow: 'hidden',
           minHeight: 0,
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column', 
+          backgroundColor: '#1A1A1A',
         }}>
           <div style={{ flex: 1, minHeight: 0 }}>
             <Terminal onReady={handleTerminalReady} visible={visible} />

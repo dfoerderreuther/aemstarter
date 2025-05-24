@@ -26,7 +26,12 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
 
       <Tabs 
         defaultValue="author" 
-        style={{ flex: 1 }}
+        style={{ 
+          flex: 1, 
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
         onChange={setActiveTab}
       >
         <Tabs.List>
@@ -36,7 +41,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           <Tabs.Tab value="files">Files</Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value="author">
+        <Tabs.Panel value="author" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <AemInstanceView 
             instance="author" 
             project={project} 
@@ -44,7 +49,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           />
         </Tabs.Panel>
 
-        <Tabs.Panel value="publish">
+        <Tabs.Panel value="publish" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <AemInstanceView 
             instance="publisher" 
             project={project} 
