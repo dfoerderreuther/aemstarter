@@ -42,10 +42,9 @@ declare global {
       
       isAemInstanceRunning: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
       
-      getAemInstanceOutput: (project: Project, instanceType: 'author' | 'publisher') => Promise<{
-        stdout: string[];
-        stderr: string[];
-      }>;
+      // Log streaming
+      onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => void;
+      removeAemLogDataListener: () => void;
     };
   }
 } 

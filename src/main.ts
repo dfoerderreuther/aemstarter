@@ -208,11 +208,6 @@ ipcMain.handle('is-aem-instance-running', (_, project: Project, instanceType: 'a
   return manager ? manager.isInstanceRunning(instanceType) : false;
 });
 
-ipcMain.handle('get-aem-instance-output', (_, project: Project, instanceType: 'author' | 'publisher') => {
-  const manager = instanceManagers.get(project.id);
-  return manager ? manager.getInstanceOutput(instanceType) : { stdout: [], stderr: [] };
-});
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

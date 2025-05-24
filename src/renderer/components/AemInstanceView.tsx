@@ -19,7 +19,15 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
   const [isDebugEnabled, setIsDebugEnabled] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hasShownAemOutput, setHasShownAemOutput] = useState(false);
   const terminalRef = useRef<XTerm | null>(null);
+
+  // Reset hasShownAemOutput when instance is stopped
+  useEffect(() => {
+    if (!isRunning) {
+      setHasShownAemOutput(false);
+    }
+  }, [isRunning]);
 
   // Check instance status on mount
   useEffect(() => {
@@ -38,6 +46,10 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
     if (!terminalRef.current) return;
     
     try {
+      terminalRef.current.clear();
+      setHasShownAemOutput(false);
+      terminalRef.current.writeln(`AEM ${instance} instance terminal`);
+      terminalRef.current.writeln('Ready to start...');
       terminalRef.current.writeln(`Starting ${instance} instance on port ${port}...`);
       terminalRef.current.writeln(`CQ_PORT=${port}`);
       terminalRef.current.writeln(`CQ_RUNMODE=${runmode}`);
@@ -97,24 +109,49 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
 
   const handleTerminalReady = (terminal: XTerm) => {
     terminalRef.current = terminal;
-    terminal.writeln(`AEM ${instance} instance terminal`);
+    terminal.writeln(`AEM ${instance} instance - Error Log Monitor`);
     terminal.writeln('Ready to start...');
 
-    // Set up output polling
-    const pollOutput = async () => {
-      if (!isRunning) return;
+    let totalLinesProcessed = 0;
 
-      try {
-        const output = await window.electronAPI.getAemInstanceOutput(project, instance);
-        output.stdout.forEach(line => terminal.writeln(line));
-        output.stderr.forEach(line => terminal.writeln(line));
-      } catch (error) {
-        console.error('Error polling output:', error);
+    // Set up real-time log streaming
+    const handleLogData = (data: { projectId: string; instanceType: string; data: string }) => {
+      // Only process logs for this specific project and instance
+      if (data.projectId === project.id && data.instanceType === instance) {
+        console.log('Streaming log data:', data.data.substring(0, 100) + '...');
+        
+        // Clear terminal and show header when we get first AEM output
+        if (!hasShownAemOutput) {
+          terminal.clear();
+          terminal.writeln(`AEM ${instance} instance - Live Log Stream:`);
+          terminal.writeln('----------------------------');
+          setHasShownAemOutput(true);
+        }
+
+        // Write the log line immediately
+        terminal.writeln(data.data);
+        totalLinesProcessed++;
+        
+        // Auto-scroll to bottom to show latest logs
+        terminal.scrollToBottom();
+        
+        if (totalLinesProcessed % 50 === 0) {
+          console.log(`Total lines streamed: ${totalLinesProcessed}`);
+        }
       }
     };
 
-    const interval = setInterval(pollOutput, 1000);
-    return () => clearInterval(interval);
+    // Set up the event listener
+    window.electronAPI.onAemLogData(handleLogData);
+    console.log(`Started real-time log streaming for ${instance} instance`);
+
+    // Cleanup function
+    const cleanup = () => {
+      console.log('Cleaning up log streaming');
+      window.electronAPI.removeAemLogDataListener();
+    };
+
+    return cleanup;
   };
 
   return (

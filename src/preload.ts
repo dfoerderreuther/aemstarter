@@ -59,8 +59,14 @@ contextBridge.exposeInMainWorld(
     
     isAemInstanceRunning: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('is-aem-instance-running', project, instanceType),
+
+    // Log streaming
+    onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => {
+      ipcRenderer.on('aem-log-data', (_, data) => callback(data));
+    },
     
-    getAemInstanceOutput: (project: Project, instanceType: 'author' | 'publisher') =>
-      ipcRenderer.invoke('get-aem-instance-output', project, instanceType),
+    removeAemLogDataListener: () => {
+      ipcRenderer.removeAllListeners('aem-log-data');
+    },
   }
 );

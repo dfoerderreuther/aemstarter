@@ -9,68 +9,49 @@ interface TerminalProps {
 
 export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
-  const xtermRef = useRef<XTerm | null>(null);
-  const fitAddonRef = useRef<FitAddon | null>(null);
 
   useEffect(() => {
     if (!terminalRef.current) return;
 
-    // Initialize xterm.js
+    // Minimal xterm.js configuration
     const xterm = new XTerm({
+      convertEol: true,
+      fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+      fontSize: 13,
       theme: {
-        background: '#1a1b1e',
+        background: '#1a1a1a',
         foreground: '#ffffff',
-      },
-      fontSize: 14,
-      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-      cursorBlink: true,
+      }
     });
 
     // Initialize fit addon
     const fitAddon = new FitAddon();
     xterm.loadAddon(fitAddon);
-    fitAddonRef.current = fitAddon;
-
-    // Store ref
-    xtermRef.current = xterm;
 
     // Open terminal
     xterm.open(terminalRef.current);
+    
+    // Fit terminal to container
+    fitAddon.fit();
 
-    // Initial fit
-    try {
-      fitAddon.fit();
-    } catch (error) {
-      console.warn('Failed to fit terminal:', error);
-    }
-
-    // Call onReady callback if provided
-    if (onReady) {
-      onReady(xterm);
-    }
-
-    // Handle window resize
+    // Simple resize handler
     const handleResize = () => {
       try {
-        if (fitAddonRef.current) {
-          fitAddonRef.current.fit();
-        }
+        fitAddon.fit();
       } catch (error) {
         console.warn('Failed to fit terminal:', error);
       }
     };
 
     window.addEventListener('resize', handleResize);
-    // Also handle parent container resize
-    const resizeObserver = new ResizeObserver(handleResize);
-    if (terminalRef.current) {
-      resizeObserver.observe(terminalRef.current);
+
+    // Call onReady
+    if (onReady) {
+      onReady(xterm);
     }
 
-    // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
-      resizeObserver.disconnect();
       xterm.dispose();
     };
   }, [onReady]);
@@ -81,11 +62,7 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady }) => {
       style={{ 
         width: '100%', 
         height: '100%',
-        backgroundColor: '#1a1b1e',
-        padding: '8px',
-        display: 'flex',
-        overflow: 'hidden',
-      }} 
+      }}
     />
   );
 }; 
