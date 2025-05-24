@@ -1,53 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { AppShell, Tabs, Group, Button, Text, Switch, Box, ScrollArea, Code, Divider, Stack, Modal, ActionIcon, Grid } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconDownload, IconFolder, IconEye, IconExternalLink, IconTrash, IconRefresh, IconEyeOff } from '@tabler/icons-react';
+import React, { useState } from 'react';
+import { AppShell, Tabs, Group, Button, Text, Stack, Modal, Box } from '@mantine/core';
+import { IconPlayerPlay, IconPlayerStop, IconDownload, IconTrash } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
-import { FileTreeView, FileTreeViewRef } from './FileTreeView';
 import { InstallService } from '../services/installService';
 import { ClearService } from '../services/clearService';
 import { AemInstanceView } from './AemInstanceView';
+import { FilesView } from './FilesView';
 
 interface ProjectViewProps {
   project: Project;
 }
 
-// File path utility functions for browser environment
-// These replicate Node.js path module functionality that's not available in the browser
-function getBasename(filepath: string): string {
-  // Handle both Windows and Unix-style paths
-  return filepath.split(/[\\/]/).pop() || '';
-}
-
-function getDirname(filepath: string): string {
-  // Handle both Windows and Unix-style paths
-  const parts = filepath.split(/[\\/]/);
-  parts.pop(); // Remove the last part (filename)
-  return parts.join('/') || '.';
-}
-
 export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
-  const [fileContent, setFileContent] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstallConfirm, setShowInstallConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const fileTreeRef = useRef<FileTreeViewRef>(null);
-  
-  const handleFileSelect = async (filePath: string) => {
-    try {
-      setSelectedFile(filePath);
-      const result = await window.electronAPI.readFile(filePath);
-      if (result.error) {
-        setFileContent(`Error reading file: ${result.error}`);
-      } else {
-        setFileContent(result.content || null);
-      }
-    } catch (error) {
-      console.error('Error reading file:', error);
-      setFileContent(`Error reading file: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
 
   const handleInstall = () => {
     setShowInstallConfirm(true);
@@ -60,10 +28,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       await InstallService.installAEM(project);
       // Add a small delay to ensure file system operations are complete
       await new Promise(resolve => setTimeout(resolve, 1000));
-      await fileTreeRef.current?.refresh();
     } catch (error) {
       console.error('Installation failed:', error);
-      setFileContent(`Installation failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsInstalling(false);
     }
@@ -80,10 +46,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       await ClearService.clearAEM(project);
       // Add a small delay to ensure file system operations are complete
       await new Promise(resolve => setTimeout(resolve, 1000));
-      await fileTreeRef.current?.refresh();
     } catch (error) {
       console.error('Clearing failed:', error);
-      setFileContent(`Clearing failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsClearing(false);
     }
@@ -95,12 +59,14 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       styles={{
         main: {
           backgroundColor: '#1A1B1E',
-          padding: 0
+          padding: 0,
+          display: 'flex',
+          flexDirection: 'column'
         }
       }}
     >
       <AppShell.Main>
-        <Stack gap={0} style={{ height: '100%' }}>
+        <Stack gap={0} style={{ height: '100vh', minHeight: '100vh' }}>
           <Group p="xs" gap="xs">
             <Button 
               color="blue" 
@@ -147,11 +113,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             </Button>
           </Group>
           
-          <Box style={{ flex: 1, overflow: 'hidden' }}>
+          <Box style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
             <Tabs 
               defaultValue="files" 
               variant="outline"
-              style={{ height: '100%' }}
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
             >
               <Tabs.List>
                 <Tabs.Tab value="files">Files</Tabs.Tab>
@@ -160,46 +126,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
                 <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
               </Tabs.List>
               
-              <Tabs.Panel value="files" style={{ height: 'calc(100% - 36px)' }}>
-                <Grid grow style={{ height: '100%', margin: 0 }}>
-                  <Grid.Col span={4} style={{ height: '100%', padding: 0 }}>
-                    <ScrollArea h="100%" scrollbarSize={6}>
-                      <FileTreeView 
-                        rootPath={project.folderPath} 
-                        onFileSelect={handleFileSelect}
-                        ref={fileTreeRef}
-                      />
-                    </ScrollArea>
-                  </Grid.Col>
-                  
-                  <Grid.Col span={8} style={{ height: '100%', padding: 0, borderLeft: '1px solid #2C2E33' }}>
-                    <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                      <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
-                        <Group justify="space-between">
-                          <Text size="xs" fw={700} c="dimmed">FILE CONTENT</Text>
-                          {selectedFile && (
-                            <Group>
-                              <Text size="xs" fw={500}>
-                                {getBasename(selectedFile)}
-                              </Text>
-                            </Group>
-                          )}
-                        </Group>
-                      </Box>
-                      <ScrollArea h="calc(100% - 37px)" scrollbarSize={6}>
-                        {fileContent ? (
-                          <Code block p="md" style={{ whiteSpace: 'pre-wrap' }}>
-                            {fileContent}
-                          </Code>
-                        ) : (
-                          <Text p="md" size="sm" c="dimmed">
-                            Select a file to view its content
-                          </Text>
-                        )}
-                      </ScrollArea>
-                    </Box>
-                  </Grid.Col>
-                </Grid>
+              <Tabs.Panel value="files" style={{ flex: 1, minHeight: 0 }}>
+                <FilesView rootPath={project.folderPath} />
               </Tabs.Panel>
               
               <Tabs.Panel value="author" p="md">

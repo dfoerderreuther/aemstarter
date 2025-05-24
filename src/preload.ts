@@ -33,6 +33,8 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('read-directory', dirPath, showHidden),
     readFile: (filePath: string) =>
       ipcRenderer.invoke('read-file', filePath),
+    writeFile: (filePath: string, content: string) =>
+      ipcRenderer.invoke('write-file', filePath, content),
 
     // AEM Installation
     installAEM: (project: Project) =>

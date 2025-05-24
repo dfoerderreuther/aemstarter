@@ -13,6 +13,7 @@ declare global {
       
       // File system operations
       readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
+      writeFile: (filePath: string, content: string) => Promise<{ error?: string }>;
       readDirectory: (dirPath: string, showHidden?: boolean) => Promise<Array<{
         name: string;
         path: string;

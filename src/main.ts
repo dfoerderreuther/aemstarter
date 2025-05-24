@@ -48,11 +48,12 @@ const createWindow = () => {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self';",
-          "script-src 'self';",
+          "script-src 'self' 'unsafe-eval';",
           "style-src 'self' 'unsafe-inline';",
           "font-src 'self' data:;",
           "img-src 'self' data:;",
           "connect-src 'self';",
+          "worker-src 'self' blob:;"
         ].join(' ')
       }
     });
@@ -127,6 +128,16 @@ ipcMain.handle('read-file', async (_, filePath) => {
     return { content };
   } catch (error) {
     console.error('Error reading file:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle('write-file', async (_, filePath, content) => {
+  try {
+    await fs.promises.writeFile(filePath, content, 'utf-8');
+    return {};
+  } catch (error) {
+    console.error('Error writing file:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
