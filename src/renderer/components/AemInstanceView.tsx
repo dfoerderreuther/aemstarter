@@ -1,9 +1,9 @@
 import { Project } from "../../types/Project";
-import { Grid, TextInput, NumberInput, Switch, Button, Group, Stack, Paper, Text, Collapse } from '@mantine/core';
+import { Grid, TextInput, NumberInput, Switch, Button, Group, Stack, Paper, Text, Box, Tooltip, ActionIcon, Modal } from '@mantine/core';
 import { useState, useRef, useEffect } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal } from './Terminal';
-import { IconPlayerPlay, IconPlayerStop, IconBug, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconBug, IconX, IconSettings } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -18,8 +18,8 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
   const [debugPort, setDebugPort] = useState(30303);
   const [isDebugEnabled, setIsDebugEnabled] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [hasShownAemOutput, setHasShownAemOutput] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const terminalRef = useRef<XTerm | null>(null);
 
   // Reset hasShownAemOutput when instance is stopped
@@ -41,71 +41,6 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
     };
     checkStatus();
   }, [project, instance]);
-
-  const handleStart = async () => {
-    if (!terminalRef.current) return;
-    
-    try {
-      terminalRef.current.clear();
-      setHasShownAemOutput(false);
-      terminalRef.current.writeln(`AEM ${instance} instance terminal`);
-      terminalRef.current.writeln('Ready to start...');
-      terminalRef.current.writeln(`Starting ${instance} instance on port ${port}...`);
-      terminalRef.current.writeln(`CQ_PORT=${port}`);
-      terminalRef.current.writeln(`CQ_RUNMODE=${runmode}`);
-      terminalRef.current.writeln(`CQ_JVM_OPTS=${jvmOpts}`);
-      if (isDebugEnabled) {
-        terminalRef.current.writeln(`Debug port: ${debugPort}`);
-      }
-
-      await window.electronAPI.startAemInstance(project, instance, {
-        port,
-        runmode,
-        jvmOpts,
-        ...(isDebugEnabled && { debugPort }),
-      });
-
-      setIsRunning(true);
-    } catch (error) {
-      terminalRef.current.writeln(`Error starting instance: ${error instanceof Error ? error.message : String(error)}`);
-      console.error('Error starting instance:', error);
-    }
-  };
-
-  const handleStop = async () => {
-    if (!terminalRef.current) return;
-    
-    try {
-      terminalRef.current.writeln(`Stopping ${instance} instance...`);
-      await window.electronAPI.stopAemInstance(project, instance);
-      setIsRunning(false);
-      terminalRef.current.writeln('Instance stopped successfully');
-    } catch (error) {
-      terminalRef.current.writeln(`Error stopping instance: ${error instanceof Error ? error.message : String(error)}`);
-      console.error('Error stopping instance:', error);
-    }
-  };
-
-  const handleDebug = async () => {
-    if (!terminalRef.current) return;
-    
-    try {
-      terminalRef.current.writeln(`Starting ${instance} instance in debug mode...`);
-      terminalRef.current.writeln(`Debug port: ${debugPort}`);
-
-      await window.electronAPI.startAemInstance(project, instance, {
-        port,
-        runmode,
-        jvmOpts,
-        debugPort,
-      });
-
-      setIsRunning(true);
-    } catch (error) {
-      terminalRef.current.writeln(`Error starting debug mode: ${error instanceof Error ? error.message : String(error)}`);
-      console.error('Error starting debug mode:', error);
-    }
-  };
 
   const handleTerminalReady = (terminal: XTerm) => {
     terminalRef.current = terminal;
@@ -148,105 +83,94 @@ export const AemInstanceView = ({ instance, project }: AemInstanceViewProps) => 
 
   return (
     <Stack gap="md" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Form Section */}
-      <Paper shadow="xs" p="md" style={{ flexShrink: 0 }}>
+    <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
+      <Group justify="space-between" align="center">
+        <Text size="xs" fw={700} c="dimmed">
+          {instance.toUpperCase()} INSTANCE 
+        </Text>
+        <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
+         
+              <Text size="xs" fw={500}>
+                PID: 1234567890
+              </Text>
+              
+              
+              <Tooltip 
+                label="Settings" 
+                withArrow 
+                withinPortal
+                position="bottom"
+              >
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  onClick={() => setIsSettingsOpen(true)}
+                >
+                  <IconSettings size={16} />
+                </ActionIcon>
+              </Tooltip>
+        </Group>
+      </Group>
+    </Box>
+
+      {/* Settings Modal */}
+      <Modal
+        opened={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        title={`${instance.charAt(0).toUpperCase() + instance.slice(1)} Instance Settings`}
+        size="lg"
+      >
         <Stack gap="md">
-          <Group justify="space-between">
-            <Text fw={500} size="lg">{instance.charAt(0).toUpperCase() + instance.slice(1)} Instance Settings</Text>
-            <Button 
-              variant="subtle" 
-              onClick={() => setIsExpanded(!isExpanded)}
-              rightSection={isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-            >
-              {isExpanded ? 'Show Less' : 'Show More'}
-            </Button>
+          {/* Debug Configuration */}
+          <Group gap="sm">
+            <Switch
+              label="Enable Debug"
+              checked={isDebugEnabled}
+              onChange={(e) => setIsDebugEnabled(e.target.checked)}
+              disabled={isRunning}
+            />
+            <NumberInput
+              label="Debug Port"
+              value={debugPort}
+              onChange={(val) => setDebugPort(Number(val))}
+              min={1024}
+              max={65535}
+              disabled={isRunning}
+              style={{ width: '120px' }}
+            />
           </Group>
 
-          {/* Always visible controls */}
-          <Group grow>
-            <Group gap="sm">
-              <Button
-                color="green"
-                leftSection={<IconPlayerPlay size={16} />}
-                onClick={handleStart}
-                disabled={isRunning}
-              >
-                Start
-              </Button>
-              <Button
-                color="red"
-                leftSection={<IconPlayerStop size={16} />}
-                onClick={handleStop}
-                disabled={!isRunning}
-              >
-                Stop
-              </Button>
-            </Group>
+          <Stack gap="md">
+            <NumberInput
+              label="CQ Port"
+              description="The port on which the AEM instance will run"
+              value={port}
+              onChange={(val) => setPort(Number(val))}
+              min={1024}
+              max={65535}
+              disabled={isRunning}
+            />
 
-            <Group gap="sm">
-              <Switch
-                label="Enable Debug"
-                checked={isDebugEnabled}
-                onChange={(e) => setIsDebugEnabled(e.target.checked)}
-                disabled={isRunning}
-              />
-              {isDebugEnabled && (
-                <>
-                  <NumberInput
-                    label="Debug Port"
-                    value={debugPort}
-                    onChange={(val) => setDebugPort(Number(val))}
-                    min={1024}
-                    max={65535}
-                    disabled={isRunning}
-                    style={{ width: '120px' }}
-                  />
-                  <Button
-                    color="blue"
-                    leftSection={<IconBug size={16} />}
-                    onClick={handleDebug}
-                    disabled={isRunning}
-                  >
-                    Debug
-                  </Button>
-                </>
-              )}
-            </Group>
-          </Group>
+            <TextInput
+              label="CQ Runmode"
+              description="Comma-separated list of runmodes"
+              value={runmode}
+              onChange={(e) => setRunmode(e.target.value)}
+              placeholder="author,local,nosample"
+              disabled={isRunning}
+            />
 
-          {/* Collapsible section */}
-          <Collapse in={isExpanded}>
-            <Stack gap="md">
-              <NumberInput
-                label="CQ Port"
-                description="The port on which the AEM instance will run"
-                value={port}
-                onChange={(val) => setPort(Number(val))}
-                min={1024}
-                max={65535}
-                disabled={isRunning}
-              />
-
-              <TextInput
-                label="CQ Runmode"
-                description="Comma-separated list of runmodes"
-                value={runmode}
-                onChange={(e) => setRunmode(e.target.value)}
-                placeholder="author,local,nosample"
-                disabled={isRunning}
-              />
-
-              <TextInput
-                label="CQ JVM Options"
-                description="Java Virtual Machine options"
-                value={jvmOpts}
-                onChange={(e) => setJvmOpts(e.target.value)}
-                disabled={isRunning}
-              />
-            </Stack>
-          </Collapse>
+            <TextInput
+              label="CQ JVM Options"
+              description="Java Virtual Machine options"
+              value={jvmOpts}
+              onChange={(e) => setJvmOpts(e.target.value)}
+              disabled={isRunning}
+            />
+          </Stack>
         </Stack>
-      </Paper>
+      </Modal>
 
       {/* Terminal Section */}
       <Paper shadow="xs" style={{ 

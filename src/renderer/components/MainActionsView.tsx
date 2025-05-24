@@ -301,10 +301,42 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
 
         <Divider orientation="vertical" />
 
+
         <Paper style={sectionStyles}>
           <Stack gap="xs">
-            <Text size="sm" fw={500} c="dimmed">Dispatcher</Text>
-            <Badge variant="light" color="red" size="sm">232</Badge>
+            <Group justify="space-between" align="center">
+              <Text size="sm" fw={500} c="dimmed">Dispatcher</Text>
+              <Badge variant="light" color="red" size="sm">
+                "Not implemented"
+              </Badge>
+            </Group>
+            <Group gap="xs">
+              <Button.Group>
+                <Tooltip label="Start publish">
+                  <Button 
+                    color="blue" 
+                    variant="filled" 
+                    size="xs"
+                    styles={buttonStyles}
+                    disabled={true}
+                  >
+                    <IconPlayerPlay size={16} />
+                  </Button>
+                </Tooltip>
+
+                <Tooltip label="Stop publish">
+                  <Button
+                    color="red" 
+                    variant="filled" 
+                    size="xs"
+                    styles={buttonStyles}
+                    disabled={true}
+                  >
+                    <IconPlayerStop size={16} />
+                  </Button>
+                </Tooltip>
+              </Button.Group>
+            </Group>
           </Stack>
         </Paper>
 
@@ -324,7 +356,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   loading={isInstalling}
                   leftSection={<IconDownload size={16} />}
                 >
-                  Install
+                  Reinstall
                 </Button>
               </Tooltip>
             </Button.Group>
