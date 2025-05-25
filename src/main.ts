@@ -220,20 +220,13 @@ ipcMain.handle('get-aem-instance-pid', (_, project: Project, instanceType: 'auth
 });
 
 ipcMain.handle('get-available-log-files', (_, project: Project, instanceType: 'author' | 'publisher') => {
-  console.log(`[main.ts] get-available-log-files called for project ${project.id}, instance ${instanceType}`);
-  console.log(`[main.ts] Available managers:`, Array.from(instanceManagers.keys()));
-  
   let manager = instanceManagers.get(project.id);
   if (!manager) {
-    console.log(`[main.ts] No manager found, creating new AemInstanceManager for project ${project.id}`);
     manager = new AemInstanceManager(project);
     instanceManagers.set(project.id, manager);
   }
   
-  console.log(`[main.ts] Calling manager.getAvailableLogFiles(${instanceType})`);
-  const result = manager.getAvailableLogFiles(instanceType);
-  console.log(`[main.ts] Manager returned:`, result);
-  return result;
+  return manager.getAvailableLogFiles(instanceType);
 });
 
 ipcMain.handle('get-selected-log-files', (_, project: Project, instanceType: 'author' | 'publisher') => {

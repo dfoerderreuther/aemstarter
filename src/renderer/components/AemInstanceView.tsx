@@ -1,5 +1,5 @@
 import { Project } from "../../types/Project";
-import { TextInput, NumberInput, Switch, Group, Stack, Paper, Text, Box, Tooltip, ActionIcon, MultiSelect } from '@mantine/core';
+import { TextInput, NumberInput, Switch, Group, Stack, Paper, Text, Box, Tooltip, ActionIcon, MultiSelect, Input } from '@mantine/core';
 import { useState, useRef, useEffect } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal } from './Terminal';
@@ -21,6 +21,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   const [pid, setPid] = useState<number | null>(null);
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
   const [selectedLogFiles, setSelectedLogFiles] = useState<string[]>(['error.log']);
+  const [filterText, setFilterText] = useState('');
   const hasShownAemOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -122,10 +123,18 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
       
       // Only process logs for this specific project and instance
       if (data.projectId === project.id && data.instanceType === instance) {
+        // Apply filter if filterText is set
+        if (filterText && !data.data.toLowerCase().includes(filterText.toLowerCase())) {
+          return; // Skip this log entry if it doesn't contain the filter text
+        }
+
         // Clear terminal and show header when we get first AEM output
         if (!hasShownAemOutputRef.current) {
           terminal.clear();
           terminal.writeln(`AEM ${instance} instance - Live Log Stream:`);
+          if (filterText) {
+            terminal.writeln(`Filter: "${filterText}"`);
+          }
           terminal.writeln('----------------------------');
           hasShownAemOutputRef.current = true;
         }
@@ -155,7 +164,13 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
               {instance.toUpperCase()} INSTANCE 
             </Text>
             <Group gap="xs" align="center">
-              
+                <TextInput
+                  placeholder="Filter logs..."
+                  value={filterText}
+                  onChange={(event) => setFilterText(event.currentTarget.value)}
+                  size="xs"
+                  style={{ width: '200px' }}
+                />
                 <MultiSelect
                   placeholder="Select log files to monitor"
                   data={availableLogFiles}
@@ -166,6 +181,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                   clearable
                   maxDropdownHeight={200}
                   onFocus={handleInputFocus}
+                  style={{ width: '400px' }}
                 />
             </Group>
           </Group>
