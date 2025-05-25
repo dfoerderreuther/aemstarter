@@ -78,26 +78,76 @@ export class AemInstanceManager {
 
   private async findJavaProcess(port: number): Promise<number | null> {
     return new Promise((resolve) => {
-      // Use different commands based on platform
-      const cmd = process.platform === 'win32'
-        ? `netstat -ano | findstr :${port}`
-        : `lsof -i :${port} -t`;
+      let cmd: string;
+      
+      if (process.platform === 'win32') {
+        // For Windows: find process using the port, then extract PID
+        cmd = `netstat -ano | findstr :${port}`;
+      } else {
+        // For Unix-like systems: use lsof to find processes using the port
+        // Filter for Java processes specifically
+        cmd = `lsof -i :${port} -t 2>/dev/null | head -1`;
+      }
 
-      exec(cmd, (error, stdout) => {
-        if (error || !stdout) {
+      exec(cmd, (error, stdout, stderr) => {
+        if (error || !stdout.trim()) {
+          console.log(`[AemInstanceManager] No process found on port ${port}: ${error?.message || 'No output'}`);
           resolve(null);
           return;
         }
 
         try {
-          // Parse PID from command output
-          const pid = parseInt(stdout.trim().split('\n')[0], 10);
-          resolve(pid || null);
-        } catch {
+          if (process.platform === 'win32') {
+            // Parse Windows netstat output
+            // Format: TCP    0.0.0.0:4502    0.0.0.0:0    LISTENING    1234
+            const lines = stdout.trim().split('\n');
+            for (const line of lines) {
+              const parts = line.trim().split(/\s+/);
+              if (parts.length >= 5 && parts[3] === 'LISTENING') {
+                const pid = parseInt(parts[4], 10);
+                if (pid && !isNaN(pid)) {
+                  console.log(`[AemInstanceManager] Found process PID ${pid} on port ${port}`);
+                  resolve(pid);
+                  return;
+                }
+              }
+            }
+            resolve(null);
+          } else {
+            // Parse Unix lsof output (just the PID)
+            const pid = parseInt(stdout.trim(), 10);
+            if (pid && !isNaN(pid)) {
+              console.log(`[AemInstanceManager] Found process PID ${pid} on port ${port}`);
+              resolve(pid);
+            } else {
+              resolve(null);
+            }
+          }
+        } catch (parseError) {
+          console.error(`[AemInstanceManager] Error parsing process output for port ${port}:`, parseError);
           resolve(null);
         }
       });
     });
+  }
+
+  private async findJavaProcessWithRetry(port: number, maxRetries: number = 10, delayMs: number = 2000): Promise<number | null> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`[AemInstanceManager] Attempting to find Java process on port ${port} (attempt ${attempt}/${maxRetries})`);
+      
+      const pid = await this.findJavaProcess(port);
+      if (pid) {
+        return pid;
+      }
+      
+      if (attempt < maxRetries) {
+        console.log(`[AemInstanceManager] Process not found on port ${port}, retrying in ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+    
+    console.warn(`[AemInstanceManager] Failed to find Java process on port ${port} after ${maxRetries} attempts`);
+    return null;
   }
 
   private async waitForLogFile(logPath: string, maxWaitSeconds: number = 60): Promise<boolean> {
@@ -271,6 +321,25 @@ export class AemInstanceManager {
       this.startTailing(instanceType, instance);
     }, 5000);
 
+    // Periodically check for the real AEM process PID
+    const pidCheckInterval = setInterval(async () => {
+      if (!instance.pid) {
+        const realPid = await this.findJavaProcess(port);
+        if (realPid) {
+          instance.pid = realPid;
+          console.log(`[AemInstanceManager] Found AEM ${instanceType} process with PID ${realPid}`);
+          clearInterval(pidCheckInterval);
+        }
+      } else {
+        clearInterval(pidCheckInterval);
+      }
+    }, 3000);
+
+    // Clear the interval after 5 minutes to avoid infinite checking
+    setTimeout(() => {
+      clearInterval(pidCheckInterval);
+    }, 300000);
+
     // Stream initial startup messages directly
     aemProcess.stdout?.on('data', (data) => {
       this.processLogData(instanceType, data);
@@ -290,7 +359,7 @@ export class AemInstanceManager {
         console.log(`[AemInstanceManager] Initial ${instanceType} process exited with code ${code} and signal ${signal}`);
       }
       
-      const realPid = await this.findJavaProcess(port);
+      const realPid = await this.findJavaProcessWithRetry(port);
       if (realPid) {
         instance.pid = realPid;
         console.log(`[AemInstanceManager] Found AEM ${instanceType} process with PID ${realPid}`);
