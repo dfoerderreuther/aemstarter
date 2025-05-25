@@ -27,7 +27,7 @@ export class ProjectSettings {
         if (fs.existsSync(settingsPath)) {
             return JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         }
-        return ProjectSettings.SETTINGS_TEMPLATE;
+        return JSON.parse(ProjectSettings.SETTINGS_TEMPLATE);
     }
 
     static saveSettings(project: Project, settings: any) {

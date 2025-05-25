@@ -3,6 +3,7 @@ import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } fro
 import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage, IconSettings } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
+import { SettingsModal } from './SettingsModal';
 
 interface MainActionsViewProps {
   project: Project;
@@ -11,6 +12,7 @@ interface MainActionsViewProps {
 export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => {
   const [showInstallConfirm, setShowInstallConfirm] = useState(false);
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [isAuthorRunning, setIsAuthorRunning] = useState(false);
   const [isPublisherRunning, setIsPublisherRunning] = useState(false);
@@ -352,8 +354,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   variant="outline" 
                   size="xs"
                   styles={installButtonStyles}
-                  onClick={handleInstall}
-                  loading={isInstalling}
+                  onClick={() => setShowSettings(true)}
                   leftSection={<IconSettings size={16} />}
                 >
                   Settings
@@ -434,6 +435,12 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
           </Group>
         </Stack>
       </Modal>
+      
+      <SettingsModal
+        opened={showSettings}
+        onClose={() => setShowSettings(false)}
+        project={project}
+      />
     </>
   );
 }; 

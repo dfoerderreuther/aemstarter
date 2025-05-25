@@ -4,6 +4,7 @@ import started from 'electron-squirrel-startup';
 import { ProjectManager } from './main/services/ProjectManager';
 import { Installer } from './main/installer/Installer';
 import { AemInstanceManager } from './main/services/AemInstanceManager';
+import { ProjectSettings } from './main/services/ProjectSettings';
 import fs from 'fs';
 import { Project } from './types/Project';
 
@@ -228,6 +229,26 @@ ipcMain.handle('kill-all-aem-instances', async (_, project: Project) => {
     return true;
   } catch (error) {
     console.error('Error killing all AEM instances:', error);
+    throw error;
+  }
+});
+
+// Project Settings
+ipcMain.handle('get-project-settings', async (_, project: Project) => {
+  try {
+    return ProjectSettings.getSettings(project);
+  } catch (error) {
+    console.error('Error getting project settings:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('save-project-settings', async (_, project: Project, settings: any) => {
+  try {
+    ProjectSettings.saveSettings(project, settings);
+    return true;
+  } catch (error) {
+    console.error('Error saving project settings:', error);
     throw error;
   }
 });

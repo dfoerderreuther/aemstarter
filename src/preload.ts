@@ -69,6 +69,12 @@ contextBridge.exposeInMainWorld(
     killAllAemInstances: (project: Project) =>
       ipcRenderer.invoke('kill-all-aem-instances', project),
 
+    // Project Settings
+    getProjectSettings: (project: Project) =>
+      ipcRenderer.invoke('get-project-settings', project),
+    saveProjectSettings: (project: Project, settings: any) =>
+      ipcRenderer.invoke('save-project-settings', project, settings),
+
     // Log streaming
     onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => {
       const handler = (_: any, data: { projectId: string; instanceType: string; data: string }) => callback(data);
