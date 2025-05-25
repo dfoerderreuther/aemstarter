@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage, IconSettings } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 
@@ -345,10 +345,23 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
         <Paper style={sectionStyles}>
           <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">Other</Text>
-            <Button.Group>
-              <Tooltip label="Install">
+            <Group>
+              <Tooltip label="Settings">
                 <Button 
-                  color="blue" 
+                  color="gray" 
+                  variant="outline" 
+                  size="xs"
+                  styles={installButtonStyles}
+                  onClick={handleInstall}
+                  loading={isInstalling}
+                  leftSection={<IconSettings size={16} />}
+                >
+                  Settings
+                </Button>
+              </Tooltip>
+              <Tooltip label="Reinstall">
+                <Button 
+                  color="orange" 
                   variant="outline" 
                   size="xs"
                   styles={installButtonStyles}
@@ -359,7 +372,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   Reinstall
                 </Button>
               </Tooltip>
-            </Button.Group>
+            </Group>
           </Stack>
         </Paper>
       </Group>
