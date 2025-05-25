@@ -12,7 +12,8 @@ interface AemInstance {
   port: number;
   runmode: string;
   jvmOpts: string;
-  tailProcess: ChildProcess | null;
+  tailProcesses: Map<string, ChildProcess>; // Map of log file name to tail process
+  selectedLogFiles: string[]; // Currently selected log files for tailing
 }
 
 export class AemInstanceManager {
@@ -65,7 +66,6 @@ export class AemInstanceManager {
     const text = data.toString();
     const bufferKey = `${instanceType}-${this.project.id}`;
     
-    
     // Get any existing buffer for this stream
     const existingBuffer = this.logBuffers.get(bufferKey) || '';
     const fullText = existingBuffer + text;
@@ -76,7 +76,6 @@ export class AemInstanceManager {
     // Keep the last line as buffer (might be incomplete)
     const incompleteLastLine = lines.pop() || '';
     this.logBuffers.set(bufferKey, incompleteLastLine);
-    
     
     // Send complete lines in batch
     const completeLines = lines.filter(line => line.trim());
@@ -175,62 +174,154 @@ export class AemInstanceManager {
     return true;
   }
 
-  private async startTailing(instanceType: string, instance: AemInstance) {
-    // Use consistent directory mapping
+  getAvailableLogFiles(instanceType: string): string[] {
+    console.log(`[AemInstanceManager] Getting available log files for ${instanceType}`);
     const instanceDir = instanceType === 'author' ? 'author' : 'publish';
     const logPath = path.join(
       this.project.folderPath,
       instanceDir,
       'crx-quickstart',
-      'logs',
-      'error.log'
+      'logs'
     );
 
-    // Wait for log file to exist
-    const exists = await this.waitForLogFile(logPath);
-    if (!exists) {
-      console.warn(`Log file not found: ${logPath}`);
-      return;
+    if (!fs.existsSync(logPath)) {
+      console.log(`[AemInstanceManager] No logs directory found at ${logPath}`);
+      return ['error.log']; // Return default if logs directory doesn't exist yet
     }
 
-    // Use different tail command based on platform
-    let tailProcess: ChildProcess;
-    if (process.platform === 'win32') {
-      tailProcess = spawn('powershell.exe', [
-        '-Command',
-        `Get-Content -Path "${logPath}" -Wait -Tail 100`
-      ]);
-    } else {
-      tailProcess = spawn('tail', ['-f', '-n', '100', logPath]);
-    }
-    
-    instance.tailProcess = tailProcess;
-
-    // Stream log data as it comes in
-    tailProcess.stdout?.on('data', (data) => {
-      this.processLogData(instanceType, data);
-    });
-
-    tailProcess.stderr?.on('data', (data) => {
-      this.processLogData(instanceType, data);
-    });
-
-    tailProcess.on('error', (error) => {
-      console.error(`Error in tail process: ${error}`);
-      this.sendLogData(instanceType, `Error tailing log file: ${error.message}`);
-    });
-
-    tailProcess.on('exit', (code, signal) => {
-      if (code !== 0 && !instance.tailProcess?.killed) {
-        console.warn(`Tail process exited unexpectedly, restarting...`);
-        setTimeout(() => this.startTailing(instanceType, instance), 1000);
+    try {
+      const files = fs.readdirSync(logPath);
+      const logFiles = files.filter(file => file.endsWith('.log'));
+      console.log(`[AemInstanceManager] Found log files: ${logFiles}`);
+      
+      // Ensure error.log is always first if it exists, otherwise add it as default
+      const errorLogIndex = logFiles.indexOf('error.log');
+      if (errorLogIndex > 0) {
+        logFiles.splice(errorLogIndex, 1);
+        logFiles.unshift('error.log');
+      } else if (errorLogIndex === -1) {
+        logFiles.unshift('error.log');
       }
-    });
+      
+      return logFiles;
+    } catch (error) {
+      console.error(`Error reading log directory: ${error}`);
+      return ['error.log']; // Return default on error
+    }
+  }
 
-    if (!tailProcess.pid) {
-      console.error('Failed to start tail process');
+  private async startTailing(instanceType: string, instance: AemInstance, logFiles: string[] = ['error.log']) {
+    // Stop any existing tail processes
+    this.stopTailing(instanceType);
+    
+    // Use consistent directory mapping
+    const instanceDir = instanceType === 'author' ? 'author' : 'publish';
+    const logsDir = path.join(
+      this.project.folderPath,
+      instanceDir,
+      'crx-quickstart',
+      'logs'
+    );
+
+    // Update selected log files
+    instance.selectedLogFiles = logFiles;
+
+    for (const logFile of logFiles) {
+      const logPath = path.join(logsDir, logFile);
+
+      // Wait for log file to exist
+      const exists = await this.waitForLogFile(logPath);
+      if (!exists) {
+        console.warn(`Log file not found: ${logPath}`);
+        continue;
+      }
+
+      // Use different tail command based on platform
+      let tailProcess: ChildProcess;
+      if (process.platform === 'win32') {
+        tailProcess = spawn('powershell.exe', [
+          '-Command',
+          `Get-Content -Path "${logPath}" -Wait -Tail 100`
+        ]);
+      } else {
+        tailProcess = spawn('tail', ['-f', '-n', '100', logPath]);
+      }
+      
+      instance.tailProcesses.set(logFile, tailProcess);
+
+      // Stream log data as it comes in
+      tailProcess.stdout?.on('data', (data) => {
+        // Prefix log data with file name for identification
+        const prefixedData = `[${logFile}] ${data.toString()}`;
+        this.processLogData(instanceType, prefixedData);
+      });
+
+      tailProcess.stderr?.on('data', (data) => {
+        const prefixedData = `[${logFile}] ${data.toString()}`;
+        this.processLogData(instanceType, prefixedData);
+      });
+
+      tailProcess.on('error', (error) => {
+        console.error(`Error in tail process for ${logFile}: ${error}`);
+        this.sendLogData(instanceType, `Error tailing log file ${logFile}: ${error.message}`);
+      });
+
+      tailProcess.on('exit', (code, signal) => {
+        if (code !== 0 && !tailProcess.killed) {
+          console.warn(`Tail process for ${logFile} exited unexpectedly, restarting...`);
+          setTimeout(() => {
+            if (instance.selectedLogFiles.includes(logFile)) {
+              this.startTailing(instanceType, instance, [logFile]);
+            }
+          }, 1000);
+        }
+      });
+
+      if (!tailProcess.pid) {
+        console.error(`Failed to start tail process for ${logFile}`);
+        continue;
+      }
+    }
+  }
+
+  private stopTailing(instanceType: string) {
+    const instance = this.instances.get(instanceType);
+    if (!instance) return;
+
+    // Stop all tail processes
+    for (const [logFile, tailProcess] of instance.tailProcesses) {
+      if (tailProcess && !tailProcess.killed) {
+        tailProcess.kill();
+      }
+    }
+    instance.tailProcesses.clear();
+    instance.selectedLogFiles = [];
+  }
+
+  async updateLogFiles(instanceType: 'author' | 'publisher', logFiles: string[]): Promise<void> {
+    const instance = this.instances.get(instanceType);
+    if (!instance) {
+      // If instance doesn't exist yet, create a placeholder to store the selection
+      const placeholderInstance: AemInstance = {
+        process: null,
+        pid: null,
+        port: 0,
+        runmode: '',
+        jvmOpts: '',
+        tailProcesses: new Map(),
+        selectedLogFiles: logFiles
+      };
+      this.instances.set(instanceType, placeholderInstance);
       return;
     }
+
+    // Restart tailing with new log files
+    await this.startTailing(instanceType, instance, logFiles);
+  }
+
+  getSelectedLogFiles(instanceType: 'author' | 'publisher'): string[] {
+    const instance = this.instances.get(instanceType);
+    return instance?.selectedLogFiles || ['error.log'];
   }
 
   async startInstance(
@@ -324,14 +415,16 @@ export class AemInstanceManager {
       port,
       runmode,
       jvmOpts,
-      tailProcess: null
+      tailProcesses: new Map(),
+      selectedLogFiles: this.getSelectedLogFiles(instanceType) // Use previously selected files or default
     };
 
     this.instances.set(instanceType, instance);
 
     // Start tailing after a short delay to allow AEM to create initial folders
+    // Use the selected log files from the instance
     setTimeout(() => {
-      this.startTailing(instanceType, instance);
+      this.startTailing(instanceType, instance, instance.selectedLogFiles);
     }, 5000);
 
     // Periodically check for the real AEM process PID
@@ -355,18 +448,8 @@ export class AemInstanceManager {
       clearInterval(pidCheckInterval);
     }, 300000);
 
-    // Stream initial startup messages directly
-    aemProcess.stdout?.on('data', (data) => {
-      this.processLogData(instanceType, data);
-    });
-
-    aemProcess.stderr?.on('data', (data) => {
-      this.processLogData(instanceType, data);
-    });
-
     aemProcess.on('error', (error) => {
       console.error(`Error starting ${instanceType} instance:`, error);
-      this.sendLogData(instanceType, `Process error: ${error.message}`);
     });
 
     aemProcess.on('exit', async (code, signal) => {
@@ -384,47 +467,23 @@ export class AemInstanceManager {
       }
     });
 
+    // Wait for AEM to start (simplified - just wait for process to be found)
     return new Promise((resolve, reject) => {
-      let startupOutput = '';
-      
-      const handleStartupOutput = (data: Buffer) => {
-        const text = data.toString();
-        startupOutput += text;
-        
-        // Process the raw data through our buffering system
-        this.processLogData(instanceType, data);
-        
-        if (startupOutput.includes('Ready to handle requests')) {
-          cleanup();
+      const startupTimeout = setTimeout(() => {
+        reject(new Error('Startup timeout - AEM process not found'));
+      }, 300000); // 5 minutes timeout
+
+      const checkStartup = setInterval(async () => {
+        const realPid = await this.findJavaProcess(port);
+        if (realPid) {
+          instance.pid = realPid;
+          console.log(`[AemInstanceManager] AEM ${instanceType} started with PID ${realPid}`);
+          this.sendPidStatusUpdate(instanceType, realPid, true);
+          clearTimeout(startupTimeout);
+          clearInterval(checkStartup);
           resolve();
         }
-        
-        if (startupOutput.includes('Server startup failed')) {
-          cleanup();
-          reject(new Error('Server startup failed'));
-        }
-      };
-
-      const handleStartupError = (data: Buffer) => {
-        const text = data.toString();
-        startupOutput += text;
-        
-        // Process the raw data through our buffering system
-        this.processLogData(instanceType, data);
-      };
-
-      const cleanup = () => {
-        aemProcess.stdout?.removeListener('data', handleStartupOutput);
-        aemProcess.stderr?.removeListener('data', handleStartupError);
-      };
-
-      aemProcess.stdout?.on('data', handleStartupOutput);
-      aemProcess.stderr?.on('data', handleStartupError);
-
-      setTimeout(() => {
-        cleanup();
-        reject(new Error('Startup timeout'));
-      }, 300000);
+      }, 5000);
     });
   }
 
@@ -440,10 +499,7 @@ export class AemInstanceManager {
     this.logBuffers.delete(bufferKey);
 
     // Stop log tailing
-    if (instance.tailProcess) {
-      instance.tailProcess.kill();
-      instance.tailProcess = null;
-    }
+    this.stopTailing(instanceType);
 
     if (instance.pid) {
       try {
@@ -496,10 +552,7 @@ export class AemInstanceManager {
 
     // Reset all instance tracking and send PID status updates
     for (const [instanceType, instance] of this.instances.entries()) {
-      if (instance.tailProcess) {
-        instance.tailProcess.kill();
-        instance.tailProcess = null;
-      }
+      this.stopTailing(instanceType);
       instance.process = null;
       instance.pid = null;
       // Send PID status update for each instance

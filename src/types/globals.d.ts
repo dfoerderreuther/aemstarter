@@ -48,6 +48,12 @@ declare global {
       
       getAemInstancePid: (project: Project, instanceType: 'author' | 'publisher') => Promise<number | null>;
       
+      getAvailableLogFiles: (project: Project, instanceType: 'author' | 'publisher') => Promise<string[]>;
+      
+      getSelectedLogFiles: (project: Project, instanceType: 'author' | 'publisher') => Promise<string[]>;
+      
+      updateLogFiles: (project: Project, instanceType: 'author' | 'publisher', logFiles: string[]) => Promise<boolean>;
+      
       killAllAemInstances: (project: Project) => Promise<boolean>;
       
       // Project Settings

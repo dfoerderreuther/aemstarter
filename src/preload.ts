@@ -69,6 +69,15 @@ contextBridge.exposeInMainWorld(
     getAemInstancePid: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('get-aem-instance-pid', project, instanceType),
 
+    getAvailableLogFiles: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('get-available-log-files', project, instanceType),
+
+    getSelectedLogFiles: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('get-selected-log-files', project, instanceType),
+
+    updateLogFiles: (project: Project, instanceType: 'author' | 'publisher', logFiles: string[]) =>
+      ipcRenderer.invoke('update-log-files', project, instanceType, logFiles),
+
     killAllAemInstances: (project: Project) =>
       ipcRenderer.invoke('kill-all-aem-instances', project),
 

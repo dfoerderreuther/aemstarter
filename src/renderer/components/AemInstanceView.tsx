@@ -1,9 +1,8 @@
 import { Project } from "../../types/Project";
-import { TextInput, NumberInput, Switch, Group, Stack, Paper, Text, Box, Tooltip, ActionIcon, Modal } from '@mantine/core';
+import { TextInput, NumberInput, Switch, Group, Stack, Paper, Text, Box, Tooltip, ActionIcon, MultiSelect } from '@mantine/core';
 import { useState, useRef, useEffect } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal } from './Terminal';
-import { IconSettings } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -19,8 +18,10 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   const [debugPort, setDebugPort] = useState(30303);
   const [isDebugEnabled, setIsDebugEnabled] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [pid, setPid] = useState<number | null>(null);
+  const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
+  const [selectedLogFiles, setSelectedLogFiles] = useState<string[]>(['error.log']);
   const hasShownAemOutputRef = useRef(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const terminalRef = useRef<XTerm | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -42,18 +43,64 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     }
   }, [isRunning]);
 
-  // Check instance status on mount
+  // Check instance status on mount and load available log files
   useEffect(() => {
     const checkStatus = async () => {
       try {
         const running = await window.electronAPI.isAemInstanceRunning(project, instance);
         setIsRunning(running);
+        
+        // Load available log files
+        const logFiles = await window.electronAPI.getAvailableLogFiles(project, instance);
+        setAvailableLogFiles(logFiles);
+        
+        // Load previously selected log files
+        const selectedFiles = await window.electronAPI.getSelectedLogFiles(project, instance);
+        setSelectedLogFiles(selectedFiles);
       } catch (error) {
         console.error('Error checking instance status:', error);
       }
     };
     checkStatus();
   }, [project, instance]);
+
+  // Listen for PID status updates
+  useEffect(() => {
+    const cleanup = window.electronAPI.onAemPidStatus((data) => {
+      if (data.projectId === project.id && data.instanceType === instance) {
+        setPid(data.pid);
+        setIsRunning(data.isRunning);
+      }
+    });
+
+    return cleanup;
+  }, [project.id, instance]);
+
+  // Handle log file selection changes
+  const handleLogFileChange = async (newSelectedFiles: string[]) => {
+    setSelectedLogFiles(newSelectedFiles);
+    
+    try {
+      await window.electronAPI.updateLogFiles(project, instance, newSelectedFiles);
+    } catch (error) {
+      console.error('Error updating log files:', error);
+    }
+  };
+
+  // Refresh available log files when dropdown opens
+  const handleInputFocus = async () => {
+    console.log('[AemInstanceView] Input focused, refreshing log files...');
+    console.log('[AemInstanceView] Project:', project);
+    console.log('[AemInstanceView] Instance:', instance);
+    try {
+      console.log('[AemInstanceView] Calling getAvailableLogFiles...');
+      const logFiles = await window.electronAPI.getAvailableLogFiles(project, instance);
+      console.log('[AemInstanceView] Received log files:', logFiles);
+      setAvailableLogFiles(logFiles);
+    } catch (error) {
+      console.error('Error refreshing log files:', error);
+    }
+  };
 
   const handleTerminalReady = (terminal: XTerm) => {
     
@@ -99,65 +146,6 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     return cleanup;
   };
 
-  const modal = (
-    <Modal
-    opened={isSettingsOpen}
-    onClose={() => setIsSettingsOpen(false)}
-    title={`${instance.charAt(0).toUpperCase() + instance.slice(1)} Instance Settings`}
-    size="lg"
-    >
-      <Stack gap="md">
-        {/* Debug Configuration */}
-        <Group gap="sm">
-          <Switch
-            label="Enable Debug"
-            checked={isDebugEnabled}
-            onChange={(e) => setIsDebugEnabled(e.target.checked)}
-            disabled={isRunning}
-          />
-          <NumberInput
-            label="Debug Port"
-            value={debugPort}
-            onChange={(val) => setDebugPort(Number(val))}
-            min={1024}
-            max={65535}
-            disabled={isRunning}
-            style={{ width: '120px' }}
-          />
-        </Group>
-
-        <Stack gap="md">
-          <NumberInput
-            label="CQ Port"
-            description="The port on which the AEM instance will run"
-            value={port}
-            onChange={(val) => setPort(Number(val))}
-            min={1024}
-            max={65535}
-            disabled={isRunning}
-          />
-
-          <TextInput
-            label="CQ Runmode"
-            description="Comma-separated list of runmodes"
-            value={runmode}
-            onChange={(e) => setRunmode(e.target.value)}
-            placeholder="author,local,nosample"
-            disabled={isRunning}
-          />
-
-          <TextInput
-            label="CQ JVM Options"
-            description="Java Virtual Machine options"
-            value={jvmOpts}
-            onChange={(e) => setJvmOpts(e.target.value)}
-            disabled={isRunning}
-          />
-        </Stack>
-      </Stack>
-    </Modal>
-  )
-
   return (
     <>
       <Stack gap="0" style={{ height: '100%' }}>
@@ -166,31 +154,25 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
             <Text size="xs" fw={700} c="dimmed">
               {instance.toUpperCase()} INSTANCE 
             </Text>
-            <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
-              <Text size="xs" fw={500}>
-                PID: 1234567890
-              </Text>
-              <Tooltip 
-                label="Settings" 
-                withArrow 
-                withinPortal
-                position="bottom"
-              >
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="sm"
-                  onClick={() => setIsSettingsOpen(true)}
-                >
-                  <IconSettings size={16} />
-                </ActionIcon>
-              </Tooltip>
+            <Group gap="xs" align="center">
+              
+                <MultiSelect
+                  placeholder="Select log files to monitor"
+                  data={availableLogFiles}
+                  value={selectedLogFiles}
+                  onChange={handleLogFileChange}
+                  size="xs"
+                  searchable
+                  clearable
+                  maxDropdownHeight={200}
+                  onFocus={handleInputFocus}
+                />
             </Group>
           </Group>
+          
+          {/* Log Files Selection */}
+          
         </Box>
-
-        {/* Settings Modal */}
-        {modal}
 
         {/* Terminal Section */}
         <Paper shadow="xs" p="sm" style={{ 

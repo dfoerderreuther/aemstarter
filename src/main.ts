@@ -219,6 +219,48 @@ ipcMain.handle('get-aem-instance-pid', (_, project: Project, instanceType: 'auth
   return manager ? manager.getInstancePid(instanceType) : null;
 });
 
+ipcMain.handle('get-available-log-files', (_, project: Project, instanceType: 'author' | 'publisher') => {
+  console.log(`[main.ts] get-available-log-files called for project ${project.id}, instance ${instanceType}`);
+  console.log(`[main.ts] Available managers:`, Array.from(instanceManagers.keys()));
+  
+  let manager = instanceManagers.get(project.id);
+  if (!manager) {
+    console.log(`[main.ts] No manager found, creating new AemInstanceManager for project ${project.id}`);
+    manager = new AemInstanceManager(project);
+    instanceManagers.set(project.id, manager);
+  }
+  
+  console.log(`[main.ts] Calling manager.getAvailableLogFiles(${instanceType})`);
+  const result = manager.getAvailableLogFiles(instanceType);
+  console.log(`[main.ts] Manager returned:`, result);
+  return result;
+});
+
+ipcMain.handle('get-selected-log-files', (_, project: Project, instanceType: 'author' | 'publisher') => {
+  let manager = instanceManagers.get(project.id);
+  if (!manager) {
+    manager = new AemInstanceManager(project);
+    instanceManagers.set(project.id, manager);
+  }
+  return manager.getSelectedLogFiles(instanceType);
+});
+
+ipcMain.handle('update-log-files', async (_, project: Project, instanceType: 'author' | 'publisher', logFiles: string[]) => {
+  try {
+    let manager = instanceManagers.get(project.id);
+    if (!manager) {
+      manager = new AemInstanceManager(project);
+      instanceManagers.set(project.id, manager);
+    }
+
+    await manager.updateLogFiles(instanceType, logFiles);
+    return true;
+  } catch (error) {
+    console.error('Error updating log files:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('kill-all-aem-instances', async (_, project: Project) => {
   try {
     const manager = instanceManagers.get(project.id);
