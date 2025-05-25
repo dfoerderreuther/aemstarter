@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage, IconSettings, IconBug } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage, IconSettings, IconBug, IconPackageExport } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
@@ -458,7 +458,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
         <Paper style={sectionStyles}>
           <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">Other</Text>
-            <Group>
+            <Button.Group>
               <Tooltip label="Settings">
                 <Button 
                   color="gray" 
@@ -466,9 +466,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   size="xs"
                   styles={installButtonStyles}
                   onClick={() => setShowSettings(true)}
-                  leftSection={<IconSettings size={16} />}
                 >
-                  Settings
+                  <IconSettings size={16} />
                 </Button>
               </Tooltip>
               <Tooltip label="Reinstall">
@@ -479,12 +478,11 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   styles={installButtonStyles}
                   onClick={handleInstall}
                   loading={isInstalling}
-                  leftSection={<IconDownload size={16} />}
                 >
-                  Reinstall
+                  <IconPackage size={16} />
                 </Button>
               </Tooltip>
-            </Group>
+            </Button.Group>
           </Stack>
         </Paper>
       </Group>
