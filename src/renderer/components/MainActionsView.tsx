@@ -462,7 +462,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
               <Tooltip label="Settings">
                 <Button 
                   color="gray" 
-                  variant="outline" 
+                  variant="filled" 
                   size="xs"
                   styles={installButtonStyles}
                   onClick={() => setShowSettings(true)}
@@ -473,7 +473,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
               <Tooltip label="Reinstall">
                 <Button 
                   color="orange" 
-                  variant="outline" 
+                  variant="filled" 
                   size="xs"
                   styles={installButtonStyles}
                   onClick={handleInstall}
