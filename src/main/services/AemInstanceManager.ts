@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
+import { ProjectSettings } from './ProjectSettings';
 
 interface AemInstance {
   process: ChildProcess | null;
@@ -11,7 +12,6 @@ interface AemInstance {
   port: number;
   runmode: string;
   jvmOpts: string;
-  debugPort?: number;
   tailProcess: ChildProcess | null;
 }
 
@@ -25,7 +25,6 @@ export class AemInstanceManager {
   }
 
   private sendLogData(instanceType: string, data: string) {
-    console.log(`[AemInstanceManager] Sending log data for ${instanceType}:`, data.substring(0, 100) + (data.length > 100 ? '...' : ''));
     // Send log data immediately to all windows
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(window => {
@@ -38,7 +37,6 @@ export class AemInstanceManager {
   }
 
   private sendBatchedLogData(instanceType: string, lines: string[]) {
-    console.log(`[AemInstanceManager] Sending batched log data for ${instanceType}, ${lines.length} lines`);
     // Send multiple lines at once to reduce IPC overhead
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(window => {
@@ -54,7 +52,6 @@ export class AemInstanceManager {
     const text = data.toString();
     const bufferKey = `${instanceType}-${this.project.id}`;
     
-    console.log(`[AemInstanceManager] Processing log data for ${bufferKey}, length: ${text.length}`);
     
     // Get any existing buffer for this stream
     const existingBuffer = this.logBuffers.get(bufferKey) || '';
@@ -67,12 +64,10 @@ export class AemInstanceManager {
     const incompleteLastLine = lines.pop() || '';
     this.logBuffers.set(bufferKey, incompleteLastLine);
     
-    console.log(`[AemInstanceManager] Found ${lines.length} complete lines, buffer contains: "${incompleteLastLine.substring(0, 50)}${incompleteLastLine.length > 50 ? '...' : ''}"`);
     
     // Send complete lines in batch
     const completeLines = lines.filter(line => line.trim());
     if (completeLines.length > 0) {
-      console.log(`[AemInstanceManager] Sending ${completeLines.length} complete lines`);
       if (completeLines.length === 1) {
         this.sendLogData(instanceType, completeLines[0]);
       } else {
@@ -177,46 +172,88 @@ export class AemInstanceManager {
 
   async startInstance(
     instanceType: 'author' | 'publisher',
-    port: number,
-    runmode: string,
-    jvmOpts: string,
-    debugPort?: number
+    startType: 'start' | 'debug'
   ): Promise<void> {
-    const instanceDir = path.join(this.project.folderPath, instanceType === 'author' ? 'author' : 'publish');
-    const jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
-
-    if (!fs.existsSync(jarPath)) {
-      throw new Error(`AEM jar not found at ${jarPath}`);
+    // Load settings from ProjectSettings
+    const settings = ProjectSettings.getSettings(this.project);
+    const instanceSettings = settings[instanceType];
+    
+    if (!instanceSettings) {
+      throw new Error(`No settings found for ${instanceType} instance`);
     }
 
-    const env = {
-      ...process.env,
-      CQ_PORT: port.toString(),
-      CQ_RUNMODE: runmode,
-      CQ_JVM_OPTS: jvmOpts,
-      ...(debugPort && {
-        CQ_JVM_DEBUG: 'true',
-        CQ_JVM_DEBUG_PORT: debugPort.toString(),
-      }),
-    };
+    const instanceDir = path.join(this.project.folderPath, instanceType === 'author' ? 'author' : 'publish');
+    const crxQuickstartDir = path.join(instanceDir, 'crx-quickstart');
+    const hasCrxQuickstart = fs.existsSync(crxQuickstartDir);
 
-    const javaArgs = [
-      ...(debugPort ? [`-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${debugPort}`] : []),
-      '-jar',
-      jarPath,
-      '-port',
-      port.toString(),
-      '-r',
-      runmode,
-      'start',
-    ];
+    const port = instanceSettings.port;
+    const runmode = instanceSettings.runmode;
+    let jvmOpts = instanceSettings.jvmOpts;
 
-    const aemProcess = spawn('java', javaArgs, {
-      cwd: instanceDir,
-      env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      detached: true
-    });
+    // Handle debug mode
+    if (startType === 'debug') {
+      jvmOpts += instanceSettings.debugJvmOpts;
+    }
+
+    let aemProcess: ChildProcess;
+
+    if (hasCrxQuickstart) {
+      console.log('[AemInstanceManager] ### Starting AEM instance with crx-quickstart ###');
+      // Use crx-quickstart/bin/start script
+      const startScript = process.platform === 'win32' ? 'start.bat' : 'start';
+      const startScriptPath = path.join(crxQuickstartDir, 'bin', startScript);
+
+      if (!fs.existsSync(startScriptPath)) {
+        throw new Error(`Start script not found at ${startScriptPath}`);
+      }
+
+      const env = {
+        ...process.env,
+        CQ_PORT: port.toString(),
+        CQ_RUNMODE: runmode,
+        CQ_JVM_OPTS: jvmOpts,
+      };
+
+      aemProcess = spawn(startScriptPath, [], {
+        cwd: instanceDir,
+        env,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: true,
+        shell: process.platform === 'win32'
+      });
+    } else {
+      console.log('[AemInstanceManager] ### Starting AEM instance with quickstart.jar ###');
+      // Use quickstart.jar
+      const jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
+
+      if (!fs.existsSync(jarPath)) {
+        throw new Error(`AEM jar not found at ${jarPath}`);
+      }
+
+      const env = {
+        ...process.env,
+        CQ_PORT: port.toString(),
+        CQ_RUNMODE: runmode,
+        CQ_JVM_OPTS: jvmOpts,
+      };
+
+      const javaArgs = [
+        '-jar',
+        jarPath,
+        '-port',
+        port.toString(),
+        '-r',
+        runmode,
+        'start',
+      ];
+
+      aemProcess = spawn('java', javaArgs, {
+        cwd: instanceDir,
+        env,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: true
+      });
+    }
 
     const instance: AemInstance = {
       process: aemProcess,
@@ -224,7 +261,6 @@ export class AemInstanceManager {
       port,
       runmode,
       jvmOpts,
-      debugPort,
       tailProcess: null
     };
 
@@ -251,13 +287,13 @@ export class AemInstanceManager {
 
     aemProcess.on('exit', async (code, signal) => {
       if (!instance.pid) {
-        console.log(`Initial ${instanceType} process exited with code ${code} and signal ${signal}`);
+        console.log(`[AemInstanceManager] Initial ${instanceType} process exited with code ${code} and signal ${signal}`);
       }
       
       const realPid = await this.findJavaProcess(port);
       if (realPid) {
         instance.pid = realPid;
-        console.log(`Found AEM ${instanceType} process with PID ${realPid}`);
+        console.log(`[AemInstanceManager] Found AEM ${instanceType} process with PID ${realPid}`);
       }
     });
 
@@ -306,6 +342,7 @@ export class AemInstanceManager {
   }
 
   async stopInstance(instanceType: 'author' | 'publisher'): Promise<void> {
+    console.log(`[AemInstanceManager] ###  Stopping ${instanceType} instance ###`);
     const instance = this.instances.get(instanceType);
     if (!instance) {
       return;
