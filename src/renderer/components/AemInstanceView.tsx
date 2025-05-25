@@ -1,8 +1,9 @@
 import { Project } from "../../types/Project";
 import { TextInput, NumberInput, Switch, Group, Stack, Paper, Text, Box, Tooltip, ActionIcon, MultiSelect, Input } from '@mantine/core';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal } from './Terminal';
+import { IconX } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -90,69 +91,85 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
 
   // Refresh available log files when dropdown opens
   const handleInputFocus = async () => {
-    console.log('[AemInstanceView] Input focused, refreshing log files...');
-    console.log('[AemInstanceView] Project:', project);
-    console.log('[AemInstanceView] Instance:', instance);
     try {
-      console.log('[AemInstanceView] Calling getAvailableLogFiles...');
       const logFiles = await window.electronAPI.getAvailableLogFiles(project, instance);
-      console.log('[AemInstanceView] Received log files:', logFiles);
       setAvailableLogFiles(logFiles);
     } catch (error) {
       console.error('Error refreshing log files:', error);
     }
   };
 
-  const handleTerminalReady = (terminal: XTerm) => {
+  // Helper function to highlight filtered text with red background
+  const highlightFilteredText = (text: string, filter: string): string => {
+    if (!filter) return text;
     
+    // ANSI escape codes for red background and reset
+    // Using the most basic ANSI codes
+    const redBg = '\x1b[41m';    // Basic red background
+    const reset = '\x1b[0m';     // Reset formatting
+    
+    // Case-insensitive replacement
+    const regex = new RegExp(`(${filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, `${redBg}$1${reset}`);
+  };
+
+  // Create log data handler with proper dependency tracking
+  const handleLogData = useCallback((data: { projectId: string; instanceType: string; data: string }) => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+
+    // Only process logs for this specific project and instance
+    if (data.projectId === project.id && data.instanceType === instance) {
+      // Apply filter if filterText is set
+      if (filterText && !data.data.toLowerCase().includes(filterText.toLowerCase())) {
+        return; // Skip this log entry if it doesn't contain the filter text
+      }
+
+      // Clear terminal and show header when we get first AEM output
+      if (!hasShownAemOutputRef.current) {
+        terminal.clear();
+        terminal.writeln(`AEM ${instance} instance - Live Log Stream:`);
+        if (filterText) {
+          terminal.writeln(`Filter: "${filterText}"`);
+        }
+        terminal.writeln('----------------------------');
+        hasShownAemOutputRef.current = true;
+      }
+
+      // Write the log line with highlighting
+      const highlightedText = highlightFilteredText(data.data, filterText);
+      terminal.writeln(highlightedText);
+      
+      // Auto-scroll to bottom to show latest logs
+      terminal.scrollToBottom();
+    }
+  }, [project.id, instance, filterText]);
+
+  // Set up log data listener with proper cleanup and updates
+  useEffect(() => {
+    if (!terminalRef.current) return;
+
     // Clean up any existing listener
     if (cleanupRef.current) {
       cleanupRef.current();
       cleanupRef.current = null;
     }
-    
-    terminalRef.current = terminal;
-    terminal.writeln(`AEM ${instance} instance - Error Log Monitor`);
-    terminal.writeln('Ready to start...');
 
-    let totalLinesProcessed = 0;
-
-    // Set up real-time log streaming
-    const handleLogData = (data: { projectId: string; instanceType: string; data: string }) => {
-
-      
-      // Only process logs for this specific project and instance
-      if (data.projectId === project.id && data.instanceType === instance) {
-        // Apply filter if filterText is set
-        if (filterText && !data.data.toLowerCase().includes(filterText.toLowerCase())) {
-          return; // Skip this log entry if it doesn't contain the filter text
-        }
-
-        // Clear terminal and show header when we get first AEM output
-        if (!hasShownAemOutputRef.current) {
-          terminal.clear();
-          terminal.writeln(`AEM ${instance} instance - Live Log Stream:`);
-          if (filterText) {
-            terminal.writeln(`Filter: "${filterText}"`);
-          }
-          terminal.writeln('----------------------------');
-          hasShownAemOutputRef.current = true;
-        }
-
-        // Write the log line immediately
-        terminal.writeln(data.data);
-        totalLinesProcessed++;
-        
-        // Auto-scroll to bottom to show latest logs
-        terminal.scrollToBottom();
-      }
-    };
-
+    // Set up new listener with current handleLogData
     const cleanup = window.electronAPI.onAemLogData(handleLogData);
     cleanupRef.current = cleanup;
 
-    // Return the cleanup function
-    return cleanup;
+    return () => {
+      if (cleanup) {
+        cleanup();
+      }
+    };
+  }, [handleLogData]);
+
+  const handleTerminalReady = (terminal: XTerm) => {
+    terminalRef.current = terminal;
+    terminal.writeln(`AEM ${instance} instance - Error Log Monitor`);
+    terminal.writeln('Ready to start...');
   };
 
   return (
@@ -170,6 +187,18 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                   onChange={(event) => setFilterText(event.currentTarget.value)}
                   size="xs"
                   style={{ width: '200px' }}
+                  rightSection={
+                    filterText ? (
+                      <ActionIcon
+                        size="xs"
+                        variant="subtle"
+                        onClick={() => setFilterText('')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <IconX size={12} />
+                      </ActionIcon>
+                    ) : null
+                  }
                 />
                 <MultiSelect
                   placeholder="Select log files to monitor"

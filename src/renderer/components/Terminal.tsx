@@ -30,6 +30,7 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) =
       convertEol: true,
       fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
       fontSize: 13,
+      allowTransparency: true,
       theme: {
         background: '#1a1a1a',
         foreground: '#ffffff',
