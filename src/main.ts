@@ -184,13 +184,9 @@ ipcMain.handle('start-aem-instance', async (_, project: Project, instanceType: '
       instanceManagers.set(project.id, manager);
     }
 
-    await manager.startInstance(
-      instanceType,
-      options.port,
-      options.runmode,
-      options.jvmOpts,
-      options.debugPort
-    );
+    // Determine start type based on whether debug port is provided
+    const startType = options.debugPort ? 'debug' : 'start';
+    await manager.startInstance(instanceType, startType);
     return true;
   } catch (error) {
     console.error('Error starting AEM instance:', error);
@@ -216,6 +212,11 @@ ipcMain.handle('stop-aem-instance', async (_, project: Project, instanceType: 'a
 ipcMain.handle('is-aem-instance-running', (_, project: Project, instanceType: 'author' | 'publisher') => {
   const manager = instanceManagers.get(project.id);
   return manager ? manager.isInstanceRunning(instanceType) : false;
+});
+
+ipcMain.handle('get-aem-instance-pid', (_, project: Project, instanceType: 'author' | 'publisher') => {
+  const manager = instanceManagers.get(project.id);
+  return manager ? manager.getInstancePid(instanceType) : null;
 });
 
 ipcMain.handle('kill-all-aem-instances', async (_, project: Project) => {

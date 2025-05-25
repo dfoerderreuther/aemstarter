@@ -16,17 +16,23 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
   const [isInstalling, setIsInstalling] = useState(false);
   const [isAuthorRunning, setIsAuthorRunning] = useState(false);
   const [isPublisherRunning, setIsPublisherRunning] = useState(false);
+  const [authorPid, setAuthorPid] = useState<number | null>(null);
+  const [publisherPid, setPublisherPid] = useState<number | null>(null);
 
   // Check instance status on mount and periodically
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const [authorRunning, publisherRunning] = await Promise.all([
+        const [authorRunning, publisherRunning, authorPidValue, publisherPidValue] = await Promise.all([
           window.electronAPI.isAemInstanceRunning(project, 'author'),
-          window.electronAPI.isAemInstanceRunning(project, 'publisher')
+          window.electronAPI.isAemInstanceRunning(project, 'publisher'),
+          window.electronAPI.getAemInstancePid(project, 'author'),
+          window.electronAPI.getAemInstancePid(project, 'publisher')
         ]);
         setIsAuthorRunning(authorRunning);
         setIsPublisherRunning(publisherRunning);
+        setAuthorPid(authorPidValue);
+        setPublisherPid(publisherPidValue);
       } catch (error) {
         console.error('Error checking instance status:', error);
       }
@@ -34,7 +40,24 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
 
     checkStatus();
     const interval = setInterval(checkStatus, 5000);
-    return () => clearInterval(interval);
+    
+    // Set up PID status event listener
+    const pidStatusCleanup = window.electronAPI.onAemPidStatus((data) => {
+      if (data.projectId === project.id) {
+        if (data.instanceType === 'author') {
+          setIsAuthorRunning(data.isRunning);
+          setAuthorPid(data.pid);
+        } else if (data.instanceType === 'publisher') {
+          setIsPublisherRunning(data.isRunning);
+          setPublisherPid(data.pid);
+        }
+      }
+    });
+    
+    return () => {
+      clearInterval(interval);
+      pidStatusCleanup();
+    };
   }, [project]);
 
   const handleInstall = () => {
@@ -65,6 +88,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
       setShowKillAllConfirm(false);
       setIsAuthorRunning(false);
       setIsPublisherRunning(false);
+      setAuthorPid(null);
+      setPublisherPid(null);
     } catch (error) {
       console.error('Failed to kill all instances:', error);
     }
@@ -120,6 +145,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
       ]);
       setIsAuthorRunning(false);
       setIsPublisherRunning(false);
+      setAuthorPid(null);
+      setPublisherPid(null);
     } catch (error) {
       console.error('Error stopping all instances:', error);
     }
@@ -155,6 +182,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
     try {
       await window.electronAPI.stopAemInstance(project, 'author');
       setIsAuthorRunning(false);
+      setAuthorPid(null);
     } catch (error) {
       console.error('Error stopping author instance:', error);
     }
@@ -190,6 +218,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
     try {
       await window.electronAPI.stopAemInstance(project, 'publisher');
       setIsPublisherRunning(false);
+      setPublisherPid(null);
     } catch (error) {
       console.error('Error stopping publisher instance:', error);
     }
@@ -282,7 +311,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Author</Text>
               <Badge variant="light" color={isAuthorRunning ? "green" : "red"} size="sm">
-                {isAuthorRunning ? "Running" : "Stopped"}
+                {isAuthorRunning && authorPid ? `PID: ${authorPid}` : "-"}
               </Badge>
             </Group>
             <Group gap="xs">
@@ -336,7 +365,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Publisher</Text>
               <Badge variant="light" color={isPublisherRunning ? "green" : "red"} size="sm">
-                {isPublisherRunning ? "Running" : "Stopped"}
+                {isPublisherRunning && publisherPid ? `PID: ${publisherPid}` : "-"}
               </Badge>
             </Group>
             <Group gap="xs">
@@ -391,7 +420,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Dispatcher</Text>
               <Badge variant="light" color="red" size="sm">
-                "Not implemented"
+                
               </Badge>
             </Group>
             <Group gap="xs">

@@ -48,6 +48,19 @@ export class AemInstanceManager {
     });
   }
 
+  private sendPidStatusUpdate(instanceType: string, pid: number | null, isRunning: boolean) {
+    // Send PID status update to all windows
+    const windows = BrowserWindow.getAllWindows();
+    windows.forEach(window => {
+      window.webContents.send('aem-pid-status', {
+        projectId: this.project.id,
+        instanceType,
+        pid,
+        isRunning
+      });
+    });
+  }
+
   private processLogData(instanceType: string, data: Buffer | string) {
     const text = data.toString();
     const bufferKey = `${instanceType}-${this.project.id}`;
@@ -328,9 +341,11 @@ export class AemInstanceManager {
         if (realPid) {
           instance.pid = realPid;
           console.log(`[AemInstanceManager] Found AEM ${instanceType} process with PID ${realPid}`);
+          this.sendPidStatusUpdate(instanceType, realPid, true);
           clearInterval(pidCheckInterval);
         }
       } else {
+        this.sendPidStatusUpdate(instanceType, instance.pid, this.isInstanceRunning(instanceType));
         clearInterval(pidCheckInterval);
       }
     }, 3000);
@@ -363,6 +378,9 @@ export class AemInstanceManager {
       if (realPid) {
         instance.pid = realPid;
         console.log(`[AemInstanceManager] Found AEM ${instanceType} process with PID ${realPid}`);
+        this.sendPidStatusUpdate(instanceType, realPid, true);
+      } else {
+        this.sendPidStatusUpdate(instanceType, null, false);
       }
     });
 
@@ -435,6 +453,9 @@ export class AemInstanceManager {
       }
     }
 
+    // Send PID status update
+    this.sendPidStatusUpdate(instanceType, null, false);
+
     if (instance.process) {
       return new Promise((resolve) => {
         instance.process!.kill();
@@ -473,7 +494,7 @@ export class AemInstanceManager {
     // Clean up all log buffers
     this.logBuffers.clear();
 
-    // Reset all instance tracking
+    // Reset all instance tracking and send PID status updates
     for (const [instanceType, instance] of this.instances.entries()) {
       if (instance.tailProcess) {
         instance.tailProcess.kill();
@@ -481,23 +502,37 @@ export class AemInstanceManager {
       }
       instance.process = null;
       instance.pid = null;
+      // Send PID status update for each instance
+      this.sendPidStatusUpdate(instanceType, null, false);
     }
     this.instances.clear();
   }
 
   isInstanceRunning(instanceType: 'author' | 'publisher'): boolean {
     const instance = this.instances.get(instanceType);
-    if (!instance) return false;
+    if (!instance) {
+      this.sendPidStatusUpdate(instanceType, null, false);
+      return false;
+    }
 
     if (instance.pid) {
       try {
         process.kill(instance.pid, 0);
+        this.sendPidStatusUpdate(instanceType, instance.pid, true);
         return true;
       } catch {
+        this.sendPidStatusUpdate(instanceType, null, false);
         return false;
       }
     }
 
-    return !!(instance.process && !instance.process.killed);
+    const isRunning = !!(instance.process && !instance.process.killed);
+    this.sendPidStatusUpdate(instanceType, instance.pid, isRunning);
+    return isRunning;
+  }
+
+  getInstancePid(instanceType: 'author' | 'publisher'): number | null {
+    const instance = this.instances.get(instanceType);
+    return instance?.pid || null;
   }
 } 

@@ -66,6 +66,9 @@ contextBridge.exposeInMainWorld(
     isAemInstanceRunning: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('is-aem-instance-running', project, instanceType),
 
+    getAemInstancePid: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('get-aem-instance-pid', project, instanceType),
+
     killAllAemInstances: (project: Project) =>
       ipcRenderer.invoke('kill-all-aem-instances', project),
 
@@ -96,6 +99,17 @@ contextBridge.exposeInMainWorld(
       return () => {
         ipcRenderer.removeListener('aem-log-data', handler);
         ipcRenderer.removeListener('aem-log-data-batch', batchHandler);
+      };
+    },
+
+    // PID status streaming
+    onAemPidStatus: (callback: (data: { projectId: string; instanceType: string; pid: number | null; isRunning: boolean }) => void) => {
+      const handler = (_: any, data: { projectId: string; instanceType: string; pid: number | null; isRunning: boolean }) => callback(data);
+      ipcRenderer.on('aem-pid-status', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('aem-pid-status', handler);
       };
     },
     

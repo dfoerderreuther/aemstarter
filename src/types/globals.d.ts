@@ -46,6 +46,8 @@ declare global {
       
       isAemInstanceRunning: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
       
+      getAemInstancePid: (project: Project, instanceType: 'author' | 'publisher') => Promise<number | null>;
+      
       killAllAemInstances: (project: Project) => Promise<boolean>;
       
       // Project Settings
@@ -54,6 +56,10 @@ declare global {
       
       // Log streaming
       onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => () => void;
+      
+      // PID status streaming
+      onAemPidStatus: (callback: (data: { projectId: string; instanceType: string; pid: number | null; isRunning: boolean }) => void) => () => void;
+      
       removeAemLogDataListener: (cleanup?: () => void) => void;
     };
   }
