@@ -3,22 +3,8 @@ import { Project } from "../../types/Project";
 import fs from 'fs';
 import extract from 'extract-zip';
 import process from 'process';
+import { ProjectSettings } from "../services/ProjectSettings";
 
-const AUTHOR_ENV_TEMPLATE = `
-CQ_RUNMODE=author,default
-#CQ_RUNMODE=dynamicmedia_scene7,$CQ_RUNMODE
-CQ_PORT=4502
-
-export CQ_JVM_OPTS='-server -Xmx4096m -XX:MaxPermSize=256M -Djava.awt.headless=true'
-`;
-
-const PUBLISH_ENV_TEMPLATE = `
-CQ_RUNMODE=publish,default
-#CQ_RUNMODE=dynamicmedia_scene7,$CQ_RUNMODE
-CQ_PORT=4503
-
-export CQ_JVM_OPTS='-server -Xmx4096m -XX:MaxPermSize=256M -Djava.awt.headless=true'
-`;
 
 const README_TEMPLATE = `
 # AEM Installation of {{PROJECT_NAME}}
@@ -63,7 +49,7 @@ export class Installer {
             const folderPath = `${this.project.folderPath}/${folder}`;
             fs.rmSync(folderPath, { force: true, recursive: true });
         }
-        fs.rmSync(`${this.project.folderPath}/README.md`, { force: true });
+        //fs.rmSync(`${this.project.folderPath}/README.md`, { force: true });
         console.log('Deletion complete');
     }
 
@@ -88,6 +74,7 @@ export class Installer {
         await this.installDispatcherLinux(`${this.project.folderPath}/dispatcher`, this.installDir + '/' + dispatcherScript);
 
         this.createReadme();
+        this.createSettings();
 
         console.log('Installation complete');
     }
@@ -156,6 +143,11 @@ export class Installer {
     private createReadme() {
         const readmeContent = README_TEMPLATE.replace('{{PROJECT_NAME}}', this.project.name);
         fs.writeFileSync(`${this.project.folderPath}/README.md`, readmeContent);
+    }
+
+    private createSettings() {
+        const settingsContent = ProjectSettings.SETTINGS_TEMPLATE;
+        fs.writeFileSync(`${this.project.folderPath}/settings.json`, settingsContent);
     }
 
 }

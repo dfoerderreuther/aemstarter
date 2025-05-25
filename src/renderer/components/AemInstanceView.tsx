@@ -25,11 +25,9 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    console.log('AemInstanceView CREATION');
     
     // Cleanup on unmount
     return () => {
-      console.log('AemInstanceView CLEANUP');
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
@@ -58,11 +56,9 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   }, [project, instance]);
 
   const handleTerminalReady = (terminal: XTerm) => {
-    console.log('handleTerminalReady', { instance, projectId: project.id });
     
     // Clean up any existing listener
     if (cleanupRef.current) {
-      console.log('Cleaning up existing listener');
       cleanupRef.current();
       cleanupRef.current = null;
     }
@@ -75,20 +71,12 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
 
     // Set up real-time log streaming
     const handleLogData = (data: { projectId: string; instanceType: string; data: string }) => {
-      console.log('Received log data:', { 
-        dataProjectId: data.projectId, 
-        expectedProjectId: project.id,
-        dataInstance: data.instanceType, 
-        expectedInstance: instance,
-        lineLength: data.data.length,
-        line: data.data.substring(0, 100) + (data.data.length > 100 ? '...' : '')
-      });
+
       
       // Only process logs for this specific project and instance
       if (data.projectId === project.id && data.instanceType === instance) {
         // Clear terminal and show header when we get first AEM output
         if (!hasShownAemOutputRef.current) {
-          console.log('First AEM output - clearing terminal and showing header');
           terminal.clear();
           terminal.writeln(`AEM ${instance} instance - Live Log Stream:`);
           terminal.writeln('----------------------------');
@@ -98,15 +86,12 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
         // Write the log line immediately
         terminal.writeln(data.data);
         totalLinesProcessed++;
-        console.log('Written line to terminal, total lines:', totalLinesProcessed);
         
         // Auto-scroll to bottom to show latest logs
         terminal.scrollToBottom();
       }
     };
 
-    // Set up the event listener and get cleanup function
-    console.log('Setting up event listener');
     const cleanup = window.electronAPI.onAemLogData(handleLogData);
     cleanupRef.current = cleanup;
 

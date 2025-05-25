@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Tabs, Stack } from '@mantine/core';
 import { Project } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
@@ -13,9 +13,6 @@ interface ProjectViewProps {
 export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
   const [activeTab, setActiveTab] = useState<string | null>('author');
 
-  useEffect(() => {
-    console.log('ProjectView CREATION');
-  }, [])
 
   return (
     <Stack 

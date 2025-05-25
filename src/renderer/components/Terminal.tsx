@@ -17,18 +17,13 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) =
     onReadyRef.current = onReady;
   }, [onReady]);
 
-  useEffect(() => {
-    console.log('TERMINAL CREATION');
-  }, [])
 
   useEffect(() => {
     if (!terminalRef.current) return;
     if (!onReadyRef.current) {
-      console.log('TERMINAL: onReadyRef.current is null, skipping initialization');
       return;
     }
 
-    console.log('TERMINAL INITIATED - creating xterm instance');
 
     // Minimal xterm.js configuration
     const xterm = new XTerm({
@@ -72,13 +67,11 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) =
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Call onReady
-    console.log('TERMINAL: Calling onReady callback');
     if (onReadyRef.current) {
       onReadyRef.current(xterm);
     }
 
     return () => {
-      console.log('TERMINAL: Cleaning up xterm instance');
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       xterm.dispose();
