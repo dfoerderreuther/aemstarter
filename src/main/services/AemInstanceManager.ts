@@ -118,9 +118,11 @@ export class AemInstanceManager {
   }
 
   private async startTailing(instanceType: string, instance: AemInstance) {
+    // Use consistent directory mapping
+    const instanceDir = instanceType === 'author' ? 'author' : 'publish';
     const logPath = path.join(
       this.project.folderPath,
-      instanceType,
+      instanceDir,
       'crx-quickstart',
       'logs',
       'error.log'
