@@ -11,9 +11,24 @@ interface TerminalProps {
 export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const onReadyRef = useRef<((terminal: XTerm) => void) | undefined>(onReady);
+
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
+
+  useEffect(() => {
+    console.log('TERMINAL CREATION');
+  }, [])
 
   useEffect(() => {
     if (!terminalRef.current) return;
+    if (!onReadyRef.current) {
+      console.log('TERMINAL: onReadyRef.current is null, skipping initialization');
+      return;
+    }
+
+    console.log('TERMINAL INITIATED - creating xterm instance');
 
     // Minimal xterm.js configuration
     const xterm = new XTerm({
@@ -57,16 +72,18 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) =
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Call onReady
-    if (onReady) {
-      onReady(xterm);
+    console.log('TERMINAL: Calling onReady callback');
+    if (onReadyRef.current) {
+      onReadyRef.current(xterm);
     }
 
     return () => {
+      console.log('TERMINAL: Cleaning up xterm instance');
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       xterm.dispose();
     };
-  }, [onReady]);
+  }, []);
 
   // Handle tab visibility changes
   useEffect(() => {

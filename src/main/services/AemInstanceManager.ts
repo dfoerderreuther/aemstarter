@@ -18,12 +18,14 @@ interface AemInstance {
 export class AemInstanceManager {
   private instances: Map<string, AemInstance> = new Map();
   private project: Project;
+  private logBuffers: Map<string, string> = new Map(); // Store incomplete lines
 
   constructor(project: Project) {
     this.project = project;
   }
 
   private sendLogData(instanceType: string, data: string) {
+    console.log(`[AemInstanceManager] Sending log data for ${instanceType}:`, data.substring(0, 100) + (data.length > 100 ? '...' : ''));
     // Send log data immediately to all windows
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(window => {
@@ -33,6 +35,50 @@ export class AemInstanceManager {
         data
       });
     });
+  }
+
+  private sendBatchedLogData(instanceType: string, lines: string[]) {
+    console.log(`[AemInstanceManager] Sending batched log data for ${instanceType}, ${lines.length} lines`);
+    // Send multiple lines at once to reduce IPC overhead
+    const windows = BrowserWindow.getAllWindows();
+    windows.forEach(window => {
+      window.webContents.send('aem-log-data-batch', {
+        projectId: this.project.id,
+        instanceType,
+        lines
+      });
+    });
+  }
+
+  private processLogData(instanceType: string, data: Buffer | string) {
+    const text = data.toString();
+    const bufferKey = `${instanceType}-${this.project.id}`;
+    
+    console.log(`[AemInstanceManager] Processing log data for ${bufferKey}, length: ${text.length}`);
+    
+    // Get any existing buffer for this stream
+    const existingBuffer = this.logBuffers.get(bufferKey) || '';
+    const fullText = existingBuffer + text;
+    
+    // Split by newlines
+    const lines = fullText.split('\n');
+    
+    // Keep the last line as buffer (might be incomplete)
+    const incompleteLastLine = lines.pop() || '';
+    this.logBuffers.set(bufferKey, incompleteLastLine);
+    
+    console.log(`[AemInstanceManager] Found ${lines.length} complete lines, buffer contains: "${incompleteLastLine.substring(0, 50)}${incompleteLastLine.length > 50 ? '...' : ''}"`);
+    
+    // Send complete lines in batch
+    const completeLines = lines.filter(line => line.trim());
+    if (completeLines.length > 0) {
+      console.log(`[AemInstanceManager] Sending ${completeLines.length} complete lines`);
+      if (completeLines.length === 1) {
+        this.sendLogData(instanceType, completeLines[0]);
+      } else {
+        this.sendBatchedLogData(instanceType, completeLines);
+      }
+    }
   }
 
   private async findJavaProcess(port: number): Promise<number | null> {
@@ -102,21 +148,11 @@ export class AemInstanceManager {
 
     // Stream log data as it comes in
     tailProcess.stdout?.on('data', (data) => {
-      const lines = data.toString().split('\n');
-      lines.forEach((line: string) => {
-        if (line.trim()) {
-          this.sendLogData(instanceType, line.trim());
-        }
-      });
+      this.processLogData(instanceType, data);
     });
 
     tailProcess.stderr?.on('data', (data) => {
-      const lines = data.toString().split('\n');
-      lines.forEach((line: string) => {
-        if (line.trim()) {
-          this.sendLogData(instanceType, `ERROR: ${line.trim()}`);
-        }
-      });
+      this.processLogData(instanceType, data);
     });
 
     tailProcess.on('error', (error) => {
@@ -199,17 +235,11 @@ export class AemInstanceManager {
 
     // Stream initial startup messages directly
     aemProcess.stdout?.on('data', (data) => {
-      const lines = data.toString().split('\n').filter((line: string) => line.trim());
-      lines.forEach((line: string) => {
-        this.sendLogData(instanceType, line);
-      });
+      this.processLogData(instanceType, data);
     });
 
     aemProcess.stderr?.on('data', (data) => {
-      const lines = data.toString().split('\n').filter((line: string) => line.trim());
-      lines.forEach((line: string) => {
-        this.sendLogData(instanceType, `STARTUP ERROR: ${line}`);
-      });
+      this.processLogData(instanceType, data);
     });
 
     aemProcess.on('error', (error) => {
@@ -236,10 +266,8 @@ export class AemInstanceManager {
         const text = data.toString();
         startupOutput += text;
         
-        const lines = text.split('\n').filter((line: string) => line.trim());
-        lines.forEach((line: string) => {
-          this.sendLogData(instanceType, line);
-        });
+        // Process the raw data through our buffering system
+        this.processLogData(instanceType, data);
         
         if (startupOutput.includes('Ready to handle requests')) {
           cleanup();
@@ -256,10 +284,8 @@ export class AemInstanceManager {
         const text = data.toString();
         startupOutput += text;
         
-        const lines = text.split('\n').filter((line: string) => line.trim());
-        lines.forEach((line: string) => {
-          this.sendLogData(instanceType, `STARTUP ERROR: ${line}`);
-        });
+        // Process the raw data through our buffering system
+        this.processLogData(instanceType, data);
       };
 
       const cleanup = () => {
@@ -282,6 +308,10 @@ export class AemInstanceManager {
     if (!instance) {
       return;
     }
+
+    // Clean up log buffer
+    const bufferKey = `${instanceType}-${this.project.id}`;
+    this.logBuffers.delete(bufferKey);
 
     // Stop log tailing
     if (instance.tailProcess) {
@@ -331,6 +361,9 @@ export class AemInstanceManager {
         console.error(`Error killing all instances:`, error);
       }
     });
+
+    // Clean up all log buffers
+    this.logBuffers.clear();
 
     // Reset all instance tracking
     for (const [instanceType, instance] of this.instances.entries()) {

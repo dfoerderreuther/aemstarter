@@ -71,11 +71,36 @@ contextBridge.exposeInMainWorld(
 
     // Log streaming
     onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => {
-      ipcRenderer.on('aem-log-data', (_, data) => callback(data));
+      const handler = (_: any, data: { projectId: string; instanceType: string; data: string }) => callback(data);
+      ipcRenderer.on('aem-log-data', handler);
+      
+      // Also handle batched data
+      const batchHandler = (_: any, batchData: { projectId: string; instanceType: string; lines: string[] }) => {
+        batchData.lines.forEach(line => {
+          callback({
+            projectId: batchData.projectId,
+            instanceType: batchData.instanceType,
+            data: line
+          });
+        });
+      };
+      ipcRenderer.on('aem-log-data-batch', batchHandler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('aem-log-data', handler);
+        ipcRenderer.removeListener('aem-log-data-batch', batchHandler);
+      };
     },
     
-    removeAemLogDataListener: () => {
-      ipcRenderer.removeAllListeners('aem-log-data');
+    removeAemLogDataListener: (cleanup?: () => void) => {
+      if (cleanup) {
+        cleanup();
+      } else {
+        // Fallback: remove all listeners (not recommended for multiple components)
+        ipcRenderer.removeAllListeners('aem-log-data');
+        ipcRenderer.removeAllListeners('aem-log-data-batch');
+      }
     },
   }
 );

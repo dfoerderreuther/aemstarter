@@ -49,8 +49,8 @@ declare global {
       killAllAemInstances: (project: Project) => Promise<boolean>;
       
       // Log streaming
-      onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => void;
-      removeAemLogDataListener: () => void;
+      onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => () => void;
+      removeAemLogDataListener: (cleanup?: () => void) => void;
     };
   }
 } 
