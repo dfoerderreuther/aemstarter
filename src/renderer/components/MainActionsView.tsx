@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage, IconSettings } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage, IconSettings, IconBug } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
@@ -91,6 +91,27 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
     }
   };
 
+  const handleDebugAll = async () => {
+    try {
+      await Promise.all([
+        window.electronAPI.startAemInstance(project, 'author', {
+          port: 4502,
+          runmode: 'author,local',
+          jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
+        }),
+        window.electronAPI.startAemInstance(project, 'publisher', {
+          port: 4503,
+          runmode: 'publish,local',
+          jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006'
+        })
+      ]);
+      setIsAuthorRunning(true);
+      setIsPublisherRunning(true);
+    } catch (error) {
+      console.error('Error starting all instances in debug mode:', error);
+    }
+  };
+
   const handleStopAll = async () => {
     try {
       await Promise.all([
@@ -117,6 +138,19 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
     }
   };
 
+  const handleDebugAuthor = async () => {
+    try {
+      await window.electronAPI.startAemInstance(project, 'author', {
+        port: 4502,
+        runmode: 'author,local',
+        jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
+      });
+      setIsAuthorRunning(true);
+    } catch (error) {
+      console.error('Error starting author instance in debug mode:', error);
+    }
+  };
+
   const handleStopAuthor = async () => {
     try {
       await window.electronAPI.stopAemInstance(project, 'author');
@@ -136,6 +170,19 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
       setIsPublisherRunning(true);
     } catch (error) {
       console.error('Error starting publisher instance:', error);
+    }
+  };
+
+  const handleDebugPublisher = async () => {
+    try {
+      await window.electronAPI.startAemInstance(project, 'publisher', {
+        port: 4503,
+        runmode: 'publish,local',
+        jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006'
+      });
+      setIsPublisherRunning(true);
+    } catch (error) {
+      console.error('Error starting publisher instance in debug mode:', error);
     }
   };
 
@@ -187,7 +234,18 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                 >
                   <IconPlayerPlay size={16} />
                 </Button>
-              </Tooltip>
+              </Tooltip><Tooltip label="Debug all">
+                  <Button 
+                    color="violet" 
+                    variant="filled" 
+                    size="xs"
+                    styles={buttonStyles}
+                    onClick={handleDebugAll}
+                    disabled={isAuthorRunning && isPublisherRunning}
+                  >
+                    <IconBug size={16} />
+                  </Button>
+                </Tooltip>
               
               <Tooltip label="Stop all">
                 <Button 
@@ -241,6 +299,18 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                     <IconPlayerPlay size={16} />
                   </Button>
                 </Tooltip>
+                <Tooltip label="Debug author">
+                  <Button 
+                    color="violet" 
+                    variant="filled" 
+                    size="xs"
+                    styles={buttonStyles}
+                    onClick={handleDebugAuthor}
+                    disabled={isAuthorRunning}
+                  >
+                    <IconBug size={16} />
+                  </Button>
+                </Tooltip>
 
                 <Tooltip label="Stop author">
                   <Button
@@ -281,6 +351,18 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                     disabled={isPublisherRunning}
                   >
                     <IconPlayerPlay size={16} />
+                  </Button>
+                </Tooltip>
+                <Tooltip label="Debug publish">
+                  <Button 
+                    color="violet" 
+                    variant="filled" 
+                    size="xs"
+                    styles={buttonStyles}
+                    onClick={handleDebugPublisher}
+                    disabled={isPublisherRunning}
+                  >
+                    <IconBug size={16} />
                   </Button>
                 </Tooltip>
 
