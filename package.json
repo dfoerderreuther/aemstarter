@@ -6,10 +6,10 @@
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
-    "dev:electron": "nodemon",
+    "dev:electron": "NODE_NO_WARNINGS=1 nodemon",
     "dev": "concurrently \"vite\" \"wait-on tcp:5173 && sleep 2 && npm run dev:electron\"",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
+    "package": "NODE_NO_WARNINGS=1 electron-forge package",
+    "make": "NODE_NO_WARNINGS=1 electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
