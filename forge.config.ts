@@ -12,12 +12,13 @@ const config: ForgeConfig = {
     asar: true,
     // macOS specific configuration
     osxSign: {
-      identity: 'Apple Development: dominik.foerderreuther@gmail.com (3ZHD6SW8R2)',
+      identity: '9C86B0E8B0AADB16EC370431C6E7DDAC50D97DE4',
       optionsForFile: (filePath: string) => {
         // Return entitlements for the main app
         return {
           entitlements: 'entitlements.mac.plist',
-          hardenedRuntime: true
+          hardenedRuntime: true,
+          // timestamp: undefined, // Disable timestamping to avoid network timeouts
         };
       }
     },

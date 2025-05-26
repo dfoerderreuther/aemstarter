@@ -80,8 +80,9 @@ export class AemInstanceManager {
     const incompleteLastLine = lines.pop() || '';
     this.logBuffers.set(bufferKey, incompleteLastLine);
     
-    // Send complete lines in batch
-    const completeLines = lines.filter(line => line.trim());
+    // Send complete lines - don't filter out lines that might just be whitespace
+    // as they could be meaningful in log context
+    const completeLines = lines.filter(line => line.length > 0);
     if (completeLines.length > 0) {
       if (completeLines.length === 1) {
         this.sendLogData(instanceType, completeLines[0]);
@@ -256,9 +257,23 @@ export class AemInstanceManager {
 
       // Stream log data as it comes in
       tailProcess.stdout?.on('data', (data) => {
-        // Prefix log data with file name for identification
-        const prefixedData = `[${logFile}] ${data.toString()}`;
-        this.processLogData(instanceType, prefixedData);
+        const dataStr = data.toString();
+        
+        // Process each line individually to ensure proper prefixing
+        const lines = dataStr.split('\n');
+        const processedLines: string[] = [];
+        
+        for (const line of lines) {
+          if (line.length > 0) {
+            processedLines.push(`[${logFile}] ${line}`);
+          }
+        }
+        
+        if (processedLines.length > 0) {
+          // Join back with newlines and add a final newline to maintain the original format
+          const prefixedData = processedLines.join('\n') + '\n';
+          this.processLogData(instanceType, prefixedData);
+        }
       });
 
       tailProcess.stderr?.on('data', (data) => {
@@ -396,9 +411,10 @@ export class AemInstanceManager {
         CQ_JVM_OPTS: jvmOpts,
       };
 
+      // Use relative path for jar since we're setting cwd to instanceDir
       const javaArgs = [
         '-jar',
-        jarPath,
+        'aem-sdk-quickstart.jar', // Use relative path instead of absolute
         '-port',
         port.toString(),
         '-r',
