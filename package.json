@@ -10,13 +10,13 @@
     "dev": "concurrently \"vite\" \"wait-on tcp:5173 && sleep 2 && npm run dev:electron\"",
     "package": "NODE_NO_WARNINGS=1 electron-forge package",
     "make": "NODE_NO_WARNINGS=1 electron-forge make",
-    "publish": "electron-forge publish",
+    "publish": "NODE_NO_WARNINGS=1 electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],
   "author": {
     "name": "Dominik Förderreuther",
-    "email": "dominik@eleon.de"
+    "email": "df@adobe.com"
   },
   "license": "MIT",
   "devDependencies": {

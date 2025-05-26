@@ -17,10 +17,13 @@ export const PackageMenu = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInstallWKND = async () => {
+    const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip";
+
     setIsLoading(true);
     try {
-      // TODO: Implement WKND installation
       console.log('Installing WKND package...');
+      await window.electronAPI.installPackage(project, instance, wkndUrl);
+      console.log('WKND package installed successfully');
     } catch (error) {
       console.error('Error installing WKND:', error);
     } finally {
@@ -29,10 +32,11 @@ export const PackageMenu = ({
   };
 
   const handleInstallACSCommons = async () => {
+    const acsCommonsUrl = "https://github.com/Adobe-Consulting-Services/acs-aem-commons/releases/download/acs-aem-commons-6.12.0/acs-aem-commons-all-6.12.0-cloud.zip";
     setIsLoading(true);
     try {
-      // TODO: Implement ACS AEM Commons installation
       console.log('Installing ACS AEM Commons...');
+      await window.electronAPI.installPackage(project, instance, acsCommonsUrl);
     } catch (error) {
       console.error('Error installing ACS AEM Commons:', error);
     } finally {

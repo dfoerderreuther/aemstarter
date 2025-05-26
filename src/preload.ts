@@ -82,6 +82,10 @@ contextBridge.exposeInMainWorld(
     killAllAemInstances: (project: Project) =>
       ipcRenderer.invoke('kill-all-aem-instances', project),
 
+    // Package Installation
+    installPackage: (project: Project, instance: 'author' | 'publisher', packageUrl: string) =>
+      ipcRenderer.invoke('install-package', project, instance, packageUrl),
+
     // Screenshot and Health Check functionality
     takeAemScreenshot: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('take-aem-screenshot', project, instanceType),

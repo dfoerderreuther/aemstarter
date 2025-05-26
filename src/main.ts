@@ -6,6 +6,7 @@ import { ProjectManager } from './main/services/ProjectManager';
 import { Installer } from './main/installer/Installer';
 import { AemInstanceManager } from './main/services/AemInstanceManager';
 import { ProjectSettings } from './main/services/ProjectSettings';
+import { PackageInstaller } from './main/services/PackageInstaller';
 import { Project } from './types/Project';
 
 // Increase memory limits for AEM operations
@@ -406,6 +407,18 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
     return true;
   } catch (error) {
     console.error('Error saving project settings:', error);
+    throw error;
+  }
+});
+
+// Package Installation
+ipcMain.handle('install-package', async (_, project: Project, instance: 'author' | 'publisher', packageUrl: string) => {
+  try {
+    const packageInstaller = new PackageInstaller(project);
+    await packageInstaller.installPackage(instance, packageUrl);
+    return true;
+  } catch (error) {
+    console.error('Error installing package:', error);
     throw error;
   }
 });
