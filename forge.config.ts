@@ -18,8 +18,8 @@ const config: ForgeConfig = {
       name: '@electron-forge/publisher-github',
       config: {
         repository: {
-          owner: 'YOUR_GITHUB_USERNAME',
-          name: 'YOUR_REPOSITORY_NAME'
+          owner: 'dfoerderreuther',
+          name: 'aemstarter'
         },
         prerelease: false
       }

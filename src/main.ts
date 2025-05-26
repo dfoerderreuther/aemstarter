@@ -13,10 +13,10 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 // Initialize auto-updates
-const { updateElectronApp } = require('update-electron-app');
-updateElectronApp({
-  repo: 'YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME'
-});
+//const { updateElectronApp } = require('update-electron-app');
+//updateElectronApp({
+//  repo: 'YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME'
+//});
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -68,7 +68,7 @@ const createWindow = () => {
   }
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();  // ← Comment this out for production
 };
 
 // Project management IPC handlers

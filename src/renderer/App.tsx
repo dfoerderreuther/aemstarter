@@ -4,6 +4,7 @@ import '@mantine/core/styles.css';
 import { ProjectView } from './components/ProjectView';
 import { Project } from '../types/Project';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
+import AemLogo from './assets/AEM.svg';
 
 const theme = createTheme({
   primaryColor: 'blue',
@@ -193,7 +194,7 @@ const App: React.FC = () => {
           <Group justify="space-between" align="center" style={{ width: '100%' }}>
             <Group align="center" gap={8}>
               <ThemeIcon size="lg" radius="md" variant="transparent">
-                <img src="/AEM.svg" alt="AEM Logo" style={{ width: 32, height: 32 }} />
+                <img src={AemLogo} alt="AEM Logo" style={{ width: 32, height: 32 }} />
               </ThemeIcon>
               <Title order={2}>
                 {selectedProject ? selectedProject.name : 'AEM Starter'}
