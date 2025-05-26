@@ -20,10 +20,20 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   const [latestScreenshot, setLatestScreenshot] = useState<string | null>(null);
   const [screenshotDataUrl, setScreenshotDataUrl] = useState<string | null>(null);
   const [isLoadingScreenshot, setIsLoadingScreenshot] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<any>(null);
+  const [healthCheckEnabled, setHealthCheckEnabled] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const hasShownAemOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
   const terminalComponentRef = useRef<TerminalRef>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const healthCleanupRef = useRef<(() => void) | null>(null);
+
+  // Helper function to format timestamp
+  const formatTimestamp = (date: Date | null): string => {
+    if (!date) return '';
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
 
   useEffect(() => {
     
@@ -32,6 +42,10 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
+      }
+      if (healthCleanupRef.current) {
+        healthCleanupRef.current();
+        healthCleanupRef.current = null;
       }
     };
   }, [])
@@ -74,8 +88,59 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     return cleanup;
   }, [project.id, instance]);
 
+  // Check if health checking is enabled for this instance
+  useEffect(() => {
+    const checkHealthCheckConfig = async () => {
+      try {
+        const settings = await window.electronAPI.getProjectSettings(project);
+        const instanceSettings = settings[instance];
+        setHealthCheckEnabled(instanceSettings?.healthCheck || false);
+      } catch (error) {
+        console.error('Error checking health check configuration:', error);
+        setHealthCheckEnabled(false);
+      }
+    };
+    checkHealthCheckConfig();
+  }, [project, instance]);
+
+  // Listen for health status updates
+  useEffect(() => {
+    if (!healthCheckEnabled) return;
+
+    const cleanup = window.electronAPI.onAemHealthStatus((data) => {
+      if (data.projectId === project.id && data.instanceType === instance) {
+        setHealthStatus(data.status);
+        
+        // Auto-update screenshot if available
+        if (data.status.screenshotPath) {
+          setLatestScreenshot(data.status.screenshotPath);
+          setLastUpdateTime(new Date(data.status.timestamp));
+          // Load the screenshot as data URL
+          window.electronAPI.readScreenshot(data.status.screenshotPath)
+            .then(dataUrl => {
+              if (dataUrl) {
+                setScreenshotDataUrl(dataUrl);
+              }
+            })
+            .catch(error => {
+              console.error('Error loading screenshot from health status:', error);
+            });
+        }
+      }
+    });
+
+    healthCleanupRef.current = cleanup;
+    return cleanup;
+  }, [project.id, instance, healthCheckEnabled]);
+
   // Handle screenshot functionality
   const takeScreenshot = async () => {
+    // Only allow manual screenshots when health checking is disabled
+    if (healthCheckEnabled) {
+      console.log('Manual screenshots disabled when health checking is enabled');
+      return;
+    }
+
     if (!isRunning) {
       console.warn('Cannot take screenshot: instance is not running');
       return;
@@ -85,6 +150,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     try {
       const screenshotPath = await window.electronAPI.takeAemScreenshot(project, instance);
       setLatestScreenshot(screenshotPath);
+      setLastUpdateTime(new Date());
       
       // Load the screenshot as data URL
       if (screenshotPath) {
@@ -101,6 +167,9 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   // Load latest screenshot on mount and when instance status changes
   useEffect(() => {
     const loadLatestScreenshot = async () => {
+      // Only load manually when health checking is disabled
+      if (healthCheckEnabled) return;
+      
       if (isRunning) {
         try {
           const screenshotPath = await window.electronAPI.getLatestScreenshot(project, instance);
@@ -110,8 +179,10 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
           if (screenshotPath) {
             const dataUrl = await window.electronAPI.readScreenshot(screenshotPath);
             setScreenshotDataUrl(dataUrl);
+            setLastUpdateTime(new Date()); // Set current time for existing screenshots
           } else {
             setScreenshotDataUrl(null);
+            setLastUpdateTime(null);
           }
         } catch (error) {
           console.error('Error loading latest screenshot:', error);
@@ -122,7 +193,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
       }
     };
     loadLatestScreenshot();
-  }, [project, instance, isRunning]);
+  }, [project, instance, isRunning, healthCheckEnabled]);
 
   // Handle log file selection changes
   const handleLogFileChange = async (newSelectedFiles: string[]) => {
@@ -308,10 +379,10 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
               <Stack gap="sm" p="sm" style={{ flex: 1, overflow: 'auto' }}>
                 {/* Clickable Screenshot Frame */}
                 <Box
-                  onClick={takeScreenshot}
+                  onClick={healthCheckEnabled ? undefined : takeScreenshot}
                   style={{
-                    cursor: isRunning ? 'pointer' : 'not-allowed',
-                    border: '2px dashed #2C2E33',
+                    cursor: healthCheckEnabled ? 'default' : (isRunning ? 'pointer' : 'not-allowed'),
+                    border: healthCheckEnabled ? '2px solid #4C6EF5' : '2px dashed #2C2E33',
                     borderRadius: '8px',
                     minHeight: '120px',
                     display: 'flex',
@@ -324,12 +395,14 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                     overflow: 'hidden'
                   }}
                   onMouseEnter={(e) => {
-                    if (isRunning) {
+                    if (!healthCheckEnabled && isRunning) {
                       e.currentTarget.style.borderColor = '#4C6EF5';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#2C2E33';
+                    if (!healthCheckEnabled) {
+                      e.currentTarget.style.borderColor = '#2C2E33';
+                    }
                   }}
                 >
                   {screenshotDataUrl ? (
@@ -344,49 +417,67 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                           display: 'block'
                         }}
                       />
-                      {/* Overlay for click indication */}
-                      <Box
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          backgroundColor: 'rgba(0, 0, 0, 0)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'background-color 0.2s ease',
-                          borderRadius: '6px'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (isRunning) {
-                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0)';
-                        }}
-                      >
-                        {isRunning && (
-                          <ActionIcon
-                            variant="filled"
-                            size="lg"
-                            style={{
-                              opacity: 0,
-                              transition: 'opacity 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.opacity = '1';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.opacity = '0';
-                            }}
-                          >
-                            <IconCamera size={20} />
-                          </ActionIcon>
-                        )}
-                      </Box>
+                      {/* Health status indicator */}
+                      {healthCheckEnabled && healthStatus && (
+                        <Box
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            backgroundColor: healthStatus.status === 'healthy' ? '#51cf66' : '#ff6b6b',
+                            borderRadius: '50%',
+                            width: '12px',
+                            height: '12px',
+                            border: '2px solid white',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                          }}
+                        />
+                      )}
+                      {/* Overlay for click indication - only when health checking is disabled */}
+                      {!healthCheckEnabled && (
+                        <Box
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0, 0, 0, 0)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'background-color 0.2s ease',
+                            borderRadius: '6px'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (isRunning) {
+                              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+                          }}
+                        >
+                          {isRunning && (
+                            <ActionIcon
+                              variant="filled"
+                              size="lg"
+                              style={{
+                                opacity: 0,
+                                transition: 'opacity 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.opacity = '1';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.opacity = '0';
+                              }}
+                            >
+                              <IconCamera size={20} />
+                            </ActionIcon>
+                          )}
+                        </Box>
+                      )}
                     </>
                   ) : (
                     <Stack align="center" gap="xs">
@@ -403,8 +494,16 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                         <>
                           <IconCamera size={32} color="#666" />
                           <Text size="xs" c="dimmed" ta="center">
-                            Click to take screenshot
+                            {healthCheckEnabled 
+                              ? 'Waiting for health check...' 
+                              : 'Click to take screenshot'
+                            }
                           </Text>
+                          {healthCheckEnabled && (
+                            <Text size="xs" c="blue" ta="center">
+                              Auto-updating enabled
+                            </Text>
+                          )}
                         </>
                       ) : (
                         <>
@@ -417,6 +516,13 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                     </Stack>
                   )}
                 </Box>
+                
+                {/* Timestamp display */}
+                {lastUpdateTime && (
+                  <Text size="xs" c="dimmed" ta="center">
+                    Last updated: {formatTimestamp(lastUpdateTime)}
+                  </Text>
+                )}
               </Stack>
             )}
           </Box>

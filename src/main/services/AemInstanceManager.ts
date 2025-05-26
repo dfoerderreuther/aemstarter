@@ -484,6 +484,18 @@ export class AemInstanceManager {
           instance.pid = realPid;
           console.log(`[AemInstanceManager] AEM ${instanceType} started with PID ${realPid}`);
           this.sendPidStatusUpdate(instanceType, realPid, true);
+          
+          // Start health checking if configured
+          const settings = ProjectSettings.getSettings(this.project);
+          const instanceSettings = settings[instanceType];
+          if (instanceSettings?.healthCheck) {
+            console.log(`[AemInstanceManager] Starting health checks for ${instanceType}`);
+            // Wait a bit for AEM to fully start before beginning health checks
+            setTimeout(() => {
+              this.healthChecker.startHealthChecking(instanceType, port, 30000); // Check every 30 seconds
+            }, 10000); // Wait 10 seconds after startup
+          }
+          
           clearTimeout(startupTimeout);
           clearInterval(checkStartup);
           resolve();
@@ -498,6 +510,9 @@ export class AemInstanceManager {
     if (!instance) {
       return;
     }
+
+    // Stop health checking
+    this.healthChecker.stopHealthChecking(instanceType);
 
     if (instance.pid) {
       try {
@@ -534,6 +549,9 @@ export class AemInstanceManager {
   }
 
   async killAllInstances() {
+    // Stop all health checking
+    this.healthChecker.cleanup();
+
     // Kill all processes using pkill
     const cmd = process.platform === 'win32'
       ? `pkill -9 -f quickstart`
