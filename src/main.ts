@@ -376,6 +376,23 @@ ipcMain.handle('get-project-settings', async (_, project: Project) => {
 ipcMain.handle('save-project-settings', async (_, project: Project, settings: any) => {
   try {
     ProjectSettings.saveSettings(project, settings);
+    
+    // Check if health checking was enabled for running instances and start it
+    const manager = instanceManagers.get(project.id);
+    if (manager) {
+      // Check author instance
+      if (settings.author?.healthCheck && manager.isInstanceRunning('author')) {
+        console.log('[main] Starting health checking for author instance after settings change');
+        manager.startHealthChecking('author');
+      }
+      
+      // Check publisher instance  
+      if (settings.publisher?.healthCheck && manager.isInstanceRunning('publisher')) {
+        console.log('[main] Starting health checking for publisher instance after settings change');
+        manager.startHealthChecking('publisher');
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error('Error saving project settings:', error);

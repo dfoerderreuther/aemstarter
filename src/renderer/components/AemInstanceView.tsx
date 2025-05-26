@@ -94,14 +94,30 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
       try {
         const settings = await window.electronAPI.getProjectSettings(project);
         const instanceSettings = settings[instance];
-        setHealthCheckEnabled(instanceSettings?.healthCheck || false);
+        const newHealthCheckEnabled = instanceSettings?.healthCheck || false;
+        
+        // If health checking was just enabled and instance is running, 
+        // we might need to wait a moment for the backend to start health checking
+        if (newHealthCheckEnabled && !healthCheckEnabled && isRunning) {
+          console.log(`Health checking enabled for ${instance}, will start receiving updates`);
+        }
+        
+        setHealthCheckEnabled(newHealthCheckEnabled);
       } catch (error) {
         console.error('Error checking health check configuration:', error);
         setHealthCheckEnabled(false);
       }
     };
     checkHealthCheckConfig();
-  }, [project, instance]);
+    
+    // Set up an interval to periodically check for configuration changes
+    // This ensures we pick up changes made in the settings modal
+    const configCheckInterval = setInterval(checkHealthCheckConfig, 2000);
+    
+    return () => {
+      clearInterval(configCheckInterval);
+    };
+  }, [project, instance, healthCheckEnabled, isRunning]);
 
   // Listen for health status updates
   useEffect(() => {
@@ -129,9 +145,35 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
       }
     });
 
+    // When health checking is first enabled, try to get existing health status
+    const loadExistingHealthStatus = async () => {
+      if (isRunning) {
+        try {
+          const existingStatus = await window.electronAPI.getHealthStatus(project, instance);
+          if (existingStatus) {
+            setHealthStatus(existingStatus);
+            
+            if (existingStatus.screenshotPath) {
+              setLatestScreenshot(existingStatus.screenshotPath);
+              setLastUpdateTime(new Date(existingStatus.timestamp));
+              
+              const dataUrl = await window.electronAPI.readScreenshot(existingStatus.screenshotPath);
+              if (dataUrl) {
+                setScreenshotDataUrl(dataUrl);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error loading existing health status:', error);
+        }
+      }
+    };
+    
+    loadExistingHealthStatus();
+
     healthCleanupRef.current = cleanup;
     return cleanup;
-  }, [project.id, instance, healthCheckEnabled]);
+  }, [project.id, instance, healthCheckEnabled, isRunning]);
 
   // Handle screenshot functionality
   const takeScreenshot = async () => {
@@ -285,8 +327,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
 
   const handleTerminalReady = (terminal: XTerm) => {
     terminalRef.current = terminal;
-    terminal.writeln(`AEM ${instance} instance - Error Log Monitor`);
-    terminal.writeln('Ready to start...');
+    terminal.writeln(`AEM ${instance} instance - Log Monitor`);
   };
 
   // Handle collapse/expand with terminal resize

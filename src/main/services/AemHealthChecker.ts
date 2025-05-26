@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import { Project } from '../../types/Project';
 import path from 'path';
 import fs from 'fs';
+import { ProjectSettings } from './ProjectSettings';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'starting' | 'unknown';
@@ -22,6 +23,19 @@ export class AemHealthChecker {
   }
 
   async checkHealth(instanceType: 'author' | 'publisher', port: number): Promise<HealthStatus> {
+    // Read configuration on every health check run
+    const settings = ProjectSettings.getSettings(this.project);
+    const instanceSettings = settings[instanceType];
+    
+    // Skip health check if disabled in configuration
+    if (!instanceSettings?.healthCheck) {
+      console.log(`[AemHealthChecker] Health check disabled for ${instanceType}, skipping`);
+      return {
+        status: 'unknown',
+        timestamp: Date.now()
+      };
+    }
+
     const startTime = Date.now();
     const url = `http://localhost:${port}/system/console/bundles.json`;
     
@@ -170,12 +184,12 @@ export class AemHealthChecker {
     // Stop any existing health check
     this.stopHealthChecking(instanceType);
 
-    console.log(`[AemHealthChecker] Starting health checks for ${instanceType} on port ${port}`);
+    console.log(`[AemHealthChecker] Starting health checks for ${instanceType} on port ${port} (will check config on each run)`);
     
     // Initial check
     this.checkHealth(instanceType, port);
 
-    // Set up periodic checks
+    // Set up periodic checks - always start regardless of current config
     const interval = setInterval(() => {
       this.checkHealth(instanceType, port);
     }, intervalMs);

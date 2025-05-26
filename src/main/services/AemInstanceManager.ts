@@ -485,16 +485,12 @@ export class AemInstanceManager {
           console.log(`[AemInstanceManager] AEM ${instanceType} started with PID ${realPid}`);
           this.sendPidStatusUpdate(instanceType, realPid, true);
           
-          // Start health checking if configured
-          const settings = ProjectSettings.getSettings(this.project);
-          const instanceSettings = settings[instanceType];
-          if (instanceSettings?.healthCheck) {
-            console.log(`[AemInstanceManager] Starting health checks for ${instanceType}`);
-            // Wait a bit for AEM to fully start before beginning health checks
-            setTimeout(() => {
-              this.healthChecker.startHealthChecking(instanceType, port, 30000); // Check every 30 seconds
-            }, 10000); // Wait 10 seconds after startup
-          }
+          // Always start health checking (will check config on each run)
+          console.log(`[AemInstanceManager] Starting health checks for ${instanceType}`);
+          // Wait a bit for AEM to fully start before beginning health checks
+          setTimeout(() => {
+            this.healthChecker.startHealthChecking(instanceType, port, 30000); // Check every 30 seconds
+          }, 10000); // Wait 10 seconds after startup
           
           clearTimeout(startupTimeout);
           clearInterval(checkStartup);
