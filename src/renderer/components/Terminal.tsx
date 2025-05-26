@@ -6,15 +6,17 @@ import '@xterm/xterm/css/xterm.css';
 interface TerminalProps {
   onReady?: (terminal: XTerm) => void;
   visible?: boolean;
+  fontSize?: number;
 }
 
 export interface TerminalRef {
   resize: () => void;
 }
 
-export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visible = true }, ref) => {
+export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visible = true, fontSize = 13 }, ref) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const xtermRef = useRef<XTerm | null>(null);
   const onReadyRef = useRef<((terminal: XTerm) => void) | undefined>(onReady);
 
   useEffect(() => {
@@ -34,24 +36,45 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     }
   }), []);
 
+  // Handle font size changes without recreating terminal
+  useEffect(() => {
+    if (xtermRef.current && fontSize) {
+      xtermRef.current.options.fontSize = fontSize;
+      // Trigger a resize to apply the new font size
+      if (fitAddonRef.current) {
+        try {
+          fitAddonRef.current.fit();
+        } catch (error) {
+          console.warn('Failed to fit terminal after font size change:', error);
+        }
+      }
+    }
+  }, [fontSize]);
+
   useEffect(() => {
     if (!terminalRef.current) return;
     if (!onReadyRef.current) {
       return;
     }
 
+    // Only create terminal if it doesn't exist
+    if (xtermRef.current) {
+      return;
+    }
 
     // Minimal xterm.js configuration
     const xterm = new XTerm({
       convertEol: true,
       fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-      fontSize: 13,
+      fontSize: fontSize,
       allowTransparency: true,
       theme: {
         background: '#1a1a1a',
         foreground: '#ffffff',
       }
     });
+
+    xtermRef.current = xterm;
 
     // Initialize fit addon
     const fitAddon = new FitAddon();
@@ -91,9 +114,12 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     return () => {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      xterm.dispose();
+      if (xtermRef.current) {
+        xtermRef.current.dispose();
+        xtermRef.current = null;
+      }
     };
-  }, []);
+  }, []); // Remove fontSize dependency since we handle it separately
 
   // Handle tab visibility changes
   useEffect(() => {

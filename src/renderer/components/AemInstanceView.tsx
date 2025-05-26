@@ -3,7 +3,7 @@ import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, But
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
-import { IconX, IconChevronLeft, IconChevronRight, IconCamera } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconCamera, IconTextSize } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -23,6 +23,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   const [healthStatus, setHealthStatus] = useState<any>(null);
   const [healthCheckEnabled, setHealthCheckEnabled] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [terminalFontSize, setTerminalFontSize] = useState(13);
   const hasShownAemOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
   const terminalComponentRef = useRef<TerminalRef>(null);
@@ -330,6 +331,14 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     terminal.writeln(`AEM ${instance} instance - Log Monitor`);
   };
 
+  // Handle text size toggle (cycles through 11, 13, 16)
+  const handleToggleTextSize = () => {
+    const sizes = [9, 11, 13, 16];
+    const currentIndex = sizes.indexOf(terminalFontSize);
+    const nextIndex = (currentIndex + 1) % sizes.length;
+    setTerminalFontSize(sizes[nextIndex]);
+  };
+
   // Handle collapse/expand with terminal resize
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -382,6 +391,10 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                   onFocus={handleInputFocus}
                   style={{ width: '400px' }}
                 />
+                <Button size="xs" onClick={handleToggleTextSize} title={`Font size: ${terminalFontSize}px`} variant="outline"
+                leftSection={<IconTextSize size={12} />}>
+                  {terminalFontSize}
+                </Button>
             </Group>
           </Group>
         </Box>
@@ -579,7 +592,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
             borderRadius: 0
           }}>
             <div style={{ flex: 1, minHeight: 0 }}>
-              <Terminal onReady={handleTerminalReady} visible={visible} ref={terminalComponentRef} />
+              <Terminal onReady={handleTerminalReady} visible={visible} fontSize={terminalFontSize} ref={terminalComponentRef} />
             </div>
           </Paper>
         </Box>

@@ -33,6 +33,10 @@ contextBridge.exposeInMainWorld(
     // Dialog
     showOpenDialog: (options: any) => 
       ipcRenderer.invoke('show-open-dialog', options),
+    
+    // Browser
+    openUrl: (url: string) =>
+      ipcRenderer.invoke('open-url', url),
       
     // File system operations
     readDirectory: (dirPath: string, showHidden: boolean = false) =>

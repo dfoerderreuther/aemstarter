@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage, IconSettings, IconBug, IconPackageExport } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconDownload, IconSkull, IconPackage, IconSettings, IconBug, IconPackageExport, IconBrowser } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
@@ -224,6 +224,22 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
     }
   };
 
+  const handleOpenAuthor = async () => {
+    try {
+      await window.electronAPI.openUrl('http://localhost:4502');
+    } catch (error) {
+      console.error('Error opening author URL:', error);
+    }
+  };
+
+  const handleOpenPublisher = async () => {
+    try {
+      await window.electronAPI.openUrl('http://localhost:4503');
+    } catch (error) {
+      console.error('Error opening publisher URL:', error);
+    }
+  };
+
   const sectionStyles = {
     padding: '12px',
     background: 'none',
@@ -354,6 +370,19 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   </Button>
                 </Tooltip>
               </Button.Group>
+
+              <Tooltip label="Open author">
+                  <Button
+                    color="green" 
+                    variant="filled" 
+                    size="xs"
+                    styles={buttonStyles}
+                    onClick={handleOpenAuthor}
+                    disabled={!isAuthorRunning}
+                  >
+                    <IconBrowser size={16} />
+                  </Button>
+                </Tooltip>
             </Group>
           </Stack>
         </Paper>
@@ -408,6 +437,20 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   </Button>
                 </Tooltip>
               </Button.Group>
+
+              <Tooltip label="Open publisher">
+                  <Button
+                    color="green" 
+                    variant="filled" 
+                    size="xs"
+                    styles={buttonStyles}
+                    onClick={handleOpenPublisher}
+                    disabled={!isPublisherRunning}
+                  >
+                    <IconBrowser size={16} />
+                  </Button>
+                </Tooltip>
+
             </Group>
           </Stack>
         </Paper>
@@ -478,6 +521,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   styles={installButtonStyles}
                   onClick={handleInstall}
                   loading={isInstalling}
+                  disabled={isAuthorRunning || isPublisherRunning}
                 >
                   <IconPackage size={16} />
                 </Button>

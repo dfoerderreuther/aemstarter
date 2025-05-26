@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'node:path';
 import fs from 'fs';
 import started from 'electron-squirrel-startup';
@@ -144,6 +144,16 @@ ipcMain.handle('set-global-settings', async (_, settings) => {
 
 ipcMain.handle('show-open-dialog', async (_, options) => {
   return dialog.showOpenDialog(options);
+});
+
+ipcMain.handle('open-url', async (_, url) => {
+  try {
+    await shell.openExternal(url);
+    return true;
+  } catch (error) {
+    console.error('Error opening URL:', error);
+    throw error;
+  }
 });
 
 // File system operations
