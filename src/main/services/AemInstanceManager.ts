@@ -527,8 +527,7 @@ export class AemInstanceManager {
     // Stop health checking
     this.healthChecker.stopHealthChecking(instanceType);
 
-    // Stop tailing processes first
-    //this.stopTailing(instanceType);
+    // Don't stop tailing!
 
     // Find the current LISTENING process on the port (this is the real AEM process)
     const currentPid = await this.findJavaProcess(instance.port);
