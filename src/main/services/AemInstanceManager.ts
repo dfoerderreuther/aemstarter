@@ -100,14 +100,14 @@ export class AemInstanceManager {
         // For Windows: find process using the port, then extract PID
         cmd = `netstat -ano | findstr :${port}`;
       } else {
-        // For Unix-like systems: use lsof to find processes using the port
-        // Filter for Java processes specifically
-        cmd = `lsof -i :${port} -t 2>/dev/null | head -1`;
+        // For Unix-like systems: use lsof to find the LISTENING process on the port
+        // This ensures we get the server process, not client connections
+        cmd = `lsof -i :${port} -sTCP:LISTEN -t 2>/dev/null | head -1`;
       }
 
       exec(cmd, (error, stdout, _stderr) => {
         if (error || !stdout.trim()) {
-          console.log(`[AemInstanceManager] No process found on port ${port}: ${error?.message || 'No output'}`);
+          console.log(`[AemInstanceManager] No LISTENING process found on port ${port}: ${error?.message || 'No output'}`);
           resolve(null);
           return;
         }
@@ -122,7 +122,7 @@ export class AemInstanceManager {
               if (parts.length >= 5 && parts[3] === 'LISTENING') {
                 const pid = parseInt(parts[4], 10);
                 if (pid && !isNaN(pid)) {
-                  console.log(`[AemInstanceManager] Found process PID ${pid} on port ${port}`);
+                  console.log(`[AemInstanceManager] Found LISTENING process PID ${pid} on port ${port}`);
                   resolve(pid);
                   return;
                 }
@@ -133,7 +133,7 @@ export class AemInstanceManager {
             // Parse Unix lsof output (just the PID)
             const pid = parseInt(stdout.trim(), 10);
             if (pid && !isNaN(pid)) {
-              console.log(`[AemInstanceManager] Found process PID ${pid} on port ${port}`);
+              console.log(`[AemInstanceManager] Found LISTENING process PID ${pid} on port ${port}`);
               resolve(pid);
             } else {
               resolve(null);
@@ -520,43 +520,95 @@ export class AemInstanceManager {
     console.log(`[AemInstanceManager] ###  Stopping ${instanceType} instance ###`);
     const instance = this.instances.get(instanceType);
     if (!instance) {
+      console.log(`[AemInstanceManager] No instance found for ${instanceType}`);
       return;
     }
 
     // Stop health checking
     this.healthChecker.stopHealthChecking(instanceType);
 
-    if (instance.pid) {
+    // Stop tailing processes first
+    //this.stopTailing(instanceType);
+
+    // Find the current LISTENING process on the port (this is the real AEM process)
+    const currentPid = await this.findJavaProcess(instance.port);
+    console.log(`[AemInstanceManager] Current AEM LISTENING process PID for ${instanceType}: ${currentPid}`);
+    console.log(`[AemInstanceManager] Stored instance PID for ${instanceType}: ${instance.pid}`);
+
+    // Kill the actual AEM process if found
+    if (currentPid) {
       try {
-        process.kill(instance.pid);
+        console.log(`[AemInstanceManager] Attempting to kill AEM LISTENING process ${currentPid} for ${instanceType}`);
+        process.kill(currentPid, 'SIGTERM'); // Try graceful shutdown first
+        
+        // Wait a bit for graceful shutdown
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Check if process is still running
+        const stillRunning = await this.findJavaProcess(instance.port);
+        if (stillRunning) {
+          console.log(`[AemInstanceManager] Process ${currentPid} still running, forcing kill`);
+          process.kill(currentPid, 'SIGKILL'); // Force kill if still running
+        } else {
+          console.log(`[AemInstanceManager] Process ${currentPid} terminated gracefully`);
+        }
       } catch (error) {
-        console.error(`Error killing AEM process with PID ${instance.pid}:`, error);
+        console.error(`[AemInstanceManager] Error killing AEM process ${currentPid}:`, error);
+      }
+    } else if (instance.pid) {
+      // Fallback to stored PID if we can't find the current one
+      try {
+        console.log(`[AemInstanceManager] No current process found, trying stored PID ${instance.pid}`);
+        process.kill(instance.pid, 'SIGTERM');
+      } catch (error) {
+        console.error(`[AemInstanceManager] Error killing stored PID ${instance.pid}:`, error);
       }
     }
 
-    // Send PID status update
+    // Kill the original spawn process if it exists
+    if (instance.process && !instance.process.killed) {
+      try {
+        console.log(`[AemInstanceManager] Killing original spawn process for ${instanceType}`);
+        instance.process.kill('SIGTERM');
+        
+        // Wait for process to exit or force kill after timeout
+        await new Promise((resolve) => {
+          const timeout = setTimeout(() => {
+            try {
+              if (instance.process && !instance.process.killed) {
+                console.log(`[AemInstanceManager] Force killing original spawn process for ${instanceType}`);
+                instance.process.kill('SIGKILL');
+              }
+            } catch (error) {
+              console.error(`[AemInstanceManager] Error force killing spawn process:`, error);
+            }
+            resolve(undefined);
+          }, 10000); // 10 second timeout
+
+          instance.process!.on('exit', () => {
+            console.log(`[AemInstanceManager] Original spawn process exited for ${instanceType}`);
+            clearTimeout(timeout);
+            resolve(undefined);
+          });
+        });
+      } catch (error) {
+        console.error(`[AemInstanceManager] Error killing original spawn process:`, error);
+      }
+    }
+
+    // Clean up instance data
+    instance.process = null;
+    instance.pid = null;
+
+    // Send final PID status update
     this.sendPidStatusUpdate(instanceType, null, false);
 
-    if (instance.process) {
-      return new Promise((resolve) => {
-        instance.process!.kill();
-        
-        const timeout = setTimeout(() => {
-          try {
-            if (instance.process?.pid) {
-              process.kill(instance.process.pid);
-            }
-          } catch (error) {
-            console.error(`Error force killing ${instanceType} instance:`, error);
-          }
-          resolve();
-        }, 30000);
-
-        instance.process!.on('exit', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
-      });
+    // Verify the process is actually stopped
+    const finalCheck = await this.findJavaProcess(instance.port);
+    if (finalCheck) {
+      console.warn(`[AemInstanceManager] Warning: AEM process ${finalCheck} still running on port ${instance.port} after stop attempt`);
+    } else {
+      console.log(`[AemInstanceManager] Successfully stopped ${instanceType} instance`);
     }
   }
 
