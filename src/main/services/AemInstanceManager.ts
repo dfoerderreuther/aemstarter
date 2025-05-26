@@ -713,4 +713,85 @@ export class AemInstanceManager {
   cleanup() {
     this.healthChecker.cleanup();
   }
+
+  isOakJarAvailable(instanceType: 'author' | 'publisher'): boolean {
+    const instanceDir = instanceType === 'author' ? 'author' : 'publish';
+    const instancePath = path.join(this.project.folderPath, instanceDir);
+    const oakJarPath = path.join(instancePath, 'oak-run.jar');
+    return fs.existsSync(oakJarPath);
+  }
+
+  async loadOakJar() {
+    // Check if author instance is running
+    if (!this.isInstanceRunning('author')) {
+      throw new Error('Author instance must be running to load oak-run.jar');
+    }
+
+    const instance = this.instances.get('author');
+    if (!instance) {
+      throw new Error('Author instance not found');
+    }
+
+    // Get Oak version from bundles endpoint
+    const auth = Buffer.from('admin:admin').toString('base64');
+    const response = await fetch(`http://localhost:${instance.port}/system/console/bundles/org.apache.jackrabbit.oak-core.json`, {
+      headers: {
+        'Authorization': `Basic ${auth}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to get Oak version from bundles endpoint: ${response.status} ${response.statusText}`);
+    }
+
+    const bundleInfo = await response.json();
+    
+    // The response contains an array of bundles in the data property
+    // The oak-core bundle should be the first one (or we can search for it)
+    if (!bundleInfo.data || !Array.isArray(bundleInfo.data) || bundleInfo.data.length === 0) {
+      throw new Error('Invalid bundle info response structure');
+    }
+    
+    const oakVersion = bundleInfo.data[0].version;
+    if (!oakVersion) {
+      throw new Error('Oak version not found in bundle data');
+    }
+    
+    console.log(`[AemInstanceManager] Found Oak version: ${oakVersion}`);
+
+    // Create install directory if it doesn't exist
+    const installDir = path.join(this.project.folderPath, 'install');
+    if (!fs.existsSync(installDir)) {
+      fs.mkdirSync(installDir, { recursive: true });
+    }
+
+    // Download oak-run.jar
+    const oakJarUrl = `https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/${oakVersion}/oak-run-${oakVersion}.jar`;
+    const oakJarPath = path.join(installDir, `oak-run-${oakVersion}.jar`);
+    
+    console.log(`[AemInstanceManager] Downloading oak-run.jar from ${oakJarUrl}`);
+    const jarResponse = await fetch(oakJarUrl);
+    if (!jarResponse.ok) {
+      throw new Error(`Failed to download oak-run.jar: ${jarResponse.statusText}`);
+    }
+
+    const jarBuffer = await jarResponse.arrayBuffer();
+    fs.writeFileSync(oakJarPath, Buffer.from(jarBuffer));
+    console.log(`[AemInstanceManager] Downloaded oak-run.jar to ${oakJarPath}`);
+
+    // Create symlinks in instance folders
+    const instanceDirs = ['author', 'publish'];
+    for (const dir of instanceDirs) {
+      const instancePath = path.join(this.project.folderPath, dir);
+      const symlinkPath = path.join(instancePath, 'oak-run.jar');
+      
+      // Remove existing symlink if it exists
+      if (fs.existsSync(symlinkPath)) {
+        fs.unlinkSync(symlinkPath);
+      }
+
+      // Create new symlink
+      fs.symlinkSync(oakJarPath, symlinkPath);
+      console.log(`[AemInstanceManager] Created symlink at ${symlinkPath}`);
+    }
+  }
 } 

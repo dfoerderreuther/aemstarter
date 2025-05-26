@@ -410,6 +410,36 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
   }
 });
 
+// Oak-run.jar functionality
+ipcMain.handle('is-oak-jar-available', (_, project: Project, instanceType: 'author' | 'publisher') => {
+  try {
+    let manager = instanceManagers.get(project.id);
+    if (!manager) {
+      manager = new AemInstanceManager(project);
+      instanceManagers.set(project.id, manager);
+    }
+    return manager.isOakJarAvailable(instanceType);
+  } catch (error) {
+    console.error('Error checking oak-run.jar availability:', error);
+    return false;
+  }
+});
+
+ipcMain.handle('load-oak-jar', async (_, project: Project) => {
+  try {
+    let manager = instanceManagers.get(project.id);
+    if (!manager) {
+      manager = new AemInstanceManager(project);
+      instanceManagers.set(project.id, manager);
+    }
+    await manager.loadOakJar();
+    return true;
+  } catch (error) {
+    console.error('Error loading oak-run.jar:', error);
+    throw error;
+  }
+});
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

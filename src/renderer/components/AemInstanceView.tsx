@@ -3,7 +3,7 @@ import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, But
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
-import { IconX, IconChevronLeft, IconChevronRight, IconCamera, IconTextSize } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconCamera, IconTextSize, IconPackage } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -24,6 +24,8 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   const [healthCheckEnabled, setHealthCheckEnabled] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [terminalFontSize, setTerminalFontSize] = useState(13);
+  const [isOakJarAvailable, setIsOakJarAvailable] = useState(false);
+  const [isLoadingOakJar, setIsLoadingOakJar] = useState(false);
   const hasShownAemOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
   const terminalComponentRef = useRef<TerminalRef>(null);
@@ -237,6 +239,39 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     };
     loadLatestScreenshot();
   }, [project, instance, isRunning, healthCheckEnabled]);
+
+  // Check oak-run.jar availability
+  useEffect(() => {
+    const checkOakJarAvailability = async () => {
+      try {
+        const available = await window.electronAPI.isOakJarAvailable(project, instance);
+        setIsOakJarAvailable(available);
+      } catch (error) {
+        console.error('Error checking oak-run.jar availability:', error);
+        setIsOakJarAvailable(false);
+      }
+    };
+    checkOakJarAvailability();
+  }, [project, instance, isRunning]);
+
+  // Handle oak-run.jar loading
+  const handleLoadOakJar = async () => {
+    if (!isRunning) {
+      console.warn('Cannot load oak-run.jar: author instance is not running');
+      return;
+    }
+
+    setIsLoadingOakJar(true);
+    try {
+      await window.electronAPI.loadOakJar(project);
+      setIsOakJarAvailable(true);
+      console.log('Oak-run.jar loaded successfully');
+    } catch (error) {
+      console.error('Error loading oak-run.jar:', error);
+    } finally {
+      setIsLoadingOakJar(false);
+    }
+  };
 
   // Handle log file selection changes
   const handleLogFileChange = async (newSelectedFiles: string[]) => {
@@ -577,6 +612,23 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                     Last updated: {formatTimestamp(lastUpdateTime)}
                   </Text>
                 )}
+
+                <Box>
+                  <Text size="xs" c={isOakJarAvailable ? "green" : "dimmed"}>
+                    oak-run.jar {isOakJarAvailable ? "available" : "not available"}
+                  </Text>
+                  {isRunning && !isOakJarAvailable && (
+                    <Button 
+                      size="xs" 
+                      onClick={handleLoadOakJar} 
+                      variant="outline" 
+                      leftSection={<IconPackage size={12} />}
+                      loading={isLoadingOakJar}
+                    >
+                      Load Oak Jar
+                    </Button>
+                  )}
+                </Box>
               </Stack>
             )}
           </Box>
