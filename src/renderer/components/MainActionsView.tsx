@@ -472,7 +472,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             <Button.Group>
               <Tooltip label="Settings">
                 <Button 
-                  color="gray" 
+                  color="green" 
                   variant="filled" 
                   size="xs"
                   styles={installButtonStyles}
