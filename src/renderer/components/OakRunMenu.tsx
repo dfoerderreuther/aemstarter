@@ -7,15 +7,18 @@ interface OakRunMenuProps {
   project: Project;
   instance: 'author' | 'publisher';
   isRunning: boolean;
+  onLogFileSwitch?: (logFiles: string[]) => void;
 }
 
 export const OakRunMenu = ({ 
   project, 
   instance, 
-  isRunning
+  isRunning,
+  onLogFileSwitch
 }: OakRunMenuProps) => {
   const [isOakJarAvailable, setIsOakJarAvailable] = useState(false);
   const [isLoadingOakJar, setIsLoadingOakJar] = useState(false);
+  const [isRunningCompaction, setIsRunningCompaction] = useState(false);
 
   // Check oak-run.jar availability
   useEffect(() => {
@@ -50,6 +53,34 @@ export const OakRunMenu = ({
     }
   };
 
+  // Handle compaction
+  const handleCompaction = async () => {
+    if (isRunning) {
+      console.warn('Cannot run compaction: instance is running. Please stop the instance first.');
+      return;
+    }
+
+    if (!isOakJarAvailable) {
+      console.warn('Cannot run compaction: oak-run.jar is not available');
+      return;
+    }
+
+    setIsRunningCompaction(true);
+    try {
+      // Switch to oak-run-compact.log before starting compaction
+      if (onLogFileSwitch) {
+        onLogFileSwitch(['oak-run-compact.log']);
+      }
+
+      await window.electronAPI.runOakCompaction(project, instance);
+      console.log('Oak compaction completed successfully');
+    } catch (error) {
+      console.error('Error running oak compaction:', error);
+    } finally {
+      setIsRunningCompaction(false);
+    }
+  };
+
   return (
     <Box>
       <Divider />
@@ -61,10 +92,10 @@ export const OakRunMenu = ({
             variant="outline" 
             leftSection={<IconPackage size={12} />}
             rightSection={<IconChevronDown size={12} />}
-            disabled={!isOakJarAvailable || isRunning}
+            disabled={!isOakJarAvailable}
             style={{ 
               width: '100%',
-              opacity: (!isOakJarAvailable || isRunning) ? 0.5 : 1 
+              opacity: !isOakJarAvailable ? 0.5 : 1 
             }}
           >
             Oak Tools
@@ -74,9 +105,10 @@ export const OakRunMenu = ({
         <Menu.Dropdown>
           <Menu.Item 
             leftSection={<IconDatabase size={14} />}
-            disabled={!isOakJarAvailable || isRunning}
+            disabled={!isOakJarAvailable || isRunning || isRunningCompaction}
+            onClick={handleCompaction}
           >
-            Compaction
+            {isRunningCompaction ? 'Running Compaction...' : 'Compaction'}
           </Menu.Item>
           
           <Menu.Item 

@@ -453,6 +453,21 @@ ipcMain.handle('load-oak-jar', async (_, project: Project) => {
   }
 });
 
+ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: 'author' | 'publisher') => {
+  try {
+    let manager = instanceManagers.get(project.id);
+    if (!manager) {
+      manager = new AemInstanceManager(project);
+      instanceManagers.set(project.id, manager);
+    }
+    await manager.runOakCompaction(instanceType);
+    return true;
+  } catch (error) {
+    console.error('Error running oak compaction:', error);
+    throw error;
+  }
+});
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

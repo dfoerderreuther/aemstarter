@@ -106,6 +106,9 @@ contextBridge.exposeInMainWorld(
     
     loadOakJar: (project: Project) =>
       ipcRenderer.invoke('load-oak-jar', project),
+    
+    runOakCompaction: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('run-oak-compaction', project, instanceType),
 
     // Project Settings
     getProjectSettings: (project: Project) =>

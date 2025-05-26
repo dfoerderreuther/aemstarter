@@ -6,6 +6,7 @@ import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
 import { ProjectSettings } from './ProjectSettings';
 import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
+import { OakRun } from './OakRun';
 
 interface AemInstance {
   process: ChildProcess | null;
@@ -793,5 +794,20 @@ export class AemInstanceManager {
       fs.symlinkSync(oakJarPath, symlinkPath);
       console.log(`[AemInstanceManager] Created symlink at ${symlinkPath}`);
     }
+  }
+
+  async runOakCompaction(instanceType: 'author' | 'publisher'): Promise<void> {
+    // Check if instance is stopped (required for compaction)
+    if (this.isInstanceRunning(instanceType)) {
+      throw new Error(`${instanceType} instance must be stopped before running compaction`);
+    }
+
+    // Check if oak-run.jar is available
+    if (!this.isOakJarAvailable(instanceType)) {
+      throw new Error('oak-run.jar is not available. Please load it first.');
+    }
+
+    const oakRun = new OakRun(this.project);
+    await oakRun.compact(instanceType);
   }
 } 

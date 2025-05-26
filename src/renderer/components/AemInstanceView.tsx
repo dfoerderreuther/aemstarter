@@ -298,6 +298,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                   project={project}
                   instance={instance}
                   isRunning={isRunning}
+                  onLogFileSwitch={handleLogFileChange}
                 />
               </Stack>
             )}
