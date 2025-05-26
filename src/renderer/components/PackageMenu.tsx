@@ -1,6 +1,6 @@
 import { Project } from "../../types/Project";
 import { Button, Menu, Divider, Box } from '@mantine/core';
-import { IconPackage, IconDownload, IconWorld, IconChevronDown } from '@tabler/icons-react';
+import { IconPackage, IconDownload, IconWorld, IconChevronDown, IconFolder } from '@tabler/icons-react';
 import { useState } from 'react';
 
 interface PackageMenuProps {
@@ -52,6 +52,18 @@ export const PackageMenu = ({
     }
   };
 
+  const handleInstallLocalPackage = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement local package installation
+      console.log('Installing local package...');
+    } catch (error) {
+      console.error('Error installing local package:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Box>
       <Divider />
@@ -96,6 +108,14 @@ export const PackageMenu = ({
             onClick={handleInstallFromURL}
           >
             Install from URL
+          </Menu.Item>
+          
+          <Menu.Item 
+            leftSection={<IconFolder size={14} />}
+            disabled={!isRunning || isLoading}
+            onClick={handleInstallLocalPackage}
+          >
+            Install local package
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
