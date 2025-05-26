@@ -1,12 +1,41 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
+import fs from 'fs';
 import started from 'electron-squirrel-startup';
 import { ProjectManager } from './main/services/ProjectManager';
 import { Installer } from './main/installer/Installer';
 import { AemInstanceManager } from './main/services/AemInstanceManager';
 import { ProjectSettings } from './main/services/ProjectSettings';
-import fs from 'fs';
 import { Project } from './types/Project';
+
+// Setup logging for production builds
+if (!process.env.NODE_ENV || process.env.NODE_ENV === 'production') {
+  const logDir = path.join(app.getPath('userData'), 'logs');
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+  
+  const logFile = path.join(logDir, 'main.log');
+  const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+  
+  // Redirect console output to log file
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+  
+  console.log = (...args) => {
+    const timestamp = new Date().toISOString();
+    logStream.write(`[${timestamp}] LOG: ${args.join(' ')}\n`);
+    originalConsoleLog(...args);
+  };
+  
+  console.error = (...args) => {
+    const timestamp = new Date().toISOString();
+    logStream.write(`[${timestamp}] ERROR: ${args.join(' ')}\n`);
+    originalConsoleError(...args);
+  };
+  
+  console.log('Main process logging initialized. Log file:', logFile);
+}
 
 // Declare Vite environment variables
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
