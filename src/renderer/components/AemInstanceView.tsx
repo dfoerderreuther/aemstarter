@@ -1,9 +1,9 @@
 import { Project } from "../../types/Project";
-import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
-import { Terminal } from './Terminal';
-import { IconX } from '@tabler/icons-react';
+import { Terminal, TerminalRef } from './Terminal';
+import { IconX, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -12,14 +12,14 @@ interface AemInstanceViewProps {
 }
 
 export const AemInstanceView = ({ instance, project, visible = true }: AemInstanceViewProps) => {
-
-
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
   const [selectedLogFiles, setSelectedLogFiles] = useState<string[]>(['error.log']);
   const [filterText, setFilterText] = useState('');
   const hasShownAemOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
+  const terminalComponentRef = useRef<TerminalRef>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -165,6 +165,18 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     terminal.writeln('Ready to start...');
   };
 
+  // Handle collapse/expand with terminal resize
+  const handleToggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+    
+    // Trigger terminal resize after CSS transition completes
+    setTimeout(() => {
+      if (terminalComponentRef.current) {
+        terminalComponentRef.current.resize();
+      }
+    }, 350); // Slightly longer than the 300ms CSS transition
+  };
+
   return (
     <>
       <Stack gap="0" style={{ height: '100%' }}>
@@ -207,24 +219,60 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                 />
             </Group>
           </Group>
-          
-          {/* Log Files Selection */}
-          
         </Box>
 
-        {/* Terminal Section */}
-        <Paper shadow="xs" p="sm" style={{ 
+        {/* Main content area with collapsible sidebar */}
+        <Box style={{ 
           flex: 1,
-          overflow: 'hidden',
-          minHeight: 0,
           display: 'flex',
-          flexDirection: 'column', 
-          backgroundColor: '#1A1A1A',
+          overflow: 'hidden',
+          minHeight: 0
         }}>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <Terminal onReady={handleTerminalReady} visible={visible} />
-          </div>
-        </Paper>
+          {/* Collapsible Left Column */}
+          <Box style={{
+            width: isCollapsed ? '20px' : '200px',
+            transition: 'width 0.3s ease',
+            borderRight: '1px solid #2C2E33',
+            backgroundColor: '#1E1E1E',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}>
+            {/* Collapse/Expand Button */}
+            <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                onClick={handleToggleCollapse}
+                style={{ width: '100%' }}
+              >
+                {isCollapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
+              </ActionIcon>
+            </Box>
+
+            {/* Column Content - empty for now */}
+            {!isCollapsed && (
+              <Stack gap="sm" p="sm" style={{ flex: 1, overflow: 'auto' }}>
+                {/* Empty for now */}
+              </Stack>
+            )}
+          </Box>
+
+          {/* Terminal Section */}
+          <Paper shadow="xs" p="sm" style={{ 
+            flex: 1,
+            overflow: 'hidden',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column', 
+            backgroundColor: '#1A1A1A',
+            borderRadius: 0
+          }}>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <Terminal onReady={handleTerminalReady} visible={visible} ref={terminalComponentRef} />
+            </div>
+          </Paper>
+        </Box>
       </Stack>
     </>
   );

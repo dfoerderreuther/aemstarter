@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
@@ -8,7 +8,11 @@ interface TerminalProps {
   visible?: boolean;
 }
 
-export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) => {
+export interface TerminalRef {
+  resize: () => void;
+}
+
+export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visible = true }, ref) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const onReadyRef = useRef<((terminal: XTerm) => void) | undefined>(onReady);
@@ -17,6 +21,18 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) =
     onReadyRef.current = onReady;
   }, [onReady]);
 
+  // Expose resize method to parent
+  useImperativeHandle(ref, () => ({
+    resize: () => {
+      if (fitAddonRef.current) {
+        try {
+          fitAddonRef.current.fit();
+        } catch (error) {
+          console.warn('Failed to fit terminal:', error);
+        }
+      }
+    }
+  }), []);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -99,4 +115,4 @@ export const Terminal: React.FC<TerminalProps> = ({ onReady, visible = true }) =
       }}
     />
   );
-}; 
+}); 
