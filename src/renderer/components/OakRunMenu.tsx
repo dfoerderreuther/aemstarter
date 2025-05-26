@@ -1,6 +1,6 @@
 import { Project } from "../../types/Project";
 import { Button, Menu, Divider, Box } from '@mantine/core';
-import { IconPackage, IconDatabase, IconDeviceFloppy, IconRestore, IconChevronDown, IconFileText } from '@tabler/icons-react';
+import { IconPackage, IconDatabase, IconDeviceFloppy, IconRestore, IconChevronDown } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 
 interface OakRunMenuProps {
@@ -127,7 +127,7 @@ export const OakRunMenu = ({
         </Menu.Dropdown>
       </Menu>
 
-      {!isOakJarAvailable && (
+      {!isOakJarAvailable && instance === 'author' && (
         <Button 
           mt="xs"
           w="100%"

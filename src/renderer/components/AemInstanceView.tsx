@@ -6,7 +6,7 @@ import { Terminal, TerminalRef } from './Terminal';
 import { Screenshot } from './Screenshot';
 import { OakRunMenu } from './OakRunMenu';
 import { PackageMenu } from './PackageMenu';
-import { IconX, IconChevronLeft, IconChevronRight, IconCamera, IconTextSize } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconTextSize } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -77,14 +77,6 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
 
     return cleanup;
   }, [project.id, instance]);
-
-
-
-
-
-
-
-
 
   // Handle log file selection changes
   const handleLogFileChange = async (newSelectedFiles: string[]) => {

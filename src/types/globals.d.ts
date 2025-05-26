@@ -57,6 +57,7 @@ declare global {
       // Package Installation
       installPackage: (project: Project, instance: 'author' | 'publisher', packageUrl: string) => Promise<boolean>;
       
+      
       // Screenshot and Health Check functionality
       takeAemScreenshot: (project: Project, instanceType: 'author' | 'publisher') => Promise<string>;
       getLatestScreenshot: (project: Project, instanceType: 'author' | 'publisher') => Promise<string | null>;

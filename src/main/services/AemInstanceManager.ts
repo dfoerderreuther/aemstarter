@@ -397,24 +397,54 @@ export class AemInstanceManager {
       const startScript = process.platform === 'win32' ? 'start.bat' : 'start';
       const startScriptPath = path.join(crxQuickstartDir, 'bin', startScript);
 
-      if (!fs.existsSync(startScriptPath)) {
-        throw new Error(`Start script not found at ${startScriptPath}`);
+      if (fs.existsSync(startScriptPath)) {
+        const env = {
+          ...process.env,
+          CQ_PORT: port.toString(),
+          CQ_RUNMODE: runmode,
+          CQ_JVM_OPTS: jvmOpts,
+        };
+
+        aemProcess = spawn(startScriptPath, [], {
+          cwd: instanceDir,
+          env,
+          stdio: ['pipe', 'pipe', 'pipe'],
+          detached: true,
+          shell: process.platform === 'win32'
+        });
+      } else {
+        console.log(`[AemInstanceManager] Start script not found at ${startScriptPath}, falling back to quickstart.jar`);
+        // Fall back to quickstart.jar method
+        const jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
+
+        if (!fs.existsSync(jarPath)) {
+          throw new Error(`Neither start script nor AEM jar found. Start script: ${startScriptPath}, Jar: ${jarPath}`);
+        }
+
+        const env = {
+          ...process.env,
+          CQ_PORT: port.toString(),
+          CQ_RUNMODE: runmode,
+          CQ_JVM_OPTS: jvmOpts,
+        };
+
+        const javaArgs = [
+          '-jar',
+          'aem-sdk-quickstart.jar',
+          '-port',
+          port.toString(),
+          '-r',
+          runmode,
+          'start',
+        ];
+
+        aemProcess = spawn('java', javaArgs, {
+          cwd: instanceDir,
+          env,
+          stdio: ['pipe', 'pipe', 'pipe'],
+          detached: true
+        });
       }
-
-      const env = {
-        ...process.env,
-        CQ_PORT: port.toString(),
-        CQ_RUNMODE: runmode,
-        CQ_JVM_OPTS: jvmOpts,
-      };
-
-      aemProcess = spawn(startScriptPath, [], {
-        cwd: instanceDir,
-        env,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        detached: true,
-        shell: process.platform === 'win32'
-      });
     } else {
       console.log('[AemInstanceManager] ### Starting AEM instance with quickstart.jar ###');
       // Use quickstart.jar
