@@ -69,6 +69,7 @@ declare global {
       isOakJarAvailable: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
       loadOakJar: (project: Project) => Promise<boolean>;
       runOakCompaction: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
+
       
       // Project Settings
       getProjectSettings: (project: Project) => Promise<any>;

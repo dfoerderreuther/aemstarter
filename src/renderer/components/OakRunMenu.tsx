@@ -1,6 +1,6 @@
 import { Project } from "../../types/Project";
 import { Button, Menu, Divider, Box } from '@mantine/core';
-import { IconPackage, IconDatabase, IconDeviceFloppy, IconRestore, IconChevronDown } from '@tabler/icons-react';
+import { IconPackage, IconDatabase, IconDeviceFloppy, IconRestore, IconChevronDown, IconFileText } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 
 interface OakRunMenuProps {
@@ -67,12 +67,12 @@ export const OakRunMenu = ({
 
     setIsRunningCompaction(true);
     try {
-      // Switch to oak-run-compact.log before starting compaction
       if (onLogFileSwitch) {
         onLogFileSwitch(['oak-run-compact.log']);
       }
-
       await window.electronAPI.runOakCompaction(project, instance);
+
+
       console.log('Oak compaction completed successfully');
     } catch (error) {
       console.error('Error running oak compaction:', error);

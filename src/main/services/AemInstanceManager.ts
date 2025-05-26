@@ -236,11 +236,28 @@ export class AemInstanceManager {
     for (const logFile of logFiles) {
       const logPath = path.join(logsDir, logFile);
 
-      // Wait for log file to exist
-      const exists = await this.waitForLogFile(logPath);
-      if (!exists) {
-        console.warn(`Log file not found: ${logPath}`);
-        continue;
+      // For oak-run logs, create the file if it doesn't exist to enable tailing
+      if (logFile.includes('oak-run') && !fs.existsSync(logPath)) {
+        try {
+          // Ensure the logs directory exists
+          const logDir = path.dirname(logPath);
+          if (!fs.existsSync(logDir)) {
+            fs.mkdirSync(logDir, { recursive: true });
+          }
+          // Create empty log file
+          fs.writeFileSync(logPath, '');
+          console.log(`[AemInstanceManager] Created oak-run log file: ${logPath}`);
+        } catch (error) {
+          console.error(`[AemInstanceManager] Failed to create oak-run log file: ${logPath}`, error);
+          continue;
+        }
+      } else {
+        // Wait for log file to exist (for regular AEM logs)
+        const exists = await this.waitForLogFile(logPath);
+        if (!exists) {
+          console.warn(`Log file not found: ${logPath}`);
+          continue;
+        }
       }
 
       // Use different tail command based on platform
@@ -333,6 +350,8 @@ export class AemInstanceManager {
         selectedLogFiles: logFiles
       };
       this.instances.set(instanceType, placeholderInstance);
+      // Start tailing even if AEM instance is not running (for oak-run logs)
+      await this.startTailing(instanceType, placeholderInstance, logFiles);
       return;
     }
 
