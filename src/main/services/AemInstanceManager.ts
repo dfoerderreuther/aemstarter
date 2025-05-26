@@ -101,7 +101,7 @@ export class AemInstanceManager {
         cmd = `lsof -i :${port} -t 2>/dev/null | head -1`;
       }
 
-      exec(cmd, (error, stdout, stderr) => {
+      exec(cmd, (error, stdout, _stderr) => {
         if (error || !stdout.trim()) {
           console.log(`[AemInstanceManager] No process found on port ${port}: ${error?.message || 'No output'}`);
           resolve(null);
@@ -211,6 +211,8 @@ export class AemInstanceManager {
   }
 
   private async startTailing(instanceType: string, instance: AemInstance, logFiles: string[] = ['error.log']) {
+    console.log(`[AemInstanceManager] Starting tailing for ${instanceType} with log files: ${logFiles}`);
+
     // Stop any existing tail processes
     this.stopTailing(instanceType);
     
@@ -266,7 +268,7 @@ export class AemInstanceManager {
         this.sendLogData(instanceType, `Error tailing log file ${logFile}: ${error.message}`);
       });
 
-      tailProcess.on('exit', (code, signal) => {
+      tailProcess.on('exit', (code, _signal) => {
         if (code !== 0 && !tailProcess.killed) {
           console.warn(`Tail process for ${logFile} exited unexpectedly, restarting...`);
           setTimeout(() => {
@@ -289,7 +291,7 @@ export class AemInstanceManager {
     if (!instance) return;
 
     // Stop all tail processes
-    for (const [logFile, tailProcess] of instance.tailProcesses) {
+    for (const [_logFile, tailProcess] of instance.tailProcesses) {
       if (tailProcess && !tailProcess.killed) {
         tailProcess.kill();
       }
@@ -425,7 +427,7 @@ export class AemInstanceManager {
     // Use the selected log files from the instance
     setTimeout(() => {
       this.startTailing(instanceType, instance, instance.selectedLogFiles);
-    }, 5000);
+    }, hasCrxQuickstart ? 0 : 5000);
 
     // Periodically check for the real AEM process PID
     const pidCheckInterval = setInterval(async () => {
@@ -441,7 +443,7 @@ export class AemInstanceManager {
         this.sendPidStatusUpdate(instanceType, instance.pid, this.isInstanceRunning(instanceType));
         clearInterval(pidCheckInterval);
       }
-    }, 3000);
+    }, 1000);
 
     // Clear the interval after 5 minutes to avoid infinite checking
     setTimeout(() => {
@@ -493,13 +495,6 @@ export class AemInstanceManager {
     if (!instance) {
       return;
     }
-
-    // Clean up log buffer
-    const bufferKey = `${instanceType}-${this.project.id}`;
-    this.logBuffers.delete(bufferKey);
-
-    // Stop log tailing
-    this.stopTailing(instanceType);
 
     if (instance.pid) {
       try {

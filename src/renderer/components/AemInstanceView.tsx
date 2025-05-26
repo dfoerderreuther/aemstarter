@@ -1,5 +1,5 @@
 import { Project } from "../../types/Project";
-import { TextInput, NumberInput, Switch, Group, Stack, Paper, Text, Box, Tooltip, ActionIcon, MultiSelect, Input } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal } from './Terminal';
@@ -12,14 +12,9 @@ interface AemInstanceViewProps {
 }
 
 export const AemInstanceView = ({ instance, project, visible = true }: AemInstanceViewProps) => {
-  const defaultPort = instance === 'publisher' ? 4503 : 4502;
-  const [port, setPort] = useState(defaultPort);
-  const [runmode, setRunmode] = useState('');
-  const [jvmOpts, setJvmOpts] = useState('-server -Xmx2048m -XX:MaxPermSize=512M');
-  const [debugPort, setDebugPort] = useState(30303);
-  const [isDebugEnabled, setIsDebugEnabled] = useState(false);
+
+
   const [isRunning, setIsRunning] = useState(false);
-  const [pid, setPid] = useState<number | null>(null);
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
   const [selectedLogFiles, setSelectedLogFiles] = useState<string[]>(['error.log']);
   const [filterText, setFilterText] = useState('');
@@ -66,11 +61,9 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     checkStatus();
   }, [project, instance]);
 
-  // Listen for PID status updates
   useEffect(() => {
     const cleanup = window.electronAPI.onAemPidStatus((data) => {
       if (data.projectId === project.id && data.instanceType === instance) {
-        setPid(data.pid);
         setIsRunning(data.isRunning);
       }
     });
