@@ -10,6 +10,21 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    // macOS specific configuration
+    osxSign: {
+      identity: 'Apple Development: dominik.foerderreuther@gmail.com (3ZHD6SW8R2)',
+      optionsForFile: (filePath: string) => {
+        // Return entitlements for the main app
+        return {
+          entitlements: 'entitlements.mac.plist',
+          hardenedRuntime: true
+        };
+      }
+    },
+    // Increase memory limit for the app
+    executableName: 'aem-starter',
+    // Add extra resources if needed
+    extraResource: [],
   },
   rebuildConfig: {},
   makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
@@ -55,10 +70,10 @@ const config: ForgeConfig = {
       version: FuseVersion.V1,
       [FuseV1Options.RunAsNode]: false,
       [FuseV1Options.EnableCookieEncryption]: true,
-      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: true,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
-      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: false,
+      [FuseV1Options.OnlyLoadAppFromAsar]: false,
     }),
   ],
 };

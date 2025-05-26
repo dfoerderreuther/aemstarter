@@ -8,6 +8,10 @@ import { AemInstanceManager } from './main/services/AemInstanceManager';
 import { ProjectSettings } from './main/services/ProjectSettings';
 import { Project } from './types/Project';
 
+// Increase memory limits for AEM operations
+app.commandLine.appendSwitch('max-old-space-size', '8192'); // 8GB
+app.commandLine.appendSwitch('max-semi-space-size', '512'); // 512MB
+
 // Setup logging for production builds
 if (!process.env.NODE_ENV || process.env.NODE_ENV === 'production') {
   const logDir = path.join(app.getPath('userData'), 'logs');
