@@ -1,9 +1,9 @@
 import { Project } from "../../types/Project";
-import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button, Menu, Divider } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
-import { IconX, IconChevronLeft, IconChevronRight, IconCamera, IconTextSize, IconPackage } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconCamera, IconTextSize, IconPackage, IconDatabase, IconDeviceFloppy, IconRestore, IconChevronDown } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -23,7 +23,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   const [healthStatus, setHealthStatus] = useState<any>(null);
   const [healthCheckEnabled, setHealthCheckEnabled] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
-  const [terminalFontSize, setTerminalFontSize] = useState(13);
+  const [terminalFontSize, setTerminalFontSize] = useState(9);
   const [isOakJarAvailable, setIsOakJarAvailable] = useState(false);
   const [isLoadingOakJar, setIsLoadingOakJar] = useState(false);
   const hasShownAemOutputRef = useRef(false);
@@ -613,21 +613,68 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                   </Text>
                 )}
 
+                {/* Oak-run.jar Menu */}
                 <Box>
-                  <Text size="xs" c={isOakJarAvailable ? "green" : "dimmed"}>
-                    oak-run.jar {isOakJarAvailable ? "available" : "not available"}
-                  </Text>
-                  {isRunning && !isOakJarAvailable && (
-                    <Button 
-                      size="xs" 
-                      onClick={handleLoadOakJar} 
-                      variant="outline" 
-                      leftSection={<IconPackage size={12} />}
-                      loading={isLoadingOakJar}
-                    >
-                      Load Oak Jar
-                    </Button>
+                      
+                  <Divider />
+                  
+                  <Menu shadow="md" width={200}>
+                    <Menu.Target>
+                      <Button 
+                        size="xs" 
+                        variant="outline" 
+                        leftSection={<IconPackage size={12} />}
+                        rightSection={<IconChevronDown size={12} />}
+                        disabled={!isOakJarAvailable || isRunning}
+                        style={{ 
+                          width: '100%',
+                          opacity: (!isOakJarAvailable || isRunning) ? 0.5 : 1 
+                        }}
+                      >
+                        Oak Tools
+                      </Button>
+                    </Menu.Target>
+
+                    <Menu.Dropdown>
+                      <Menu.Item 
+                        leftSection={<IconDatabase size={14} />}
+                        disabled={!isOakJarAvailable || isRunning}
+                      >
+                        Compaction
+                      </Menu.Item>
+                      
+                      <Menu.Item 
+                        leftSection={<IconDeviceFloppy size={14} />}
+                        disabled={!isOakJarAvailable || isRunning}
+                      >
+                        Checkpoints
+                      </Menu.Item>
+                      
+                      <Menu.Item 
+                        leftSection={<IconRestore size={14} />}
+                        disabled={!isOakJarAvailable || isRunning}
+                      >
+                        Backup & Restore
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+
+                  {!isOakJarAvailable && (
+                  <Button mt="xs"
+                    w="100%"
+                    leftSection={<IconPackage size={14} />}
+                    disabled={!isRunning}
+                    onClick={handleLoadOakJar}
+                    style={{ 
+                      opacity: !isRunning ? 0.5 : 1 
+                    }}
+                  >
+                    {isLoadingOakJar ? 'Loading...' : 'Load Oak Jar'}
+                  </Button>
                   )}
+                  
+
+
                 </Box>
               </Stack>
             )}
