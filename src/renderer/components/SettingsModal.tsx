@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Tabs, Stack, TextInput, NumberInput, Group, Button, Text } from '@mantine/core';
+import { Modal, Tabs, Stack, TextInput, NumberInput, Group, Button, Text, Checkbox } from '@mantine/core';
 import { Project } from '../../types/Project';
 
 interface SettingsModalProps {
@@ -15,12 +15,14 @@ interface ProjectSettings {
     runmode: string;
     jvmOpts: string;
     debugJvmOpts: string;
+    healthCheck: boolean;
   };
   publisher: {
     port: number;
     runmode: string;
     jvmOpts: string;
     debugJvmOpts: string;
+    healthCheck: boolean;
   };
 }
 
@@ -138,6 +140,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               value={settings.author.debugJvmOpts}
               onChange={(event) => updateAuthorSettings('debugJvmOpts', event.currentTarget.value)}
             />
+            
+            <Checkbox
+              label="Health Check"
+              checked={settings.author.healthCheck}
+              onChange={(event) => updateAuthorSettings('healthCheck', event.currentTarget.checked)}
+            />
           </Stack>
         </Tabs.Panel>
 
@@ -171,6 +179,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               description="Additional JVM options for debugging"
               value={settings.publisher.debugJvmOpts}
               onChange={(event) => updatePublisherSettings('debugJvmOpts', event.currentTarget.value)}
+            />
+            
+            <Checkbox
+              label="Health Check"
+              checked={settings.publisher.healthCheck}
+              onChange={(event) => updatePublisherSettings('healthCheck', event.currentTarget.checked)}
             />
           </Stack>
         </Tabs.Panel>
