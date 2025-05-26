@@ -56,6 +56,14 @@ declare global {
       
       killAllAemInstances: (project: Project) => Promise<boolean>;
       
+      // Screenshot and Health Check functionality
+      takeAemScreenshot: (project: Project, instanceType: 'author' | 'publisher') => Promise<string>;
+      getLatestScreenshot: (project: Project, instanceType: 'author' | 'publisher') => Promise<string | null>;
+      getHealthStatus: (project: Project, instanceType: 'author' | 'publisher') => Promise<any>;
+      
+      // Read screenshot as base64 data URL
+      readScreenshot: (screenshotPath: string) => Promise<string | null>;
+      
       // Project Settings
       getProjectSettings: (project: Project) => Promise<any>;
       saveProjectSettings: (project: Project, settings: any) => Promise<boolean>;
@@ -65,6 +73,9 @@ declare global {
       
       // PID status streaming
       onAemPidStatus: (callback: (data: { projectId: string; instanceType: string; pid: number | null; isRunning: boolean }) => void) => () => void;
+      
+      // Health status streaming
+      onAemHealthStatus: (callback: (data: { projectId: string; instanceType: string; status: any }) => void) => () => void;
       
       removeAemLogDataListener: (cleanup?: () => void) => void;
     };

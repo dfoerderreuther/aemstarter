@@ -302,6 +302,67 @@ ipcMain.handle('kill-all-aem-instances', async (_, project: Project) => {
   }
 });
 
+// Screenshot and Health Check functionality
+ipcMain.handle('take-aem-screenshot', async (_, project: Project, instanceType: 'author' | 'publisher') => {
+  try {
+    const manager = instanceManagers.get(project.id);
+    if (!manager) {
+      throw new Error('Instance manager not found');
+    }
+
+    const screenshotPath = await manager.takeScreenshot(instanceType);
+    return screenshotPath;
+  } catch (error) {
+    console.error('Error taking screenshot:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('get-latest-screenshot', async (_, project: Project, instanceType: 'author' | 'publisher') => {
+  try {
+    const manager = instanceManagers.get(project.id);
+    if (!manager) {
+      return null;
+    }
+
+    return manager.getLatestScreenshot(instanceType);
+  } catch (error) {
+    console.error('Error getting latest screenshot:', error);
+    return null;
+  }
+});
+
+ipcMain.handle('get-health-status', async (_, project: Project, instanceType: 'author' | 'publisher') => {
+  try {
+    const manager = instanceManagers.get(project.id);
+    if (!manager) {
+      return null;
+    }
+
+    return manager.getHealthStatus(instanceType);
+  } catch (error) {
+    console.error('Error getting health status:', error);
+    return null;
+  }
+});
+
+// Read screenshot file as base64 data URL
+ipcMain.handle('read-screenshot', async (_, screenshotPath: string) => {
+  try {
+    if (!screenshotPath || !fs.existsSync(screenshotPath)) {
+      return null;
+    }
+
+    const imageBuffer = await fs.promises.readFile(screenshotPath);
+    const base64Image = imageBuffer.toString('base64');
+    const mimeType = screenshotPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    return `data:${mimeType};base64,${base64Image}`;
+  } catch (error) {
+    console.error('Error reading screenshot:', error);
+    return null;
+  }
+});
+
 // Project Settings
 ipcMain.handle('get-project-settings', async (_, project: Project) => {
   try {

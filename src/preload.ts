@@ -81,6 +81,20 @@ contextBridge.exposeInMainWorld(
     killAllAemInstances: (project: Project) =>
       ipcRenderer.invoke('kill-all-aem-instances', project),
 
+    // Screenshot and Health Check functionality
+    takeAemScreenshot: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('take-aem-screenshot', project, instanceType),
+    
+    getLatestScreenshot: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('get-latest-screenshot', project, instanceType),
+    
+    getHealthStatus: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('get-health-status', project, instanceType),
+
+    // Read screenshot as base64 data URL
+    readScreenshot: (screenshotPath: string) =>
+      ipcRenderer.invoke('read-screenshot', screenshotPath),
+
     // Project Settings
     getProjectSettings: (project: Project) =>
       ipcRenderer.invoke('get-project-settings', project),
@@ -119,6 +133,17 @@ contextBridge.exposeInMainWorld(
       // Return cleanup function
       return () => {
         ipcRenderer.removeListener('aem-pid-status', handler);
+      };
+    },
+
+    // Health status streaming
+    onAemHealthStatus: (callback: (data: { projectId: string; instanceType: string; status: any }) => void) => {
+      const handler = (_: any, data: { projectId: string; instanceType: string; status: any }) => callback(data);
+      ipcRenderer.on('aem-health-status', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('aem-health-status', handler);
       };
     },
     

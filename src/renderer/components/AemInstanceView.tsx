@@ -3,7 +3,7 @@ import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, But
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
-import { IconX, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconCamera } from '@tabler/icons-react';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -17,6 +17,9 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
   const [selectedLogFiles, setSelectedLogFiles] = useState<string[]>(['error.log']);
   const [filterText, setFilterText] = useState('');
+  const [latestScreenshot, setLatestScreenshot] = useState<string | null>(null);
+  const [screenshotDataUrl, setScreenshotDataUrl] = useState<string | null>(null);
+  const [isLoadingScreenshot, setIsLoadingScreenshot] = useState(false);
   const hasShownAemOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
   const terminalComponentRef = useRef<TerminalRef>(null);
@@ -70,6 +73,56 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
 
     return cleanup;
   }, [project.id, instance]);
+
+  // Handle screenshot functionality
+  const takeScreenshot = async () => {
+    if (!isRunning) {
+      console.warn('Cannot take screenshot: instance is not running');
+      return;
+    }
+
+    setIsLoadingScreenshot(true);
+    try {
+      const screenshotPath = await window.electronAPI.takeAemScreenshot(project, instance);
+      setLatestScreenshot(screenshotPath);
+      
+      // Load the screenshot as data URL
+      if (screenshotPath) {
+        const dataUrl = await window.electronAPI.readScreenshot(screenshotPath);
+        setScreenshotDataUrl(dataUrl);
+      }
+    } catch (error) {
+      console.error('Error taking screenshot:', error);
+    } finally {
+      setIsLoadingScreenshot(false);
+    }
+  };
+
+  // Load latest screenshot on mount and when instance status changes
+  useEffect(() => {
+    const loadLatestScreenshot = async () => {
+      if (isRunning) {
+        try {
+          const screenshotPath = await window.electronAPI.getLatestScreenshot(project, instance);
+          setLatestScreenshot(screenshotPath);
+          
+          // Load the screenshot as data URL
+          if (screenshotPath) {
+            const dataUrl = await window.electronAPI.readScreenshot(screenshotPath);
+            setScreenshotDataUrl(dataUrl);
+          } else {
+            setScreenshotDataUrl(null);
+          }
+        } catch (error) {
+          console.error('Error loading latest screenshot:', error);
+        }
+      } else {
+        setLatestScreenshot(null);
+        setScreenshotDataUrl(null);
+      }
+    };
+    loadLatestScreenshot();
+  }, [project, instance, isRunning]);
 
   // Handle log file selection changes
   const handleLogFileChange = async (newSelectedFiles: string[]) => {
@@ -239,7 +292,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
             overflow: 'hidden'
           }}>
             {/* Collapse/Expand Button */}
-            <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
+            <Box>
               <ActionIcon
                 variant="subtle"
                 size="sm"
@@ -250,10 +303,120 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
               </ActionIcon>
             </Box>
 
-            {/* Column Content - empty for now */}
+            {/* Column Content */}
             {!isCollapsed && (
               <Stack gap="sm" p="sm" style={{ flex: 1, overflow: 'auto' }}>
-                {/* Empty for now */}
+                {/* Clickable Screenshot Frame */}
+                <Box
+                  onClick={takeScreenshot}
+                  style={{
+                    cursor: isRunning ? 'pointer' : 'not-allowed',
+                    border: '2px dashed #2C2E33',
+                    borderRadius: '8px',
+                    minHeight: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: screenshotDataUrl ? 'transparent' : '#1A1A1A',
+                    transition: 'border-color 0.2s ease',
+                    opacity: isRunning ? 1 : 0.5,
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (isRunning) {
+                      e.currentTarget.style.borderColor = '#4C6EF5';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#2C2E33';
+                  }}
+                >
+                  {screenshotDataUrl ? (
+                    <>
+                      <img 
+                        src={screenshotDataUrl}
+                        alt={`${instance} screenshot`}
+                        style={{ 
+                          width: '100%', 
+                          height: 'auto',
+                          borderRadius: '6px',
+                          display: 'block'
+                        }}
+                      />
+                      {/* Overlay for click indication */}
+                      <Box
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: 'rgba(0, 0, 0, 0)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'background-color 0.2s ease',
+                          borderRadius: '6px'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (isRunning) {
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+                        }}
+                      >
+                        {isRunning && (
+                          <ActionIcon
+                            variant="filled"
+                            size="lg"
+                            style={{
+                              opacity: 0,
+                              transition: 'opacity 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.opacity = '1';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.opacity = '0';
+                            }}
+                          >
+                            <IconCamera size={20} />
+                          </ActionIcon>
+                        )}
+                      </Box>
+                    </>
+                  ) : (
+                    <Stack align="center" gap="xs">
+                      {isLoadingScreenshot ? (
+                        <>
+                          <ActionIcon variant="subtle" size="xl" loading>
+                            <IconCamera size={24} />
+                          </ActionIcon>
+                          <Text size="xs" c="dimmed">
+                            Taking screenshot...
+                          </Text>
+                        </>
+                      ) : isRunning ? (
+                        <>
+                          <IconCamera size={32} color="#666" />
+                          <Text size="xs" c="dimmed" ta="center">
+                            Click to take screenshot
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <IconCamera size={32} color="#444" />
+                          <Text size="xs" c="dimmed" ta="center">
+                            Instance not running
+                          </Text>
+                        </>
+                      )}
+                    </Stack>
+                  )}
+                </Box>
               </Stack>
             )}
           </Box>

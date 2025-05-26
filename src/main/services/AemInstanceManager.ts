@@ -5,6 +5,7 @@ import fs from 'fs';
 import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
 import { ProjectSettings } from './ProjectSettings';
+import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
 
 interface AemInstance {
   process: ChildProcess | null;
@@ -20,9 +21,11 @@ export class AemInstanceManager {
   private instances: Map<string, AemInstance> = new Map();
   private project: Project;
   private logBuffers: Map<string, string> = new Map(); // Store incomplete lines
+  private healthChecker: AemHealthChecker;
 
   constructor(project: Project) {
     this.project = project;
+    this.healthChecker = new AemHealthChecker(project);
   }
 
   private sendLogData(instanceType: string, data: string) {
@@ -582,5 +585,51 @@ export class AemInstanceManager {
   getInstancePid(instanceType: 'author' | 'publisher'): number | null {
     const instance = this.instances.get(instanceType);
     return instance?.pid || null;
+  }
+
+  // Screenshot and Health Check functionality
+  async takeScreenshot(instanceType: 'author' | 'publisher'): Promise<string> {
+    const instance = this.instances.get(instanceType);
+    if (!instance || !instance.pid) {
+      throw new Error(`${instanceType} instance is not running`);
+    }
+
+    return this.healthChecker.takeScreenshot(instanceType, instance.port);
+  }
+
+  getLatestScreenshot(instanceType: 'author' | 'publisher'): string | null {
+    const healthStatus = this.healthChecker.getLastHealthStatus(instanceType);
+    return healthStatus?.screenshotPath || null;
+  }
+
+  getHealthStatus(instanceType: 'author' | 'publisher'): HealthStatus | null {
+    return this.healthChecker.getLastHealthStatus(instanceType);
+  }
+
+  async checkHealth(instanceType: 'author' | 'publisher'): Promise<HealthStatus> {
+    const instance = this.instances.get(instanceType);
+    if (!instance || !instance.pid) {
+      throw new Error(`${instanceType} instance is not running`);
+    }
+
+    return this.healthChecker.checkHealth(instanceType, instance.port);
+  }
+
+  startHealthChecking(instanceType: 'author' | 'publisher', intervalMs: number = 30000) {
+    const instance = this.instances.get(instanceType);
+    if (!instance || !instance.pid) {
+      console.warn(`Cannot start health checking for ${instanceType}: instance not running`);
+      return;
+    }
+
+    this.healthChecker.startHealthChecking(instanceType, instance.port, intervalMs);
+  }
+
+  stopHealthChecking(instanceType: 'author' | 'publisher') {
+    this.healthChecker.stopHealthChecking(instanceType);
+  }
+
+  cleanup() {
+    this.healthChecker.cleanup();
   }
 } 
