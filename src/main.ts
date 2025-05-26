@@ -219,7 +219,7 @@ ipcMain.handle('delete-aem', async (_, project: Project) => {
 });
 
 // AEM Instance Management
-ipcMain.handle('start-aem-instance', async (_, project: Project, instanceType: 'author' | 'publisher', options: { port: number; runmode: string; jvmOpts: string; debugPort?: number }) => {
+ipcMain.handle('start-aem-instance', async (_, project: Project, instanceType: 'author' | 'publisher', options?: { debug?: boolean }) => {
   try {
     let manager = instanceManagers.get(project.id);
     if (!manager) {
@@ -227,8 +227,8 @@ ipcMain.handle('start-aem-instance', async (_, project: Project, instanceType: '
       instanceManagers.set(project.id, manager);
     }
 
-    // Determine start type based on whether debug port is provided
-    const startType = options.debugPort ? 'debug' : 'start';
+    // Determine start type based on debug flag
+    const startType = options?.debug ? 'debug' : 'start';
     await manager.startInstance(instanceType, startType);
     return true;
   } catch (error) {

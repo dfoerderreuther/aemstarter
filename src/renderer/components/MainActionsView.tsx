@@ -98,16 +98,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
   const handleStartAll = async () => {
     try {
       await Promise.all([
-        window.electronAPI.startAemInstance(project, 'author', {
-          port: 4502,
-          runmode: 'author,local',
-          jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M'
-        }),
-        window.electronAPI.startAemInstance(project, 'publisher', {
-          port: 4503,
-          runmode: 'publish,local',
-          jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M'
-        })
+        window.electronAPI.startAemInstance(project, 'author'),
+        window.electronAPI.startAemInstance(project, 'publisher')
       ]);
       setIsAuthorRunning(true);
       setIsPublisherRunning(true);
@@ -119,16 +111,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
   const handleDebugAll = async () => {
     try {
       await Promise.all([
-        window.electronAPI.startAemInstance(project, 'author', {
-          port: 4502,
-          runmode: 'author,local',
-          jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
-        }),
-        window.electronAPI.startAemInstance(project, 'publisher', {
-          port: 4503,
-          runmode: 'publish,local',
-          jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006'
-        })
+        window.electronAPI.startAemInstance(project, 'author', { debug: true }),
+        window.electronAPI.startAemInstance(project, 'publisher', { debug: true })
       ]);
       setIsAuthorRunning(true);
       setIsPublisherRunning(true);
@@ -154,11 +138,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
 
   const handleStartAuthor = async () => {
     try {
-      await window.electronAPI.startAemInstance(project, 'author', {
-        port: 4502,
-        runmode: 'author,local',
-        jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M'
-      });
+      await window.electronAPI.startAemInstance(project, 'author');
       setIsAuthorRunning(true);
     } catch (error) {
       console.error('Error starting author instance:', error);
@@ -167,11 +147,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
 
   const handleDebugAuthor = async () => {
     try {
-      await window.electronAPI.startAemInstance(project, 'author', {
-        port: 4502,
-        runmode: 'author,local',
-        jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
-      });
+      await window.electronAPI.startAemInstance(project, 'author', { debug: true });
       setIsAuthorRunning(true);
     } catch (error) {
       console.error('Error starting author instance in debug mode:', error);
@@ -190,11 +166,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
 
   const handleStartPublisher = async () => {
     try {
-      await window.electronAPI.startAemInstance(project, 'publisher', {
-        port: 4503,
-        runmode: 'publish,local',
-        jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M'
-      });
+      await window.electronAPI.startAemInstance(project, 'publisher', {});
       setIsPublisherRunning(true);
     } catch (error) {
       console.error('Error starting publisher instance:', error);
@@ -203,11 +175,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
 
   const handleDebugPublisher = async () => {
     try {
-      await window.electronAPI.startAemInstance(project, 'publisher', {
-        port: 4503,
-        runmode: 'publish,local',
-        jvmOpts: '-server -Xmx2048m -XX:MaxPermSize=512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006'
-      });
+      await window.electronAPI.startAemInstance(project, 'publisher', { debug: true });
       setIsPublisherRunning(true);
     } catch (error) {
       console.error('Error starting publisher instance in debug mode:', error);
@@ -399,7 +367,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             </Group>
             <Group gap="xs">
               <Button.Group>
-                <Tooltip label="Start publish">
+                <Tooltip label="Start publisher">
                   <Button 
                     color="blue" 
                     variant="filled" 
@@ -411,7 +379,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                     <IconPlayerPlay size={16} />
                   </Button>
                 </Tooltip>
-                <Tooltip label="Debug publish">
+                <Tooltip label="Debug publisher">
                   <Button 
                     color="violet" 
                     variant="filled" 
@@ -424,7 +392,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   </Button>
                 </Tooltip>
 
-                <Tooltip label="Stop publish">
+                <Tooltip label="Stop publisher">
                   <Button
                     color="red" 
                     variant="filled" 
@@ -468,7 +436,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             </Group>
             <Group gap="xs">
               <Button.Group>
-                <Tooltip label="Start publish">
+                <Tooltip label="Start dispatcher">
                   <Button 
                     color="blue" 
                     variant="filled" 
@@ -480,7 +448,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   </Button>
                 </Tooltip>
 
-                <Tooltip label="Stop publish">
+                <Tooltip label="Stop dispatcher">
                   <Button
                     color="red" 
                     variant="filled" 
@@ -543,8 +511,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
           </Text>
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
             <li>Delete existing folders (if any)</li>
-            <li>Create new folders: author, publish, dispatcher, install</li>
-            <li>Copy license.properties to author and publish folders</li>
+            <li>Create new folders: author, publisher, dispatcher, install</li>
+            <li>Copy license.properties to author and publisher folders</li>
             <li>Unzip SDK package to install folder</li>
           </ul>
           <Text size="sm" c="red" mt="md">

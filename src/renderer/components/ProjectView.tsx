@@ -37,7 +37,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       >
         <Tabs.List>
           <Tabs.Tab value="author">Author</Tabs.Tab>
-          <Tabs.Tab value="publish">Publish</Tabs.Tab>
+          <Tabs.Tab value="publisher">Publisher</Tabs.Tab>
           <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
           <Tabs.Tab value="files">Files</Tabs.Tab>
         </Tabs.List>
@@ -50,11 +50,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           />
         </Tabs.Panel>
 
-        <Tabs.Panel value="publish" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Tabs.Panel value="publisher" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <AemInstanceView 
             instance="publisher" 
             project={project} 
-            visible={activeTab === 'publish'}
+            visible={activeTab === 'publisher'}
           />
         </Tabs.Panel>
 

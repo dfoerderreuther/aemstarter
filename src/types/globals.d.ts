@@ -35,11 +35,8 @@ declare global {
       startAemInstance: (
         project: Project,
         instanceType: 'author' | 'publisher',
-        options: {
-          port: number;
-          runmode: string;
-          jvmOpts: string;
-          debugPort?: number;
+        options?: {
+          debug?: boolean;
         }
       ) => Promise<boolean>;
       

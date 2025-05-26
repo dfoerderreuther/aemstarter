@@ -180,7 +180,7 @@ export class AemInstanceManager {
 
   getAvailableLogFiles(instanceType: string): string[] {
     console.log(`[AemInstanceManager] Getting available log files for ${instanceType}`);
-    const instanceDir = instanceType === 'author' ? 'author' : 'publish';
+    const instanceDir = instanceType;
     const logPath = path.join(
       this.project.folderPath,
       instanceDir,
@@ -221,7 +221,7 @@ export class AemInstanceManager {
     this.stopTailing(instanceType);
     
     // Use consistent directory mapping
-    const instanceDir = instanceType === 'author' ? 'author' : 'publish';
+    const instanceDir = instanceType === 'author' ? 'author' : 'publisher';
     const logsDir = path.join(
       this.project.folderPath,
       instanceDir,
@@ -356,7 +356,7 @@ export class AemInstanceManager {
       throw new Error(`No settings found for ${instanceType} instance`);
     }
 
-    const instanceDir = path.join(this.project.folderPath, instanceType === 'author' ? 'author' : 'publish');
+    const instanceDir = path.join(this.project.folderPath, instanceType);
     const crxQuickstartDir = path.join(instanceDir, 'crx-quickstart');
     const hasCrxQuickstart = fs.existsSync(crxQuickstartDir);
 
@@ -715,7 +715,7 @@ export class AemInstanceManager {
   }
 
   isOakJarAvailable(instanceType: 'author' | 'publisher'): boolean {
-    const instanceDir = instanceType === 'author' ? 'author' : 'publish';
+    const instanceDir = instanceType;
     const instancePath = path.join(this.project.folderPath, instanceDir);
     const oakJarPath = path.join(instancePath, 'oak-run.jar');
     return fs.existsSync(oakJarPath);
@@ -779,7 +779,7 @@ export class AemInstanceManager {
     console.log(`[AemInstanceManager] Downloaded oak-run.jar to ${oakJarPath}`);
 
     // Create symlinks in instance folders
-    const instanceDirs = ['author', 'publish'];
+    const instanceDirs = ['author', 'publisher'];
     for (const dir of instanceDirs) {
       const instancePath = path.join(this.project.folderPath, dir);
       const symlinkPath = path.join(instancePath, 'oak-run.jar');

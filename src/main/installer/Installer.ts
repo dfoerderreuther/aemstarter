@@ -12,8 +12,8 @@ const README_TEMPLATE = `
 ## Author
 This is the author instance of the AEM installation.
 
-## Publish
-This is the publish instance of the AEM installation.
+## Publisher
+This is the publisher instance of the AEM installation.
 
 ## Dispatcher
 This is the dispatcher instance of the AEM installation.
@@ -27,7 +27,7 @@ export class Installer {
 
     private project: Project;
 
-    private folders = ['author', 'publish', 'dispatcher', 'install'];
+    private folders = ['author', 'publisher', 'dispatcher', 'install'];
     private licensePropertiesPath: string;
     private sdkPath: string;
     private workDir: string;
@@ -71,7 +71,7 @@ export class Installer {
         //const windowsDispatcherZip = files.find(file => file.match(/aem-sdk-dispatcher-.*.zip/));
 
         await this.installAemInstance(`${this.project.folderPath}/author`, this.installDir + '/' + quickstartFile, 'author');
-        await this.installAemInstance(`${this.project.folderPath}/publish`, this.installDir + '/' + quickstartFile, 'publish');
+        await this.installAemInstance(`${this.project.folderPath}/publisher`, this.installDir + '/' + quickstartFile, 'publisher');
 
         await this.installDispatcherLinux(`${this.project.folderPath}/dispatcher`, this.installDir + '/' + dispatcherScript);
 
@@ -112,13 +112,7 @@ export class Installer {
             quickstartFile,
             `${instanceDir}/aem-sdk-quickstart.jar`
         );
-        if (type === 'author') {
-            console.log('writing env.sh for author');
-            //fs.writeFileSync(`${instanceDir}/env.sh`, AUTHOR_ENV_TEMPLATE);
-        } else if (type === 'publish') {
-            console.log('writing env.sh for publish');
-            //fs.writeFileSync(`${instanceDir}/env.sh`, PUBLISH_ENV_TEMPLATE);
-        }
+
     }
 
     private async installDispatcherLinux(dispatcherDir: string, dispatcherScript: string) {
