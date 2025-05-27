@@ -16,6 +16,9 @@ declare global {
       getGlobalSettings: () => Promise<{ aemSdkPath?: string; licensePath?: string }>;
       setGlobalSettings: (settings: { aemSdkPath?: string; licensePath?: string }) => Promise<boolean>;
       
+      // Menu
+      refreshMenu: () => Promise<boolean>;
+      
       // File system operations
       readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
       writeFile: (filePath: string, content: string) => Promise<{ error?: string }>;
@@ -95,6 +98,7 @@ declare global {
       // Menu event listeners
       onOpenNewProjectDialog: (callback: () => void) => () => void;
       onOpenProjectFolder: (callback: (folderPath: string) => void) => () => void;
+      onOpenRecentProject: (callback: (projectId: string) => void) => () => void;
     };
   }
 } 

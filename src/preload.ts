@@ -30,6 +30,10 @@ contextBridge.exposeInMainWorld(
     setGlobalSettings: (settings: { aemSdkPath?: string; licensePath?: string }) =>
       ipcRenderer.invoke('set-global-settings', settings),
     
+    // Menu
+    refreshMenu: () =>
+      ipcRenderer.invoke('refresh-menu'),
+    
     // Dialog
     showOpenDialog: (options: any) => 
       ipcRenderer.invoke('show-open-dialog', options),
@@ -198,6 +202,16 @@ contextBridge.exposeInMainWorld(
       // Return cleanup function
       return () => {
         ipcRenderer.removeListener('open-project-folder', handler);
+      };
+    },
+
+    onOpenRecentProject: (callback: (projectId: string) => void) => {
+      const handler = (_: any, projectId: string) => callback(projectId);
+      ipcRenderer.on('open-recent-project', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('open-recent-project', handler);
       };
     },
   }

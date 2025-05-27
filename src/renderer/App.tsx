@@ -64,6 +64,9 @@ const App: React.FC = () => {
         if (globalSettings.licensePath) {
           setLicensePath(globalSettings.licensePath);
         }
+        
+        // Refresh menu to populate recent projects
+        await window.electronAPI.refreshMenu();
       } catch (error) {
         console.error('Failed to load projects:', error);
       } finally {
@@ -87,6 +90,21 @@ const App: React.FC = () => {
       cleanupOpenProject();
     };
   }, []);
+
+  // Set up recent project event listener separately to have access to current projects
+  useEffect(() => {
+    const cleanupRecentProject = window.electronAPI.onOpenRecentProject(async (projectId: string) => {
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        setSelectedProject(project);
+        await window.electronAPI.setLastProjectId(project.id);
+      }
+    });
+
+    return () => {
+      cleanupRecentProject();
+    };
+  }, [projects]);
 
   // Save selected project when it changes
   const handleProjectSelect = async (project: Project | null) => {
@@ -127,6 +145,7 @@ const App: React.FC = () => {
         setProjects(allProjects);
         setSelectedProject(project);
         await window.electronAPI.setLastProjectId(project.id);
+        await window.electronAPI.refreshMenu();
         setModalOpen(false);
         setNewProjectName('');
         setAemSdkPath('');
@@ -185,6 +204,7 @@ const App: React.FC = () => {
     setProjects(allProjects);
     setSelectedProject(null);
     await window.electronAPI.setLastProjectId(null);
+    await window.electronAPI.refreshMenu();
     setDeleteDialogOpen(false);
   };
 
@@ -246,6 +266,7 @@ const App: React.FC = () => {
         setProjects(allProjects);
         setSelectedProject(project);
         await window.electronAPI.setLastProjectId(project.id);
+        await window.electronAPI.refreshMenu();
         
         console.log('Successfully imported existing AEM Starter project:', projectName);
       } else {
@@ -285,27 +306,7 @@ const App: React.FC = () => {
               </Title>
             </Group>
             <Group align="center" gap={8}>
-              <Select
-                placeholder={projects.length === 0 ? 'No projects' : 'Select project'}
-                data={projects.map(p => ({ value: p.id, label: p.name }))}
-                value={selectedProject?.id || null}
-                onChange={handleDropdownChange}
-                clearable
-                searchable
-                maxDropdownHeight={200}
-                style={{ minWidth: 220 }}
-              />
-              <Button
-                variant="subtle"
-                color="red"
-                size="compact-md"
-                px={8}
-                disabled={!selectedProject}
-                onClick={() => setDeleteDialogOpen(true)}
-                title="Delete selected project"
-              >
-                <IconTrash size={16} />
-              </Button>
+              
               <Button
                 leftSection={<IconPlus size={16} />}
                 onClick={handleOpenCreateProjectModal}

@@ -19,32 +19,33 @@ export const PackageMenu = ({
   const [packageUrl, setPackageUrl] = useState('');
   const [selectedFilePath, setSelectedFilePath] = useState<string>('');
 
-  const handleInstallWKND = async () => {
-    const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip";
+  // https://github.com/adobe/aem-cif-guides-venia/releases/download/venia-2025.04.11/aem-cif-guides-venia.all-2025.04.11.zip
 
+  const handleInstall = async (url: string) => {
     setIsLoading(true);
     try {
-      console.log('Installing WKND package...');
-      await window.electronAPI.installPackage(project, instance, wkndUrl);
-      console.log('WKND package installed successfully');
+      console.log('Installing package...');
+      await window.electronAPI.installPackage(project, instance, url);
     } catch (error) {
-      console.error('Error installing WKND:', error);
+      console.error('Error installing package:', error);
     } finally {
       setIsLoading(false);
     }
+  }
+
+  const handleInstallVenia = async () => {
+    const veniaUrl = "https://github.com/adobe/aem-cif-guides-venia/releases/download/venia-2025.04.11/aem-cif-guides-venia.all-2025.04.11.zip";
+    handleInstall(veniaUrl);
+  };
+
+  const handleInstallWKND = async () => {
+    const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip";
+    handleInstall(wkndUrl);
   };
 
   const handleInstallACSCommons = async () => {
     const acsCommonsUrl = "https://github.com/Adobe-Consulting-Services/acs-aem-commons/releases/download/acs-aem-commons-6.12.0/acs-aem-commons-all-6.12.0-cloud.zip";
-    setIsLoading(true);
-    try {
-      console.log('Installing ACS AEM Commons...');
-      await window.electronAPI.installPackage(project, instance, acsCommonsUrl);
-    } catch (error) {
-      console.error('Error installing ACS AEM Commons:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    handleInstall(acsCommonsUrl);
   };
 
   const handleInstallFromURL = async () => {
@@ -155,6 +156,14 @@ export const PackageMenu = ({
             onClick={handleInstallWKND}
           >
             Install WKND
+          </Menu.Item>
+
+          <Menu.Item 
+            leftSection={<IconDownload size={14} />}
+            disabled={!isRunning || isLoading}
+            onClick={handleInstallVenia}
+          >
+            Install Venia (AEM CIF Add-on required)
           </Menu.Item>
           
           <Menu.Item 

@@ -147,6 +147,12 @@ ipcMain.handle('set-global-settings', async (_, settings) => {
   return true;
 });
 
+// Refresh menu (useful when projects change)
+ipcMain.handle('refresh-menu', async () => {
+  createMenu();
+  return true;
+});
+
 ipcMain.handle('show-open-dialog', async (_, options) => {
   return dialog.showOpenDialog(options);
 });
@@ -519,10 +525,50 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
 
 // Create application menu
 const createMenu = () => {
+  // Helper function to create recent projects submenu
+  const createRecentProjectsSubmenu = (): Electron.MenuItemConstructorOptions[] => {
+    const projects = projectManager.getAllProjects();
+    
+    if (projects.length === 0) {
+      return [
+        {
+          label: 'No recent projects',
+          enabled: false
+        }
+      ];
+    }
+    
+    // Sort projects by lastModified date (most recent first)
+    const sortedProjects = projects.sort((a, b) => 
+      new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
+    );
+    
+    // Limit to 10 most recent projects
+    const recentProjects = sortedProjects.slice(0, 10);
+    
+    return recentProjects.map(project => ({
+      label: project.name,
+      click: () => {
+        if (mainWindow) {
+          mainWindow.webContents.send('open-recent-project', project.id);
+        }
+      }
+    }));
+  };
+
   const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: 'File',
       submenu: [
+        {
+          label: 'New Project...',
+          accelerator: 'CmdOrCtrl+N',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('open-new-project-dialog');
+            }
+          }
+        },
         {
           label: 'Open...',
           accelerator: 'CmdOrCtrl+O',
@@ -542,13 +588,8 @@ const createMenu = () => {
           }
         },
         {
-          label: 'New Project...',
-          accelerator: 'CmdOrCtrl+N',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('open-new-project-dialog');
-            }
-          }
+          label: 'Recent Projects',
+          submenu: createRecentProjectsSubmenu()
         },
         { type: 'separator' },
         {
