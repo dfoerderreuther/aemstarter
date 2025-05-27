@@ -71,6 +71,21 @@ const App: React.FC = () => {
       }
     };
     loadProjectsAndLast();
+
+    // Set up menu event listeners
+    const cleanupNewProject = window.electronAPI.onOpenNewProjectDialog(() => {
+      handleOpenCreateProjectModal();
+    });
+
+    const cleanupOpenProject = window.electronAPI.onOpenProjectFolder(async (folderPath: string) => {
+      await handleOpenProjectFolder(folderPath);
+    });
+
+    // Cleanup function
+    return () => {
+      cleanupNewProject();
+      cleanupOpenProject();
+    };
   }, []);
 
   // Save selected project when it changes
@@ -171,6 +186,75 @@ const App: React.FC = () => {
     setSelectedProject(null);
     await window.electronAPI.setLastProjectId(null);
     setDeleteDialogOpen(false);
+  };
+
+  // Handle opening an existing project folder
+  const handleOpenProjectFolder = async (folderPath: string) => {
+    try {
+      // Check if this folder contains an existing AEM Starter project
+      // Look for key indicators: settings.json, author/publisher folders, etc.
+      const entries = await window.electronAPI.readDirectory(folderPath);
+      const hasSettings = entries.some(entry => entry.name === 'settings.json' && entry.isFile);
+      const hasAuthor = entries.some(entry => entry.name === 'author' && entry.isDirectory);
+      const hasPublisher = entries.some(entry => entry.name === 'publisher' && entry.isDirectory);
+      
+      if (hasSettings && (hasAuthor || hasPublisher)) {
+        // This looks like an AEM Starter project
+        // Try to read the settings to get the project name
+        let projectName = 'Imported Project';
+        try {
+          const settingsResult = await window.electronAPI.readFile(`${folderPath}/settings.json`);
+          if (settingsResult.content) {
+            const settings = JSON.parse(settingsResult.content);
+            if (settings.general?.name) {
+              projectName = settings.general.name;
+            }
+          }
+        } catch (error) {
+          console.warn('Could not read project settings:', error);
+        }
+
+        // Check if this project already exists
+        const existingProject = projects.find(p => p.folderPath === folderPath);
+        if (existingProject) {
+          // Project already exists, just select it
+          setSelectedProject(existingProject);
+          await window.electronAPI.setLastProjectId(existingProject.id);
+          return;
+        }
+
+        // Get global settings for SDK and license paths
+        const globalSettings = await window.electronAPI.getGlobalSettings();
+        const sdkPath = globalSettings.aemSdkPath || '';
+        const licensePath = globalSettings.licensePath || '';
+
+        if (!sdkPath || !licensePath) {
+          alert('Please configure AEM SDK and License paths in global settings before importing a project.');
+          return;
+        }
+
+        // Create a new project entry for this existing folder
+        const project = await window.electronAPI.createProject(
+          projectName,
+          folderPath,
+          sdkPath,
+          licensePath
+        );
+
+        // Refresh projects list and select the new project
+        const allProjects = await window.electronAPI.getAllProjects();
+        setProjects(allProjects);
+        setSelectedProject(project);
+        await window.electronAPI.setLastProjectId(project.id);
+        
+        console.log('Successfully imported existing AEM Starter project:', projectName);
+      } else {
+        alert(`The selected folder does not appear to contain an AEM Starter project.\n\nExpected to find:\n- settings.json file\n- author/ or publisher/ directories\n\nSelected: ${folderPath}`);
+      }
+    } catch (error) {
+      console.error('Error opening project folder:', error);
+      alert(`Error opening project folder: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   if (loading) {

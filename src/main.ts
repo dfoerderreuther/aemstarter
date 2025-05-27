@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, Menu } from 'electron';
 import path from 'node:path';
 import fs from 'fs';
 import started from 'electron-squirrel-startup';
@@ -64,9 +64,12 @@ const projectManager = new ProjectManager();
 // Store AEM instance managers
 const instanceManagers = new Map<string, AemInstanceManager>();
 
+// Store reference to main window for menu actions
+let mainWindow: BrowserWindow | null = null;
+
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
@@ -514,7 +517,111 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
   }
 });
 
+// Create application menu
+const createMenu = () => {
+  const template: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Open...',
+          accelerator: 'CmdOrCtrl+O',
+          click: async () => {
+            if (!mainWindow) return;
+            
+            const result = await dialog.showOpenDialog(mainWindow, {
+              properties: ['openDirectory'],
+              title: 'Open AEM Starter Project',
+              buttonLabel: 'Open Project',
+              message: 'Select a folder containing an existing AEM Starter project'
+            });
+            
+            if (!result.canceled && result.filePaths.length > 0) {
+              mainWindow.webContents.send('open-project-folder', result.filePaths[0]);
+            }
+          }
+        },
+        {
+          label: 'New Project...',
+          accelerator: 'CmdOrCtrl+N',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('open-new-project-dialog');
+            }
+          }
+        },
+        { type: 'separator' },
+        {
+          label: process.platform === 'darwin' ? 'Quit AEM Starter' : 'Exit',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+          click: () => {
+            app.quit();
+          }
+        }
+      ]
+    }
+  ];
 
+  // Add standard macOS menu items
+  if (process.platform === 'darwin') {
+    template.unshift({
+      label: app.getName(),
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    });
+
+    // Add Edit menu for macOS
+    template.push({
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' }
+      ]
+    });
+
+    // Add View menu for macOS
+    template.push({
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
+      ]
+    });
+
+    // Add Window menu for macOS
+    template.push({
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'close' }
+      ]
+    });
+  }
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+};
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -540,6 +647,7 @@ app.on('ready', () => {
   });
   
   createWindow();
+  createMenu();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

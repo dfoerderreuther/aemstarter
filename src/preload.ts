@@ -179,5 +179,26 @@ contextBridge.exposeInMainWorld(
         ipcRenderer.removeAllListeners('aem-log-data-batch');
       }
     },
+
+    // Menu event listeners
+    onOpenNewProjectDialog: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on('open-new-project-dialog', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('open-new-project-dialog', handler);
+      };
+    },
+
+    onOpenProjectFolder: (callback: (folderPath: string) => void) => {
+      const handler = (_: any, folderPath: string) => callback(folderPath);
+      ipcRenderer.on('open-project-folder', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('open-project-folder', handler);
+      };
+    },
   }
 );

@@ -91,6 +91,10 @@ declare global {
       onAemHealthStatus: (callback: (data: { projectId: string; instanceType: string; status: any }) => void) => () => void;
       
       removeAemLogDataListener: (cleanup?: () => void) => void;
+
+      // Menu event listeners
+      onOpenNewProjectDialog: (callback: () => void) => () => void;
+      onOpenProjectFolder: (callback: (folderPath: string) => void) => () => void;
     };
   }
 } 
