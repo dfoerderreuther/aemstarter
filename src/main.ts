@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net } from 'electron';
 import path from 'node:path';
 import fs from 'fs';
 import started from 'electron-squirrel-startup';
@@ -395,6 +395,19 @@ ipcMain.handle('read-screenshot', async (_, screenshotPath: string) => {
   }
 });
 
+// Register custom protocol for secure local file access
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'local-file',
+    privileges: {
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+      stream: true
+    }
+  }
+]);
+
 // Project Settings
 ipcMain.handle('get-project-settings', async (_, project: Project) => {
   try {
@@ -506,7 +519,28 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', () => {
+  // Register the custom protocol handler
+  protocol.handle('local-file', async (request) => {
+    try {
+      const url = new URL(request.url);
+      const filePath = decodeURIComponent(url.pathname);
+      
+      // Security check: ensure the file exists and is readable
+      if (!fs.existsSync(filePath)) {
+        return new Response('File not found', { status: 404 });
+      }
+      
+      // Use net.fetch with file:// protocol for secure file access
+      return net.fetch(`file://${filePath}`);
+    } catch (error) {
+      console.error('Error handling local-file protocol:', error);
+      return new Response('Internal server error', { status: 500 });
+    }
+  });
+  
+  createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

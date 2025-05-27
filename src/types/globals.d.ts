@@ -68,6 +68,8 @@ declare global {
       
       // Read screenshot as base64 data URL
       readScreenshot: (screenshotPath: string) => Promise<string | null>;
+
+
       
       // Oak-run.jar functionality
       isOakJarAvailable: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;

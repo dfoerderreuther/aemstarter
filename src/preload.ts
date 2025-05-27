@@ -104,6 +104,8 @@ contextBridge.exposeInMainWorld(
     readScreenshot: (screenshotPath: string) =>
       ipcRenderer.invoke('read-screenshot', screenshotPath),
 
+
+
     // Oak-run.jar functionality
     isOakJarAvailable: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('is-oak-jar-available', project, instanceType),

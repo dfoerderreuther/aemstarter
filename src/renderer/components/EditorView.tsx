@@ -115,10 +115,61 @@ export const EditorView: React.FC<EditorViewProps> = ({
     return path.split(/[\\/]/).pop() || '';
   };
 
+  const isImageFile = useCallback((filePath: string) => {
+    const ext = filePath.split('.').pop()?.toLowerCase();
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'];
+    return ext ? imageExtensions.includes(ext) : false;
+  }, []);
+
+  const renderImageViewer = () => (
+    <Center style={{ height: '100%', padding: '20px' }}>
+      <Stack align="center" gap="md" style={{ maxWidth: '100%', maxHeight: '100%' }}>
+        <img
+          src={`local-file://${selectedFile}`}
+          alt={getFileName(selectedFile || '')}
+          style={{
+            maxWidth: '100%',
+            maxHeight: 'calc(100vh - 300px)',
+            objectFit: 'contain',
+            border: '1px solid #2C2E33',
+            borderRadius: '4px',
+            backgroundColor: '#1A1B1E'
+          }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const errorDiv = target.nextElementSibling as HTMLElement;
+            if (errorDiv) {
+              errorDiv.style.display = 'block';
+            }
+          }}
+        />
+        <div style={{ display: 'none' }}>
+          <Stack align="center" gap="xs">
+            <IconPhoto size={48} color="gray" />
+            <Text size="sm" c="dimmed">
+              Failed to load image
+            </Text>
+          </Stack>
+        </div>
+        {selectedFile && (
+          <Stack align="center" gap="xs">
+            <Text size="sm" fw={500}>
+              {getFileName(selectedFile)}
+            </Text>
+            <Text size="xs" c="dimmed">
+              Image File
+            </Text>
+          </Stack>
+        )}
+      </Stack>
+    </Center>
+  );
+
   const renderBinaryFileMessage = () => (
     <Center style={{ height: '100%' }}>
       <Stack align="center" gap="md">
-        <IconPhoto size={64} color="gray" />
+        <IconFileTypography size={64} color="gray" />
         <Stack align="center" gap="xs">
           <Text size="lg" fw={500} c="dimmed">
             Binary File
@@ -204,7 +255,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
       </Box>
       <Box style={{ height: 'calc(100vh - 197px)' }}>
         {isBinaryFile ? (
-          renderBinaryFileMessage()
+          selectedFile && isImageFile(selectedFile) ? renderImageViewer() : renderBinaryFileMessage()
         ) : fileContent ? (
           <Editor
             height="100%"
