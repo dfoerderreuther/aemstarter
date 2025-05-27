@@ -164,13 +164,33 @@ ipcMain.handle('read-directory', async (_, dirPath, showHidden = false) => {
     const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
     return entries
       .filter(entry => showHidden || !entry.name.startsWith('.'))
-      .map(entry => ({
-        name: entry.name,
-        path: path.join(dirPath, entry.name),
-        isDirectory: entry.isDirectory(),
-        isFile: entry.isFile(),
-        isSymlink: entry.isSymbolicLink()
-      }));
+      .map(entry => {
+        const entryPath = path.join(dirPath, entry.name);
+        let isDirectory = entry.isDirectory();
+        let isFile = entry.isFile();
+        const isSymlink = entry.isSymbolicLink();
+        
+        // For symlinks, check what they point to
+        if (isSymlink) {
+          try {
+            const stats = fs.statSync(entryPath); // This follows the symlink
+            isDirectory = stats.isDirectory();
+            isFile = stats.isFile();
+          } catch (error) {
+            // If we can't stat the symlink target (broken symlink), 
+            // keep the original values
+            console.warn(`Could not stat symlink target for ${entryPath}:`, error);
+          }
+        }
+        
+        return {
+          name: entry.name,
+          path: entryPath,
+          isDirectory,
+          isFile,
+          isSymlink
+        };
+      });
   } catch (error) {
     console.error('Error reading directory:', error);
     throw error;

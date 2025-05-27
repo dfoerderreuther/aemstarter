@@ -167,17 +167,46 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
+  
+  // Custom sorting function for root level entries
+  const sortRootEntries = (entries: FileSystemEntry[]) => {
+    const priorityFolders = ['author', 'publisher', 'dispatcher', 'install'];
+    
+    return entries.sort((a, b) => {
+      // First, separate directories from files
+      if (a.isDirectory && !b.isDirectory) return -1;
+      if (!a.isDirectory && b.isDirectory) return 1;
+      
+      // If both are directories, apply priority ordering
+      if (a.isDirectory && b.isDirectory) {
+        const aPriority = priorityFolders.indexOf(a.name);
+        const bPriority = priorityFolders.indexOf(b.name);
+        
+        // If both have priority, sort by priority order
+        if (aPriority !== -1 && bPriority !== -1) {
+          return aPriority - bPriority;
+        }
+        
+        // If only one has priority, it comes first
+        if (aPriority !== -1 && bPriority === -1) return -1;
+        if (aPriority === -1 && bPriority !== -1) return 1;
+        
+        // If neither has priority, sort alphabetically
+        return a.name.localeCompare(b.name);
+      }
+      
+      // If both are files, sort alphabetically
+      return a.name.localeCompare(b.name);
+    });
+  };
+  
   const loadRootEntries = async () => {
     setIsLoading(true);
     try {
       const entries = await window.electronAPI.readDirectory(rootPath, showHidden);
-      // Sort directories first, then files alphabetically
-      entries.sort((a, b) => {
-        if (a.isDirectory && !b.isDirectory) return -1;
-        if (!a.isDirectory && b.isDirectory) return 1;
-        return a.name.localeCompare(b.name);
-      });
-      setRootEntries(entries);
+      // Apply custom sorting for root level
+      const sortedEntries = sortRootEntries(entries);
+      setRootEntries(sortedEntries);
     } catch (error) {
       console.error('Error reading root directory:', error);
     } finally {
