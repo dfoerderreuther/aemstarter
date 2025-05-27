@@ -1,6 +1,7 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Collapse, Group, Text, Box, Stack, Loader, UnstyledButton, ActionIcon } from '@mantine/core';
-import { IconFolder, IconFolderOpen, IconFile, IconChevronRight, IconChevronDown, IconRefresh, IconEye, IconEyeOff } from '@tabler/icons-react';
+import { IconFolder, IconFolderOpen, IconFile, IconChevronRight, IconChevronDown, IconRefresh, IconEye, IconEyeOff, IconPhoto, IconFileZip, IconMusic, IconVideo, IconFileText } from '@tabler/icons-react';
+import { isBinaryFileByExtension, getFileExtension } from '../utils/fileUtils';
 
 export interface FileSystemEntry {
   name: string;
@@ -69,13 +70,43 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
   
   const isHiddenFile = entry.name.startsWith('.');
   const isSelected = selectedFile === entry.path;
+  const isBinary = !entry.isDirectory && isBinaryFileByExtension(entry.path);
   
   const getFileIcon = () => {
     if (entry.isDirectory) {
       return isOpen ? <IconFolderOpen size={18} /> : <IconFolder size={18} />;
     }
-    // Just use regular file icon for hidden files
-    return <IconFile size={18} />;
+    
+    // Return different icons based on file type
+    if (isBinary) {
+      const ext = getFileExtension(entry.path);
+      
+      // Images
+      if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'svg', 'ico', 'icns'].includes(ext)) {
+        return <IconPhoto size={18} />;
+      }
+      
+      // Archives
+      if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'jar', 'war', 'ear'].includes(ext)) {
+        return <IconFileZip size={18} />;
+      }
+      
+      // Audio
+      if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a'].includes(ext)) {
+        return <IconMusic size={18} />;
+      }
+      
+      // Video
+      if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'm4v', '3gp'].includes(ext)) {
+        return <IconVideo size={18} />;
+      }
+      
+      // Default binary file icon
+      return <IconFile size={18} style={{ opacity: 0.6 }} />;
+    }
+    
+    // Text files
+    return <IconFileText size={18} />;
   };
   
   return (
@@ -101,8 +132,9 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
           </Box>
           {getFileIcon()}
           <Text size="sm" style={{ 
-            opacity: isHiddenFile ? 0.6 : 1,
-            fontStyle: isHiddenFile ? 'italic' : 'normal'
+            opacity: isHiddenFile ? 0.6 : isBinary ? 0.8 : 1,
+            fontStyle: isHiddenFile ? 'italic' : 'normal',
+            color: isBinary ? '#868e96' : undefined
           }}>
             {entry.name}
           </Text>

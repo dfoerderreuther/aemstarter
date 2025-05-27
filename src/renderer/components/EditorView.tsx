@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Group, Text, ActionIcon, Tooltip } from '@mantine/core';
-import { IconDeviceFloppy, IconX, IconRefresh } from '@tabler/icons-react';
+import { Box, Group, Text, ActionIcon, Tooltip, Stack, Center } from '@mantine/core';
+import { IconDeviceFloppy, IconX, IconRefresh, IconFileTypography, IconPhoto } from '@tabler/icons-react';
 import Editor, { useMonaco, loader } from "@monaco-editor/react";
+import { getFileName, formatFileSize } from '../utils/fileUtils';
 
 // Configure Monaco Editor to use local files
 loader.config({
@@ -13,6 +14,7 @@ loader.config({
 interface EditorViewProps {
   selectedFile: string | null;
   initialContent: string | null;
+  isBinaryFile?: boolean;
   onSave: (content: string) => Promise<void>;
   onClose: () => void;
   onRefresh?: () => Promise<void>;
@@ -21,6 +23,7 @@ interface EditorViewProps {
 export const EditorView: React.FC<EditorViewProps> = ({ 
   selectedFile, 
   initialContent,
+  isBinaryFile = false,
   onSave,
   onClose,
   onRefresh
@@ -63,7 +66,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
   }, []);
 
   const handleSave = async () => {
-    if (!fileContent) return;
+    if (!fileContent || isBinaryFile) return;
     
     try {
       setIsSaving(true);
@@ -86,7 +89,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
   // Set up Monaco Editor keyboard shortcuts
   useEffect(() => {
-    if (monaco) {
+    if (monaco && !isBinaryFile) {
       monaco.editor.addKeybindingRule({
         keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
         command: 'editor.action.customSave',
@@ -101,7 +104,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
         run: handleSave
       });
     }
-  }, [monaco, handleSave]);
+  }, [monaco, handleSave, isBinaryFile]);
 
   // Update content when initialContent changes
   useEffect(() => {
@@ -111,6 +114,27 @@ export const EditorView: React.FC<EditorViewProps> = ({
   const getBasename = (path: string): string => {
     return path.split(/[\\/]/).pop() || '';
   };
+
+  const renderBinaryFileMessage = () => (
+    <Center style={{ height: '100%' }}>
+      <Stack align="center" gap="md">
+        <IconPhoto size={64} color="gray" />
+        <Stack align="center" gap="xs">
+          <Text size="lg" fw={500} c="dimmed">
+            Binary File
+          </Text>
+          <Text size="sm" c="dimmed" ta="center">
+            This file appears to be a binary file and cannot be displayed in the text editor.
+          </Text>
+          {selectedFile && (
+            <Text size="xs" c="dimmed" ta="center">
+              {getFileName(selectedFile)}
+            </Text>
+          )}
+        </Stack>
+      </Stack>
+    </Center>
+  );
 
   return (
     <>
@@ -139,23 +163,25 @@ export const EditorView: React.FC<EditorViewProps> = ({
                     <IconRefresh size={16} />
                   </ActionIcon>
                 </Tooltip>
-                <Tooltip 
-                  label="Save (⌘S)" 
-                  withArrow 
-                  withinPortal
-                  position="bottom"
-                >
-                  <ActionIcon 
-                    variant="subtle" 
-                    color="blue"
-                    onClick={handleSave}
-                    loading={isSaving}
-                    disabled={!fileContent}
-                    size="sm"
+                {!isBinaryFile && (
+                  <Tooltip 
+                    label="Save (⌘S)" 
+                    withArrow 
+                    withinPortal
+                    position="bottom"
                   >
-                    <IconDeviceFloppy size={16} />
-                  </ActionIcon>
-                </Tooltip>
+                    <ActionIcon 
+                      variant="subtle" 
+                      color="blue"
+                      onClick={handleSave}
+                      loading={isSaving}
+                      disabled={!fileContent}
+                      size="sm"
+                    >
+                      <IconDeviceFloppy size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
                 <Tooltip 
                   label="Close file" 
                   withArrow 
@@ -177,7 +203,9 @@ export const EditorView: React.FC<EditorViewProps> = ({
         </Group>
       </Box>
       <Box style={{ height: 'calc(100vh - 197px)' }}>
-        {fileContent ? (
+        {isBinaryFile ? (
+          renderBinaryFileMessage()
+        ) : fileContent ? (
           <Editor
             height="100%"
             className="monaco-editor-container"
