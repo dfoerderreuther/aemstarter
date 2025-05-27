@@ -10,6 +10,9 @@ interface SettingsModalProps {
 
 interface ProjectSettings {
   version: string;
+  general: {
+    name: string;
+  };
   author: {
     port: number;
     runmode: string;

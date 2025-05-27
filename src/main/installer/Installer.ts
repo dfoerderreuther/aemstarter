@@ -134,6 +134,8 @@ export class Installer {
                 );
             }
         }
+        const configPath = `${this.workDir}/dispatcher/config}`;
+        fs.mkdirSync(configPath, { recursive: true });
     }
 
     private createReadme() {
@@ -142,7 +144,8 @@ export class Installer {
     }
 
     private createSettings() {
-        const settingsContent = ProjectSettings.SETTINGS_TEMPLATE;
+        const settingsContent = ProjectSettings.SETTINGS_TEMPLATE
+            .replace('{{PROJECT_NAME}}', this.project.name)
         fs.writeFileSync(`${this.project.folderPath}/settings.json`, settingsContent);
     }
 
