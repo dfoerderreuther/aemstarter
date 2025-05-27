@@ -26,8 +26,9 @@ export class ProjectSettings {
     }, 
     "dispatcher": {
         "port": 80,
-        "host": "localhost"
+        "host": "localhost",
         "config": "./config"
+    }
 }
     `;
 

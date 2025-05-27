@@ -27,6 +27,11 @@ interface ProjectSettings {
     debugJvmOpts: string;
     healthCheck: boolean;
   };
+  dispatcher: {
+    port: number;
+    host: string;
+    config: string;
+  };
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, project }) => {
@@ -66,6 +71,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
     }
   };
 
+  const updateGeneralSettings = (field: string, value: any) => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      general: {
+        ...settings.general,
+        [field]: value
+      }
+    });
+  };
+
   const updateAuthorSettings = (field: string, value: any) => {
     if (!settings) return;
     setSettings({
@@ -83,6 +99,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
       ...settings,
       publisher: {
         ...settings.publisher,
+        [field]: value
+      }
+    });
+  };
+
+  const updateDispatcherSettings = (field: string, value: any) => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      dispatcher: {
+        ...settings.dispatcher,
         [field]: value
       }
     });
@@ -108,7 +135,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
 
         <Tabs.Panel value="general" pt="md">
           <Stack gap="md">
-            <Text size="sm" c="dimmed">General settings will be available in future versions.</Text>
+            <TextInput
+              label="Project Name"
+              value={settings.general.name}
+              onChange={(event) => updateGeneralSettings('name', event.currentTarget.value)}
+            />
           </Stack>
         </Tabs.Panel>
 
@@ -194,7 +225,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
 
         <Tabs.Panel value="dispatcher" pt="md">
           <Stack gap="md">
-            <Text size="sm" c="dimmed">Dispatcher settings will be available in future versions.</Text>
+            <NumberInput
+              label="Port"
+              description="Port number for the dispatcher"
+              value={settings.dispatcher.port}
+              onChange={(value) => updateDispatcherSettings('port', value)}
+              min={1}
+              max={65535}
+            />
+            
+            <TextInput
+              label="Host"
+              description="Hostname for the dispatcher"
+              value={settings.dispatcher.host}
+              onChange={(event) => updateDispatcherSettings('host', event.currentTarget.value)}
+            />
+            
+            <TextInput
+              label="Config Path"
+              description="Path to dispatcher configuration"
+              value={settings.dispatcher.config}
+              onChange={(event) => updateDispatcherSettings('config', event.currentTarget.value)}
+            />
           </Stack>
         </Tabs.Panel>
       </Tabs>
