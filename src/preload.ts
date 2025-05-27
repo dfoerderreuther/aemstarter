@@ -86,6 +86,10 @@ contextBridge.exposeInMainWorld(
     installPackage: (project: Project, instance: 'author' | 'publisher', packageUrl: string) =>
       ipcRenderer.invoke('install-package', project, instance, packageUrl),
 
+    // Replication Settings
+    setupReplication: (project: Project, instance: 'author' | 'publisher') =>
+      ipcRenderer.invoke('setup-replication', project, instance),
+
     // Screenshot and Health Check functionality
     takeAemScreenshot: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('take-aem-screenshot', project, instanceType),

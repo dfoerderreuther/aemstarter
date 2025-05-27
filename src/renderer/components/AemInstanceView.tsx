@@ -7,6 +7,7 @@ import { Screenshot } from './Screenshot';
 import { OakRunMenu } from './OakRunMenu';
 import { PackageMenu } from './PackageMenu';
 import { IconX, IconChevronLeft, IconChevronRight, IconTextSize } from '@tabler/icons-react';
+import { SettingsMenu } from "./SettingsMenu";
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -291,6 +292,11 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                   instance={instance}
                   isRunning={isRunning}
                   onLogFileSwitch={handleLogFileChange}
+                />
+                <SettingsMenu 
+                  project={project}
+                  instance={instance}
+                  isRunning={isRunning}
                 />
               </Stack>
             )}

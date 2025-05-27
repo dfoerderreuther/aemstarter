@@ -56,6 +56,9 @@ declare global {
       
       // Package Installation
       installPackage: (project: Project, instance: 'author' | 'publisher', packageUrl: string) => Promise<boolean>;
+
+      // Replication Settings
+      setupReplication: (project: Project, instance: 'author' | 'publisher') => Promise<{ success: boolean; output?: string; error?: any }>;
       
       
       // Screenshot and Health Check functionality

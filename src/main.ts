@@ -7,6 +7,7 @@ import { Installer } from './main/installer/Installer';
 import { AemInstanceManager } from './main/services/AemInstanceManager';
 import { ProjectSettings } from './main/services/ProjectSettings';
 import { PackageInstaller } from './main/services/PackageInstaller';
+import { ReplicationSettings } from './main/services/ReplicationSettings';
 import { Project } from './types/Project';
 
 // Increase memory limits for AEM operations
@@ -419,6 +420,18 @@ ipcMain.handle('install-package', async (_, project: Project, instance: 'author'
     return true;
   } catch (error) {
     console.error('Error installing package:', error);
+    throw error;
+  }
+});
+
+// Replication Settings
+ipcMain.handle('setup-replication', async (_, project: Project, instance: 'author' | 'publisher') => {
+  try {
+    const replicationSettings = ReplicationSettings.getInstance();
+    const result = await replicationSettings.setReplication(project, instance);
+    return result;
+  } catch (error) {
+    console.error('Error setting up replication:', error);
     throw error;
   }
 });
