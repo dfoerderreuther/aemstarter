@@ -36,7 +36,6 @@ interface ProjectSettings {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, project }) => {
   const [settings, setSettings] = useState<ProjectSettings | null>(null);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -47,14 +46,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
 
   const loadSettings = async () => {
     try {
-      setLoading(true);
       const projectSettings = await window.electronAPI.getProjectSettings(project);
       setSettings(projectSettings);
     } catch (error) {
       console.error('Error loading settings:', error);
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   const handleSave = async () => {
