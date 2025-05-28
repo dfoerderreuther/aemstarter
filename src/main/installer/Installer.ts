@@ -134,8 +134,8 @@ export class Installer {
                 );
             }
         }
-        const configPath = `${this.workDir}/dispatcher/config`;
-        fs.mkdirSync(configPath, { recursive: true });
+        //const configPath = `${this.workDir}/dispatcher/config`;
+        //fs.mkdirSync(configPath, { recursive: true });
     }
 
     private createReadme() {
