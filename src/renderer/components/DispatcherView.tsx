@@ -56,10 +56,14 @@ export const DispatcherView = ({ project, visible = true }: DispatcherViewProps)
   // Listen for dispatcher status updates
   useEffect(() => {
     const cleanup = window.electronAPI.onDispatcherStatus((data) => {
+      console.log(`[DispatcherView] Received status update:`, data);
       if (data.projectId === project.id) {
+        console.log(`[DispatcherView] Updating status for project ${project.id}: isRunning=${data.isRunning}`);
         setIsRunning(data.isRunning);
         setIsStarting(false);
         setIsStopping(false);
+      } else {
+        console.log(`[DispatcherView] Ignoring status update for different project: ${data.projectId} (current: ${project.id})`);
       }
     });
 

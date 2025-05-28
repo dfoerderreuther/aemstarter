@@ -565,6 +565,9 @@ ipcMain.handle('get-dispatcher-status', async (_, project: Project) => {
     if (!manager) {
       manager = new DispatcherManager(project, mainWindow || undefined);
       dispatcherManagers.set(project.id, manager);
+    } else {
+      // Always update the main window reference for existing managers
+      manager.setMainWindow(mainWindow!);
     }
     return manager.getDispatcherStatus();
   } catch (error) {

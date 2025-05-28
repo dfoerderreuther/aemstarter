@@ -30,12 +30,21 @@ export class DispatcherManager {
 
     setMainWindow(mainWindow: BrowserWindow) {
         this.mainWindow = mainWindow;
+        // Send current status when window is set/updated
+        this.sendStatusUpdate(this.isDispatcherRunning());
     }
 
     async startDispatcher(): Promise<void> {
+        // Clean up any stale references first
+        this.cleanupStaleReferences();
+        
         if (this.instance.process) {
             throw new Error('Dispatcher is already running');
         }
+
+        // Ensure clean state before starting
+        this.instance.process = null;
+        this.instance.pid = null;
 
         // Load settings from ProjectSettings
         const settings = ProjectSettings.getSettings(this.project);
@@ -75,11 +84,17 @@ export class DispatcherManager {
             const dispatcherProcess = spawn('bash', args, {
                 cwd: dispatcherDir,
                 env: env,
-                stdio: ['pipe', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe'],
+                detached: true
             });
 
+            // Immediately check if process started successfully
+            if (!dispatcherProcess.pid) {
+                throw new Error('Failed to start dispatcher process - no PID assigned');
+            }
+
             this.instance.process = dispatcherProcess;
-            this.instance.pid = dispatcherProcess.pid || null;
+            this.instance.pid = dispatcherProcess.pid;
             this.instance.port = dispatcherSettings.port;
             this.instance.config = dispatcherSettings.config;
 
@@ -96,28 +111,52 @@ export class DispatcherManager {
                 this.sendLogData(output);
             });
 
-            // Handle process exit
+            // Handle process exit - ensure cleanup
             dispatcherProcess.on('exit', (code, signal) => {
                 console.log(`Dispatcher process exited with code ${code} and signal ${signal}`);
-                this.instance.process = null;
-                this.instance.pid = null;
-                this.sendStatusUpdate(false);
+                // Only clean up if this is still our current process
+                if (this.instance.process === dispatcherProcess) {
+                    this.instance.process = null;
+                    this.instance.pid = null;
+                    this.sendStatusUpdate(false);
+                }
             });
 
             dispatcherProcess.on('error', (error) => {
                 console.error('Dispatcher process error:', error);
-                this.instance.process = null;
-                this.instance.pid = null;
-                this.sendStatusUpdate(false);
-                throw error;
+                // Only clean up if this is still our current process
+                if (this.instance.process === dispatcherProcess) {
+                    this.instance.process = null;
+                    this.instance.pid = null;
+                    this.sendStatusUpdate(false);
+                }
             });
+
+            // Wait a moment to ensure process is stable before sending status update
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Verify process is still running before sending success status
+            if (dispatcherProcess.killed || dispatcherProcess.exitCode !== null) {
+                throw new Error('Dispatcher process terminated immediately after start');
+            }
 
             // Send initial status update
             this.sendStatusUpdate(true);
+            
+            // Send another status update after a short delay to ensure UI synchronization
+            setTimeout(() => {
+                if (this.instance.process === dispatcherProcess && this.isDispatcherRunning()) {
+                    this.sendStatusUpdate(true);
+                }
+            }, 1000);
 
-            console.log(`Dispatcher started with PID: ${dispatcherProcess.pid}`);
+            console.log(`Dispatcher started successfully with PID: ${dispatcherProcess.pid}`);
         } catch (error) {
             console.error('Error starting dispatcher:', error);
+            // Ensure clean state on error
+            this.instance.process = null;
+            this.instance.pid = null;
+            this.sendStatusUpdate(false);
             throw error;
         }
     }
@@ -127,33 +166,122 @@ export class DispatcherManager {
             throw new Error('Dispatcher is not running');
         }
 
-        try {
-            console.log(`Stopping dispatcher with PID: ${this.instance.pid}`);
-            
-            // Kill the process
-            this.instance.process.kill('SIGTERM');
-            
-            // Wait a bit for graceful shutdown
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Force kill if still running
-            if (this.instance.process && !this.instance.process.killed) {
-                this.instance.process.kill('SIGKILL');
-            }
+        const processToStop = this.instance.process;
+        const pidToStop = this.instance.pid;
 
-            this.instance.process = null;
-            this.instance.pid = null;
-            this.sendStatusUpdate(false);
+        try {
+            console.log(`Stopping dispatcher with PID: ${pidToStop}`);
+            
+            // Send SIGINT (Ctrl+C) to the process group - this is the standard way
+            // the dispatcher script expects to be stopped
+            if (pidToStop) {
+                try {
+                    // Kill the entire process group with SIGINT (Ctrl+C equivalent)
+                    process.kill(-pidToStop, 'SIGINT');
+                    console.log('Sent SIGINT to process group');
+                } catch (killError) {
+                    console.warn('Error sending SIGINT to process group, trying individual process:', killError);
+                    // Fallback to killing just the main process
+                    processToStop.kill('SIGINT');
+                }
+            } else {
+                processToStop.kill('SIGINT');
+            }
+            
+            // Wait longer for graceful shutdown since Docker containers may take time to stop
+            console.log('Waiting for graceful shutdown...');
+            let waitTime = 0;
+            const maxWaitTime = 10000; // 10 seconds
+            const checkInterval = 500; // Check every 500ms
+            
+            while (waitTime < maxWaitTime && processToStop.exitCode === null && !processToStop.killed) {
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+                waitTime += checkInterval;
+            }
+            
+            // If still running, try SIGTERM
+            if (processToStop.exitCode === null && !processToStop.killed) {
+                console.log('Process still running, sending SIGTERM...');
+                if (pidToStop) {
+                    try {
+                        process.kill(-pidToStop, 'SIGTERM');
+                    } catch (killError) {
+                        console.warn('Error sending SIGTERM to process group:', killError);
+                        processToStop.kill('SIGTERM');
+                    }
+                } else {
+                    processToStop.kill('SIGTERM');
+                }
+                
+                // Wait a bit more for SIGTERM
+                waitTime = 0;
+                const maxTermWaitTime = 5000; // 5 seconds
+                while (waitTime < maxTermWaitTime && processToStop.exitCode === null && !processToStop.killed) {
+                    await new Promise(resolve => setTimeout(resolve, checkInterval));
+                    waitTime += checkInterval;
+                }
+            }
+            
+            // Final force kill if absolutely necessary
+            if (processToStop.exitCode === null && !processToStop.killed) {
+                console.log('Process still running, force killing with SIGKILL...');
+                if (pidToStop) {
+                    try {
+                        process.kill(-pidToStop, 'SIGKILL');
+                    } catch (killError) {
+                        console.warn('Error force killing process group:', killError);
+                        processToStop.kill('SIGKILL');
+                    }
+                } else {
+                    processToStop.kill('SIGKILL');
+                }
+                
+                // Wait a bit for force kill to take effect
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
 
             console.log('Dispatcher stopped successfully');
         } catch (error) {
             console.error('Error stopping dispatcher:', error);
-            throw error;
+        } finally {
+            // Always clean up instance state, regardless of how stopping went
+            if (this.instance.process === processToStop) {
+                this.instance.process = null;
+                this.instance.pid = null;
+                this.sendStatusUpdate(false);
+            }
         }
     }
 
     isDispatcherRunning(): boolean {
-        return this.instance.process !== null && !this.instance.process.killed;
+        if (!this.instance.process) {
+            return false;
+        }
+        
+        // Check if process is actually still running
+        if (this.instance.process.killed || this.instance.process.exitCode !== null) {
+            // Process is dead, clean up
+            this.instance.process = null;
+            this.instance.pid = null;
+            this.sendStatusUpdate(false);
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Clean up any stale process references and ensure consistent state
+     */
+    cleanupStaleReferences(): void {
+        if (this.instance.process) {
+            if (this.instance.process.killed || this.instance.process.exitCode !== null) {
+                console.log('Cleaning up stale process reference');
+                this.instance.process = null;
+                this.instance.pid = null;
+                this.sendStatusUpdate(false);
+            }
+        }
     }
 
     getDispatcherStatus() {
@@ -175,6 +303,8 @@ export class DispatcherManager {
     }
 
     private sendStatusUpdate(isRunning: boolean) {
+        console.log(`[DispatcherManager] Sending status update for project ${this.project.id}: isRunning=${isRunning}, pid=${this.instance.pid}, port=${this.instance.port}`);
+        
         if (this.mainWindow && !this.mainWindow.isDestroyed()) {
             this.mainWindow.webContents.send('dispatcher-status', {
                 projectId: this.project.id,
@@ -182,6 +312,9 @@ export class DispatcherManager {
                 pid: this.instance.pid,
                 port: this.instance.port
             });
+            console.log(`[DispatcherManager] Status update sent successfully`);
+        } else {
+            console.warn(`[DispatcherManager] Cannot send status update - mainWindow is ${this.mainWindow ? 'destroyed' : 'null'}`);
         }
     }
 
@@ -189,5 +322,12 @@ export class DispatcherManager {
         console.log('flushDispatcher');
         // TODO: Implement dispatcher flush functionality
         // This would typically send a flush request to the dispatcher
+    }
+
+    /**
+     * Force a status update to be sent to the UI
+     */
+    forceStatusUpdate(): void {
+        this.sendStatusUpdate(this.isDispatcherRunning());
     }
 }

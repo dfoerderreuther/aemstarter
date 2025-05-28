@@ -99,6 +99,18 @@ declare global {
       onOpenNewProjectDialog: (callback: () => void) => () => void;
       onOpenProjectFolder: (callback: (folderPath: string) => void) => () => void;
       onOpenRecentProject: (callback: (projectId: string) => void) => () => void;
+
+      // Dispatcher Management
+      startDispatcher: (project: Project) => Promise<boolean>;
+      stopDispatcher: (project: Project) => Promise<boolean>;
+      getDispatcherStatus: (project: Project) => Promise<{ isRunning: boolean; pid: number | null; port: number; config: string }>;
+      flushDispatcher: (project: Project) => Promise<boolean>;
+
+      // Dispatcher log streaming
+      onDispatcherLogData: (callback: (data: { projectId: string; data: string }) => void) => () => void;
+
+      // Dispatcher status streaming
+      onDispatcherStatus: (callback: (data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => void) => () => void;
     };
   }
 } 
