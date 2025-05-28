@@ -16,6 +16,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
   const [isInstalling, setIsInstalling] = useState(false);
   const [isAuthorRunning, setIsAuthorRunning] = useState(false);
   const [isPublisherRunning, setIsPublisherRunning] = useState(false);
+  const [isDispatcherRunning, setIsDispatcherRunning] = useState(false);
   const [authorPid, setAuthorPid] = useState<number | null>(null);
   const [publisherPid, setPublisherPid] = useState<number | null>(null);
 
@@ -23,16 +24,18 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const [authorRunning, publisherRunning, authorPidValue, publisherPidValue] = await Promise.all([
+        const [authorRunning, publisherRunning, authorPidValue, publisherPidValue, dispatcherStatus] = await Promise.all([
           window.electronAPI.isAemInstanceRunning(project, 'author'),
           window.electronAPI.isAemInstanceRunning(project, 'publisher'),
           window.electronAPI.getAemInstancePid(project, 'author'),
-          window.electronAPI.getAemInstancePid(project, 'publisher')
+          window.electronAPI.getAemInstancePid(project, 'publisher'),
+          window.electronAPI.getDispatcherStatus(project)
         ]);
         setIsAuthorRunning(authorRunning);
         setIsPublisherRunning(publisherRunning);
         setAuthorPid(authorPidValue);
         setPublisherPid(publisherPidValue);
+        setIsDispatcherRunning(dispatcherStatus.isRunning);
       } catch (error) {
         console.error('Error checking instance status:', error);
       }
@@ -53,10 +56,18 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
         }
       }
     });
+
+    // Set up dispatcher status event listener
+    const dispatcherStatusCleanup = window.electronAPI.onDispatcherStatus((data) => {
+      if (data.projectId === project.id) {
+        setIsDispatcherRunning(data.isRunning);
+      }
+    });
     
     return () => {
       clearInterval(interval);
       pidStatusCleanup();
+      dispatcherStatusCleanup();
     };
   }, [project]);
 
@@ -205,6 +216,22 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
       await window.electronAPI.openUrl('http://localhost:4503');
     } catch (error) {
       console.error('Error opening publisher URL:', error);
+    }
+  };
+
+  const handleStartDispatcher = async () => {
+    try {
+      await window.electronAPI.startDispatcher(project);
+    } catch (error) {
+      console.error('Error starting dispatcher:', error);
+    }
+  };
+
+  const handleStopDispatcher = async () => {
+    try {
+      await window.electronAPI.stopDispatcher(project);
+    } catch (error) {
+      console.error('Error stopping dispatcher:', error);
     }
   };
 
@@ -430,8 +457,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
           <Stack gap="xs">
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Dispatcher</Text>
-              <Badge variant="light" color="red" size="sm">
-                
+              <Badge variant="light" color={isDispatcherRunning ? "green" : "red"} size="sm">
+                {isDispatcherRunning ? "Running" : "Stopped"}
               </Badge>
             </Group>
             <Group gap="xs">
@@ -442,7 +469,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                     variant="filled" 
                     size="xs"
                     styles={buttonStyles}
-                    disabled={true}
+                    onClick={handleStartDispatcher}
+                    disabled={isDispatcherRunning}
                   >
                     <IconPlayerPlay size={16} />
                   </Button>
@@ -454,7 +482,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                     variant="filled" 
                     size="xs"
                     styles={buttonStyles}
-                    disabled={true}
+                    onClick={handleStopDispatcher}
+                    disabled={!isDispatcherRunning}
                   >
                     <IconPlayerStop size={16} />
                   </Button>
