@@ -5,6 +5,7 @@ import started from 'electron-squirrel-startup';
 import { ProjectManager } from './main/services/ProjectManager';
 import { Installer } from './main/installer/Installer';
 import { AemInstanceManager } from './main/services/AemInstanceManager';
+import { DispatcherManager } from './main/services/DispatcherManager';
 import { ProjectSettings } from './main/services/ProjectSettings';
 import { PackageInstaller } from './main/services/PackageInstaller';
 import { ReplicationSettings } from './main/services/ReplicationSettings';
@@ -63,6 +64,9 @@ const projectManager = new ProjectManager();
 
 // Store AEM instance managers
 const instanceManagers = new Map<string, AemInstanceManager>();
+
+// Store Dispatcher managers
+const dispatcherManagers = new Map<string, DispatcherManager>();
 
 // Store reference to main window for menu actions
 let mainWindow: BrowserWindow | null = null;
@@ -519,6 +523,66 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
     return true;
   } catch (error) {
     console.error('Error running oak compaction:', error);
+    throw error;
+  }
+});
+
+// Dispatcher Management
+ipcMain.handle('start-dispatcher', async (_, project: Project) => {
+  try {
+    let manager = dispatcherManagers.get(project.id);
+    if (!manager) {
+      manager = new DispatcherManager(project, mainWindow || undefined);
+      dispatcherManagers.set(project.id, manager);
+    } else {
+      manager.setMainWindow(mainWindow!);
+    }
+    await manager.startDispatcher();
+    return true;
+  } catch (error) {
+    console.error('Error starting dispatcher:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('stop-dispatcher', async (_, project: Project) => {
+  try {
+    const manager = dispatcherManagers.get(project.id);
+    if (!manager) {
+      throw new Error('Dispatcher manager not found');
+    }
+    await manager.stopDispatcher();
+    return true;
+  } catch (error) {
+    console.error('Error stopping dispatcher:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('get-dispatcher-status', async (_, project: Project) => {
+  try {
+    let manager = dispatcherManagers.get(project.id);
+    if (!manager) {
+      manager = new DispatcherManager(project, mainWindow || undefined);
+      dispatcherManagers.set(project.id, manager);
+    }
+    return manager.getDispatcherStatus();
+  } catch (error) {
+    console.error('Error getting dispatcher status:', error);
+    return { isRunning: false, pid: null, port: 80, config: './dispatcher-sdk/src' };
+  }
+});
+
+ipcMain.handle('flush-dispatcher', async (_, project: Project) => {
+  try {
+    const manager = dispatcherManagers.get(project.id);
+    if (!manager) {
+      throw new Error('Dispatcher manager not found');
+    }
+    await manager.flushDispatcher();
+    return true;
+  } catch (error) {
+    console.error('Error flushing dispatcher:', error);
     throw error;
   }
 });

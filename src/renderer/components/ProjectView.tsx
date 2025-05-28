@@ -58,8 +58,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           />
         </Tabs.Panel>
 
-        <Tabs.Panel value="dispatcher">
-          <DispatcherView />
+        <Tabs.Panel value="dispatcher" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <DispatcherView 
+            project={project} 
+            visible={activeTab === 'dispatcher'}
+          />
         </Tabs.Panel>
 
         <Tabs.Panel value="files" p="md">

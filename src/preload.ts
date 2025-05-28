@@ -214,5 +214,40 @@ contextBridge.exposeInMainWorld(
         ipcRenderer.removeListener('open-recent-project', handler);
       };
     },
+
+    // Dispatcher Management
+    startDispatcher: (project: Project) =>
+      ipcRenderer.invoke('start-dispatcher', project),
+    
+    stopDispatcher: (project: Project) =>
+      ipcRenderer.invoke('stop-dispatcher', project),
+    
+    getDispatcherStatus: (project: Project) =>
+      ipcRenderer.invoke('get-dispatcher-status', project),
+    
+    flushDispatcher: (project: Project) =>
+      ipcRenderer.invoke('flush-dispatcher', project),
+
+    // Dispatcher log streaming
+    onDispatcherLogData: (callback: (data: { projectId: string; data: string }) => void) => {
+      const handler = (_: any, data: { projectId: string; data: string }) => callback(data);
+      ipcRenderer.on('dispatcher-log-data', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('dispatcher-log-data', handler);
+      };
+    },
+
+    // Dispatcher status streaming
+    onDispatcherStatus: (callback: (data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => void) => {
+      const handler = (_: any, data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => callback(data);
+      ipcRenderer.on('dispatcher-status', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('dispatcher-status', handler);
+      };
+    },
   }
 );
