@@ -65,9 +65,9 @@ declare global {
       
       
       // Screenshot and Health Check functionality
-      takeAemScreenshot: (project: Project, instanceType: 'author' | 'publisher') => Promise<string>;
-      getLatestScreenshot: (project: Project, instanceType: 'author' | 'publisher') => Promise<string | null>;
-      getHealthStatus: (project: Project, instanceType: 'author' | 'publisher') => Promise<any>;
+      takeAemScreenshot: (project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') => Promise<string>;
+      getLatestScreenshot: (project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') => Promise<string | null>;
+      getHealthStatus: (project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') => Promise<any>;
       
       // Read screenshot as base64 data URL
       readScreenshot: (screenshotPath: string) => Promise<string | null>;

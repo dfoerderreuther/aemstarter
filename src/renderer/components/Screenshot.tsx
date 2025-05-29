@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 
 interface ScreenshotProps {
   project: Project;
-  instance: 'author' | 'publisher';
+  instance: 'author' | 'publisher' | 'dispatcher';
   isRunning: boolean;
 }
 

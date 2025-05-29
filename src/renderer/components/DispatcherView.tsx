@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
 import { IconX, IconChevronLeft, IconChevronRight, IconTextSize } from '@tabler/icons-react';
+import { Screenshot } from "./Screenshot";
 
 interface DispatcherViewProps {
   project: Project;
@@ -228,9 +229,7 @@ export const DispatcherView = ({ project, visible = true }: DispatcherViewProps)
             {/* Column Content */}
             {!isCollapsed && (
               <Stack gap="sm" p="sm" style={{ flex: 1, overflow: 'auto' }}>
-                
-                
-               
+                <Screenshot project={project} instance="dispatcher" isRunning={isRunning} />
               </Stack>
             )}
           </Box>
