@@ -10,7 +10,7 @@
     "dev": "concurrently \"vite\" \"wait-on tcp:5173 && sleep 2 && npm run dev:electron\"",
     "package": "NODE_NO_WARNINGS=1 electron-forge package",
     "make": "NODE_NO_WARNINGS=1 electron-forge make",
-    "publish": "NODE_NO_WARNINGS=1 electron-forge publish",
+    "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],

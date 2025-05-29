@@ -13,7 +13,7 @@ const config: ForgeConfig = {
     // macOS specific configuration
     osxSign: {
       identity: '9C86B0E8B0AADB16EC370431C6E7DDAC50D97DE4',
-      optionsForFile: (filePath: string) => {
+      optionsForFile: (_filePath: string) => {
         // Return entitlements for the main app
         return {
           entitlements: 'entitlements.mac.plist',
