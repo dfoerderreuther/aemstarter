@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserPlus } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
@@ -262,6 +262,22 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
     }
   };
 
+  const handleOpenPublisherAdmin = async () => {
+    try {
+      await window.electronAPI.openUrl('http://localhost:4503/libs/granite/core/content/login.html');
+    } catch (error) {
+      console.error('Error opening publisher URL:', error);
+    }
+  };
+
+  const handleOpenDispatcher = async () => {
+    try {
+      await window.electronAPI.openUrl('http://localhost:80');
+    } catch (error) {
+      console.error('Error opening dispatcher URL:', error);
+    }
+  };
+
   const handleStartDispatcher = async () => {
     try {
       await window.electronAPI.startDispatcher(project);
@@ -476,7 +492,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                 </Tooltip>
               </Button.Group>
 
-              <Tooltip label="Open publisher">
+              <Button.Group>
+                <Tooltip label="Open publisher">
                   <Button
                     color="green" 
                     variant="filled" 
@@ -489,6 +506,19 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   </Button>
                 </Tooltip>
 
+                <Tooltip label="Open publisher admin">
+                    <Button
+                      color="green" 
+                      variant="filled" 
+                      size="xs"
+                      styles={buttonStyles}
+                      onClick={handleOpenPublisherAdmin}
+                      disabled={!isPublisherRunning}
+                    >
+                      <IconBrowserPlus size={16} />
+                    </Button>
+                  </Tooltip>
+                </Button.Group>
             </Group>
           </Stack>
         </Paper>
@@ -532,6 +562,19 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                   </Button>
                 </Tooltip>
               </Button.Group>
+
+              <Tooltip label="Open dispatcher">
+                <Button
+                  color="green" 
+                  variant="filled" 
+                  size="xs"
+                  styles={buttonStyles}
+                  onClick={handleOpenDispatcher}
+                  disabled={!isDispatcherRunning}
+                >
+                  <IconBrowser size={16} />
+                </Button>
+              </Tooltip>
             </Group>
           </Stack>
         </Paper>
