@@ -228,6 +228,16 @@ contextBridge.exposeInMainWorld(
     flushDispatcher: (project: Project) =>
       ipcRenderer.invoke('flush-dispatcher', project),
 
+    // Dispatcher Health Checking
+    takeDispatcherScreenshot: (project: Project) =>
+      ipcRenderer.invoke('take-dispatcher-screenshot', project),
+    
+    getDispatcherHealthStatus: (project: Project) =>
+      ipcRenderer.invoke('get-dispatcher-health-status', project),
+    
+    checkDispatcherHealth: (project: Project) =>
+      ipcRenderer.invoke('check-dispatcher-health', project),
+
     // Dispatcher log streaming
     onDispatcherLogData: (callback: (data: { projectId: string; data: string }) => void) => {
       const handler = (_: any, data: { projectId: string; data: string }) => callback(data);

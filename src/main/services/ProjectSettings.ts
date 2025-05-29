@@ -26,7 +26,8 @@ export class ProjectSettings {
     }, 
     "dispatcher": {
         "port": 80,
-        "config": "./dispatcher-sdk/src"
+        "config": "./dispatcher-sdk/src",
+        "healthCheck": true
     }
 }
     `;

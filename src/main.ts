@@ -451,6 +451,18 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
       }
     }
     
+    // Check dispatcher health checking
+    const dispatcherManager = dispatcherManagers.get(project.id);
+    if (dispatcherManager) {
+      if (settings.dispatcher?.healthCheck && dispatcherManager.isDispatcherRunning()) {
+        console.log('[main] Starting health checking for dispatcher after settings change');
+        dispatcherManager.startHealthChecking();
+      } else if (!settings.dispatcher?.healthCheck) {
+        console.log('[main] Stopping health checking for dispatcher after settings change');
+        dispatcherManager.stopHealthChecking();
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error('Error saving project settings:', error);
@@ -586,6 +598,46 @@ ipcMain.handle('flush-dispatcher', async (_, project: Project) => {
     return true;
   } catch (error) {
     console.error('Error flushing dispatcher:', error);
+    throw error;
+  }
+});
+
+// Dispatcher Health Checking
+ipcMain.handle('take-dispatcher-screenshot', async (_, project: Project) => {
+  try {
+    const manager = dispatcherManagers.get(project.id);
+    if (!manager) {
+      throw new Error('Dispatcher manager not found');
+    }
+    return await manager.takeScreenshot();
+  } catch (error) {
+    console.error('Error taking dispatcher screenshot:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('get-dispatcher-health-status', async (_, project: Project) => {
+  try {
+    const manager = dispatcherManagers.get(project.id);
+    if (!manager) {
+      throw new Error('Dispatcher manager not found');
+    }
+    return manager.getHealthStatus();
+  } catch (error) {
+    console.error('Error getting dispatcher health status:', error);
+    return null;
+  }
+});
+
+ipcMain.handle('check-dispatcher-health', async (_, project: Project) => {
+  try {
+    const manager = dispatcherManagers.get(project.id);
+    if (!manager) {
+      throw new Error('Dispatcher manager not found');
+    }
+    return await manager.checkHealth();
+  } catch (error) {
+    console.error('Error checking dispatcher health:', error);
     throw error;
   }
 });

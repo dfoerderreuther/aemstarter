@@ -4,6 +4,7 @@ import { ProjectSettings } from './ProjectSettings';
 import path from 'path';
 import fs from 'fs';
 import { BrowserWindow } from 'electron';
+import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
 
 interface DispatcherInstance {
   process: ChildProcess | null;
@@ -16,10 +17,12 @@ export class DispatcherManager {
     private project: Project;
     private instance: DispatcherInstance;
     private mainWindow: BrowserWindow | null = null;
+    private healthChecker: AemHealthChecker;
 
     constructor(project: Project, mainWindow?: BrowserWindow) {
         this.project = project;
         this.mainWindow = mainWindow || null;
+        this.healthChecker = new AemHealthChecker(project);
         this.instance = {
             process: null,
             pid: null,
@@ -118,6 +121,7 @@ export class DispatcherManager {
                 if (this.instance.process === dispatcherProcess) {
                     this.instance.process = null;
                     this.instance.pid = null;
+                    this.healthChecker.stopHealthChecking('dispatcher');
                     this.sendStatusUpdate(false);
                 }
             });
@@ -128,6 +132,7 @@ export class DispatcherManager {
                 if (this.instance.process === dispatcherProcess) {
                     this.instance.process = null;
                     this.instance.pid = null;
+                    this.healthChecker.stopHealthChecking('dispatcher');
                     this.sendStatusUpdate(false);
                 }
             });
@@ -142,6 +147,14 @@ export class DispatcherManager {
 
             // Send initial status update
             this.sendStatusUpdate(true);
+            
+            // Start health checking after a short delay to allow dispatcher to start
+            setTimeout(() => {
+                if (this.instance.process === dispatcherProcess && this.isDispatcherRunning()) {
+                    console.log('[DispatcherManager] Starting health checks for dispatcher');
+                    this.healthChecker.startHealthChecking('dispatcher', this.instance.port, 30000);
+                }
+            }, 10000); // Wait 10 seconds after startup
             
             // Send another status update after a short delay to ensure UI synchronization
             setTimeout(() => {
@@ -165,6 +178,9 @@ export class DispatcherManager {
         if (!this.instance.process) {
             throw new Error('Dispatcher is not running');
         }
+
+        // Stop health checking
+        this.healthChecker.stopHealthChecking('dispatcher');
 
         const processToStop = this.instance.process;
         const pidToStop = this.instance.pid;
@@ -329,5 +345,43 @@ export class DispatcherManager {
      */
     forceStatusUpdate(): void {
         this.sendStatusUpdate(this.isDispatcherRunning());
+    }
+
+    // Health checking functionality
+    async takeScreenshot(): Promise<string> {
+        if (!this.isDispatcherRunning()) {
+            throw new Error('Dispatcher is not running');
+        }
+
+        return this.healthChecker.takeScreenshot('dispatcher', this.instance.port);
+    }
+
+    getHealthStatus(): HealthStatus | null {
+        return this.healthChecker.getLastHealthStatus('dispatcher');
+    }
+
+    async checkHealth(): Promise<HealthStatus> {
+        if (!this.isDispatcherRunning()) {
+            throw new Error('Dispatcher is not running');
+        }
+
+        return this.healthChecker.checkHealth('dispatcher', this.instance.port);
+    }
+
+    startHealthChecking(intervalMs: number = 30000) {
+        if (!this.isDispatcherRunning()) {
+            console.warn('Cannot start health checking for dispatcher: not running');
+            return;
+        }
+
+        this.healthChecker.startHealthChecking('dispatcher', this.instance.port, intervalMs);
+    }
+
+    stopHealthChecking() {
+        this.healthChecker.stopHealthChecking('dispatcher');
+    }
+
+    cleanup() {
+        this.healthChecker.cleanup();
     }
 }

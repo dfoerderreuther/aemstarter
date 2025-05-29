@@ -30,6 +30,7 @@ interface ProjectSettings {
   dispatcher: {
     port: number;
     config: string;
+    healthCheck: boolean;
   };
 }
 
@@ -235,6 +236,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               description="Path to dispatcher configuration"
               value={settings.dispatcher.config}
               onChange={(event) => updateDispatcherSettings('config', event.currentTarget.value)}
+            />
+            
+            <Checkbox
+              label="Health Check"
+              description="Enable periodic health checks for the dispatcher"
+              checked={settings.dispatcher.healthCheck}
+              onChange={(event) => updateDispatcherSettings('healthCheck', event.currentTarget.checked)}
             />
           </Stack>
         </Tabs.Panel>

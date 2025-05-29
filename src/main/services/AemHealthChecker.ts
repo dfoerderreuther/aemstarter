@@ -22,7 +22,7 @@ export class AemHealthChecker {
     this.project = project;
   }
 
-  async checkHealth(instanceType: 'author' | 'publisher', port: number): Promise<HealthStatus> {
+  async checkHealth(instanceType: 'author' | 'publisher' | 'dispatcher', port: number): Promise<HealthStatus> {
     // Read configuration on every health check run
     const settings = ProjectSettings.getSettings(this.project);
     const instanceSettings = settings[instanceType];
@@ -37,7 +37,21 @@ export class AemHealthChecker {
     }
 
     const startTime = Date.now();
-    const url = `http://localhost:${port}/system/console/bundles.json`;
+    
+    // Use different URLs based on instance type
+    let url: string;
+    let headers: Record<string, string> = {};
+    
+    if (instanceType === 'dispatcher') {
+      // For dispatcher, just check the root URL or a simple health endpoint
+      url = `http://localhost:${port}/`;
+    } else {
+      // For AEM instances, check the bundles endpoint
+      url = `http://localhost:${port}/system/console/bundles.json`;
+      headers = {
+        'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64')
+      };
+    }
     
     try {
       const controller = new AbortController();
@@ -45,9 +59,7 @@ export class AemHealthChecker {
 
       const response = await fetch(url, {
         signal: controller.signal,
-        headers: {
-          'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64')
-        }
+        headers
       });
 
       clearTimeout(timeoutId);
@@ -89,7 +101,7 @@ export class AemHealthChecker {
     }
   }
 
-  async takeScreenshot(instanceType: 'author' | 'publisher', port: number): Promise<string> {
+  async takeScreenshot(instanceType: 'author' | 'publisher' | 'dispatcher', port: number): Promise<string> {
     const screenshotsDir = path.join(this.project.folderPath, 'screenshots');
     if (!fs.existsSync(screenshotsDir)) {
       fs.mkdirSync(screenshotsDir, { recursive: true });
@@ -139,7 +151,7 @@ export class AemHealthChecker {
 
       screenshotWindow.webContents.once('did-fail-load', () => {
         screenshotWindow.close();
-        reject(new Error('Failed to load AEM page for screenshot'));
+        reject(new Error('Failed to load page for screenshot'));
       });
 
       // Timeout after 30 seconds
@@ -152,7 +164,7 @@ export class AemHealthChecker {
     });
   }
 
-  private cleanupOldScreenshots(instanceType: 'author' | 'publisher') {
+  private cleanupOldScreenshots(instanceType: 'author' | 'publisher' | 'dispatcher') {
     try {
       const screenshotsDir = path.join(this.project.folderPath, 'screenshots');
       if (!fs.existsSync(screenshotsDir)) return;
@@ -180,7 +192,7 @@ export class AemHealthChecker {
     }
   }
 
-  startHealthChecking(instanceType: 'author' | 'publisher', port: number, intervalMs: number = 30000) {
+  startHealthChecking(instanceType: 'author' | 'publisher' | 'dispatcher', port: number, intervalMs: number = 30000) {
     // Stop any existing health check
     this.stopHealthChecking(instanceType);
 
@@ -197,7 +209,7 @@ export class AemHealthChecker {
     this.healthCheckIntervals.set(instanceType, interval);
   }
 
-  stopHealthChecking(instanceType: 'author' | 'publisher') {
+  stopHealthChecking(instanceType: 'author' | 'publisher' | 'dispatcher') {
     const interval = this.healthCheckIntervals.get(instanceType);
     if (interval) {
       clearInterval(interval);
@@ -206,7 +218,7 @@ export class AemHealthChecker {
     }
   }
 
-  getLastHealthStatus(instanceType: 'author' | 'publisher'): HealthStatus | null {
+  getLastHealthStatus(instanceType: 'author' | 'publisher' | 'dispatcher'): HealthStatus | null {
     return this.lastHealthStatus.get(instanceType) || null;
   }
 
@@ -224,7 +236,7 @@ export class AemHealthChecker {
   cleanup() {
     // Stop all health checks
     for (const instanceType of this.healthCheckIntervals.keys()) {
-      this.stopHealthChecking(instanceType as 'author' | 'publisher');
+      this.stopHealthChecking(instanceType as 'author' | 'publisher' | 'dispatcher');
     }
     this.lastHealthStatus.clear();
   }
