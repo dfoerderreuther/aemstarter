@@ -26,7 +26,6 @@ export class ProjectSettings {
     }, 
     "dispatcher": {
         "port": 80,
-        "host": "localhost",
         "config": "./dispatcher-sdk/src"
     }
 }

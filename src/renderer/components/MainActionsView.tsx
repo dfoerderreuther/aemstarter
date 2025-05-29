@@ -322,7 +322,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Author</Text>
               <Badge variant="light" color={isAuthorRunning ? "green" : "red"} size="sm">
-                {isAuthorRunning && authorPid ? `PID: ${authorPid}` : "-"}
+                {isAuthorRunning && authorPid ? `PID: ${authorPid}` : "STOPPED"}
               </Badge>
             </Group>
             <Group gap="xs">
@@ -389,7 +389,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Publisher</Text>
               <Badge variant="light" color={isPublisherRunning ? "green" : "red"} size="sm">
-                {isPublisherRunning && publisherPid ? `PID: ${publisherPid}` : "-"}
+                {isPublisherRunning && publisherPid ? `PID: ${publisherPid}` : "STOPPED"}
               </Badge>
             </Group>
             <Group gap="xs">

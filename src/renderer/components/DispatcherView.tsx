@@ -3,7 +3,7 @@ import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Button } from '@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
-import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconPlayerPlay, IconPlayerStop, IconRefresh } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconTextSize } from '@tabler/icons-react';
 
 interface DispatcherViewProps {
   project: Project;
@@ -15,8 +15,6 @@ export const DispatcherView = ({ project, visible = true }: DispatcherViewProps)
   const [isRunning, setIsRunning] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [terminalFontSize, setTerminalFontSize] = useState(9);
-  const [isStarting, setIsStarting] = useState(false);
-  const [isStopping, setIsStopping] = useState(false);
 
   const hasShownDispatcherOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
@@ -53,15 +51,14 @@ export const DispatcherView = ({ project, visible = true }: DispatcherViewProps)
     checkStatus();
   }, [project]);
 
-  // Listen for dispatcher status updates
+// Listen for dispatcher status updates
   useEffect(() => {
     const cleanup = window.electronAPI.onDispatcherStatus((data) => {
       console.log(`[DispatcherView] Received status update:`, data);
       if (data.projectId === project.id) {
         console.log(`[DispatcherView] Updating status for project ${project.id}: isRunning=${data.isRunning}`);
         setIsRunning(data.isRunning);
-        setIsStarting(false);
-        setIsStopping(false);
+
       } else {
         console.log(`[DispatcherView] Ignoring status update for different project: ${data.projectId} (current: ${project.id})`);
       }
@@ -161,36 +158,7 @@ export const DispatcherView = ({ project, visible = true }: DispatcherViewProps)
     }, 350); // Slightly longer than the 300ms CSS transition
   };
 
-  // Handle start dispatcher
-  const handleStartDispatcher = async () => {
-    setIsStarting(true);
-    try {
-      await window.electronAPI.startDispatcher(project);
-    } catch (error) {
-      console.error('Error starting dispatcher:', error);
-      setIsStarting(false);
-    }
-  };
 
-  // Handle stop dispatcher
-  const handleStopDispatcher = async () => {
-    setIsStopping(true);
-    try {
-      await window.electronAPI.stopDispatcher(project);
-    } catch (error) {
-      console.error('Error stopping dispatcher:', error);
-      setIsStopping(false);
-    }
-  };
-
-  // Handle flush dispatcher
-  const handleFlushDispatcher = async () => {
-    try {
-      await window.electronAPI.flushDispatcher(project);
-    } catch (error) {
-      console.error('Error flushing dispatcher:', error);
-    }
-  };
 
   return (
     <>
@@ -260,58 +228,9 @@ export const DispatcherView = ({ project, visible = true }: DispatcherViewProps)
             {/* Column Content */}
             {!isCollapsed && (
               <Stack gap="sm" p="sm" style={{ flex: 1, overflow: 'auto' }}>
-                {/* Dispatcher Controls */}
-                <Paper p="sm" style={{ backgroundColor: '#2C2E33' }}>
-                  <Stack gap="xs">
-                    <Text size="xs" fw={500} c="dimmed">Controls</Text>
-                    
-                    <Button
-                      size="xs"
-                      color="green"
-                      leftSection={<IconPlayerPlay size={12} />}
-                      onClick={handleStartDispatcher}
-                      disabled={isRunning || isStarting || isStopping}
-                      loading={isStarting}
-                      style={{ width: '100%' }}
-                    >
-                      Start
-                    </Button>
-                    
-                    <Button
-                      size="xs"
-                      color="red"
-                      leftSection={<IconPlayerStop size={12} />}
-                      onClick={handleStopDispatcher}
-                      disabled={!isRunning || isStarting || isStopping}
-                      loading={isStopping}
-                      style={{ width: '100%' }}
-                    >
-                      Stop
-                    </Button>
-                    
-                    <Button
-                      size="xs"
-                      color="blue"
-                      variant="outline"
-                      leftSection={<IconRefresh size={12} />}
-                      onClick={handleFlushDispatcher}
-                      disabled={!isRunning || isStarting || isStopping}
-                      style={{ width: '100%' }}
-                    >
-                      Flush Cache
-                    </Button>
-                  </Stack>
-                </Paper>
-
-                {/* Status */}
-                <Paper p="sm" style={{ backgroundColor: '#2C2E33' }}>
-                  <Stack gap="xs">
-                    <Text size="xs" fw={500} c="dimmed">Status</Text>
-                    <Text size="xs" c={isRunning ? 'green' : 'red'}>
-                      {isRunning ? 'Running' : 'Stopped'}
-                    </Text>
-                  </Stack>
-                </Paper>
+                
+                
+               
               </Stack>
             )}
           </Box>

@@ -29,7 +29,6 @@ interface ProjectSettings {
   };
   dispatcher: {
     port: number;
-    host: string;
     config: string;
   };
 }
@@ -230,12 +229,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               max={65535}
             />
             
-            <TextInput
-              label="Host"
-              description="Hostname for the dispatcher"
-              value={settings.dispatcher.host}
-              onChange={(event) => updateDispatcherSettings('host', event.currentTarget.value)}
-            />
             
             <TextInput
               label="Config Path"
