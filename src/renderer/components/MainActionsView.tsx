@@ -108,14 +108,55 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
 
   const handleStartAll = async () => {
     try {
+      // Start Author and Publisher in parallel
       await Promise.all([
         window.electronAPI.startAemInstance(project, 'author'),
         window.electronAPI.startAemInstance(project, 'publisher')
       ]);
       setIsAuthorRunning(true);
       setIsPublisherRunning(true);
+
+      await handleStartDispatcherAfterPublisher();
+
+
     } catch (error) {
       console.error('Error starting all instances:', error);
+    }
+  };
+
+  const handleStartDispatcherAfterPublisher = async () => {
+    try {
+      // Wait for Publisher to be up before starting Dispatcher
+      let publisherReady = false;
+      let retries = 0;
+      const maxRetries = 10; // Wait up to 10 * 1s = 10s
+      while (!publisherReady && retries < maxRetries) {
+        // Check publisher status
+        try {
+          const running = await window.electronAPI.isAemInstanceRunning(project, 'publisher');
+          if (running) {
+            publisherReady = true;
+            break;
+          }
+        } catch (e) {
+          // ignore, will retry
+        }
+        await new Promise(res => setTimeout(res, 1000));
+        retries++;
+      }
+
+      if (publisherReady) {
+        try {
+          await window.electronAPI.startDispatcher(project);
+          setIsDispatcherRunning(true);
+        } catch (err) {
+          console.error('Error starting dispatcher:', err);
+        }
+      } else {
+        console.warn('Publisher did not start in time, Dispatcher not started.');
+      }
+    } catch (error) {
+      console.error('Error starting dispatcher:', error);
     }
   };
 
@@ -127,6 +168,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
       ]);
       setIsAuthorRunning(true);
       setIsPublisherRunning(true);
+      await handleStartDispatcherAfterPublisher();
     } catch (error) {
       console.error('Error starting all instances in debug mode:', error);
     }
@@ -136,7 +178,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
     try {
       await Promise.all([
         window.electronAPI.stopAemInstance(project, 'author'),
-        window.electronAPI.stopAemInstance(project, 'publisher')
+        window.electronAPI.stopAemInstance(project, 'publisher'),
+        window.electronAPI.stopDispatcher(project)
       ]);
       setIsAuthorRunning(false);
       setIsPublisherRunning(false);
