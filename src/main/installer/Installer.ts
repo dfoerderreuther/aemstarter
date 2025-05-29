@@ -107,12 +107,15 @@ export class Installer {
     }
 
     private async installAemInstance(instanceDir: string, quickstartFile: string, type: string) {
+        console.log('installing aem instance for linux', type, instanceDir, quickstartFile);
         fs.copyFileSync(this.licensePropertiesPath, `${instanceDir}/license.properties`);
         fs.symlinkSync(
             quickstartFile,
             `${instanceDir}/aem-sdk-quickstart.jar`
         );
-
+        process.chdir(instanceDir);
+        const { execSync } = require('child_process');
+        execSync(`java -jar aem-sdk-quickstart.jar -unpack`);
     }
 
     private async installDispatcherLinux(dispatcherDir: string, dispatcherScript: string) {
@@ -126,7 +129,6 @@ export class Installer {
 
             const files = fs.readdirSync(`${this.project.folderPath}/dispatcher`);
             const dispatcherDir = files.find(file => file.startsWith('dispatcher-sdk'));
-            console.log('dispatcherDir', dispatcherDir);
             if (dispatcherDir) {
                 fs.symlinkSync(
                     `${this.project.folderPath}/dispatcher/${dispatcherDir}`,

@@ -446,6 +446,8 @@ export class AemInstanceManager {
         });
       }
     } else {
+      throw new Error(`AEM instance not found at ${instanceDir}`);
+      /*
       console.log('[AemInstanceManager] ### Starting AEM instance with quickstart.jar ###');
       // Use quickstart.jar
       const jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
@@ -478,6 +480,7 @@ export class AemInstanceManager {
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: true
       });
+      */
     }
 
     const instance: AemInstance = {
