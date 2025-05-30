@@ -10,6 +10,8 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    // Icon configuration
+    icon: './icons/icon', // Path without extension - Electron Forge will choose the right format
     // macOS specific configuration
     osxSign: {
       identity: '9C86B0E8B0AADB16EC370431C6E7DDAC50D97DE4',
@@ -23,12 +25,29 @@ const config: ForgeConfig = {
       }
     },
     // Increase memory limit for the app
-    executableName: 'aem-starter',
+    executableName: 'AEM Starter',
     // Add extra resources if needed
     extraResource: [],
   },
   rebuildConfig: {},
-  makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
+  makers: [
+    new MakerSquirrel({
+      // Windows-specific icon
+      setupIcon: './icons/icon.ico',
+      // loadingGif: './icons/icon.gif', // Optional: custom loading animation
+    }),
+    new MakerZIP({}, ['darwin']),
+    new MakerRpm({
+      options: {
+        icon: './icons/icon.png'
+      }
+    }),
+    new MakerDeb({
+      options: {
+        icon: './icons/icon.png'
+      }
+    })
+  ],
   publishers: [
     {
       name: '@electron-forge/publisher-github',

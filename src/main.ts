@@ -11,6 +11,17 @@ import { PackageInstaller } from './main/services/PackageInstaller';
 import { ReplicationSettings } from './main/services/ReplicationSettings';
 import { Project } from './types/Project';
 
+// Set the app name immediately (this affects dock/taskbar display)
+app.setName('AEM Starter');
+
+// Handle creating/removing shortcuts on Windows when installing/uninstalling.
+if (started) {
+  app.quit();
+}
+
+// Set the app name again for emphasis
+app.setName('AEM Starter');
+
 // Increase memory limits for AEM operations
 app.commandLine.appendSwitch('max-old-space-size', '8192'); // 8GB
 app.commandLine.appendSwitch('max-semi-space-size', '512'); // 512MB
@@ -54,11 +65,6 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 //  repo: 'YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME'
 //});
 
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (started) {
-  app.quit();
-}
-
 // Initialize project manager
 const projectManager = new ProjectManager();
 
@@ -73,9 +79,24 @@ let mainWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
   // Create the browser window.
+  const getIconPath = () => {
+    const iconDir = process.env.NODE_ENV === 'development' 
+      ? path.join(__dirname, '../../icons')
+      : path.join(process.resourcesPath, 'icons');
+    
+    // Use PNG for now since ICNS is causing loading issues
+    return path.join(iconDir, 'icon.png');
+  };
+
+  const iconPath = getIconPath();
+  console.log('Using icon path:', iconPath);
+  console.log('Icon file exists:', fs.existsSync(iconPath));
+    
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    title: 'AEM Starter',
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -791,6 +812,9 @@ const createMenu = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
+  // Set app name again when ready
+  app.setName('AEM Starter');
+  
   // Register the custom protocol handler
   protocol.handle('local-file', async (request) => {
     try {
@@ -812,6 +836,15 @@ app.on('ready', () => {
   
   createWindow();
   createMenu();
+  
+  // Force set dock icon on macOS
+  if (process.platform === 'darwin' && mainWindow && app.dock) {
+    const iconPath = path.join(__dirname, '../../icons/icon.png');
+    console.log('Setting dock icon:', iconPath);
+    if (fs.existsSync(iconPath)) {
+      app.dock.setIcon(iconPath);
+    }
+  }
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
