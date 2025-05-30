@@ -58,18 +58,46 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             <Tabs.Tab value="files">Files</Tabs.Tab>
           </Tabs.List>
 
-          <Tabs.Panel value="instances" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Grid style={{ flex: 1, height: '100%' }} gutter="md">
-              <Grid.Col span={4} style={{ height: '100%', display: 'flex', flexDirection: 'column', borderRight: '1px solid #2C2E33' }}>
-                <AemInstanceView instance="author" project={project} visible={true} />
-              </Grid.Col>
-              <Grid.Col span={4} style={{ height: '100%', display: 'flex', flexDirection: 'column', borderRight: '1px solid #2C2E33' }}>
-                <AemInstanceView instance="publisher" project={project} visible={true} />
-              </Grid.Col>
-              <Grid.Col span={4} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <DispatcherView project={project} visible={true} />
-              </Grid.Col>
-            </Grid>
+          <Tabs.Panel value="instances" style={{ height: '100%', padding: 0 }}>
+            <div
+              style={{
+                display: 'flex',
+                height: '100%'
+              }}
+            >
+              <div
+                style={{
+                  width: '33.33%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRight: '1px solid #2C2E33'
+                }}
+              >
+                <AemInstanceView instance="author" project={project} visible={activeTab === 'instances'} />
+              </div>
+              <div
+                style={{
+                  width: '33.33%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRight: '1px solid #2C2E33'
+                }}
+              >
+                <AemInstanceView instance="publisher" project={project} visible={activeTab === 'instances'} />
+              </div>
+              <div
+                style={{
+                  width: '33.33%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+              >
+                <DispatcherView project={project} visible={activeTab === 'instances'} />
+              </div>
+            </div>
           </Tabs.Panel>
 
           <Tabs.Panel value="author" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
