@@ -118,6 +118,10 @@ ipcMain.handle('create-project', async (_, { name, folderPath, aemSdkPath, licen
   return projectManager.createProject(name, folderPath, aemSdkPath, licensePath);
 });
 
+ipcMain.handle('import-project', async (_, { name, folderPath }) => {
+  return projectManager.importProject(name, folderPath);
+});
+
 ipcMain.handle('load-project', async (_, id) => {
   return projectManager.getProject(id);
 });

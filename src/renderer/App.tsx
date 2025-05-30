@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MantineProvider, AppShell, Title, Container, Center, Paper, Text, ThemeIcon, Group, Stack, createTheme, rem, Select, Button, Modal, TextInput } from '@mantine/core';
+import { MantineProvider, AppShell, Title, Container, Center, Paper, Text, ThemeIcon, Group, Stack, createTheme, rem, Select, Button } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { ProjectView } from './components/ProjectView';
+import { NewProjectModal } from './components/NewProjectModal';
 import { Project } from '../types/Project';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import AemLogo from './assets/AEM.svg';
@@ -24,22 +25,15 @@ const App: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [creating, setCreating] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [aemSdkPath, setAemSdkPath] = useState('');
-  const [licensePath, setLicensePath] = useState('');
 
-  // Load global settings when opening the modal
-  const handleOpenCreateProjectModal = async () => {
-    const globalSettings = await window.electronAPI.getGlobalSettings();
-    if (globalSettings.aemSdkPath) {
-      setAemSdkPath(globalSettings.aemSdkPath);
-    }
-    if (globalSettings.licensePath) {
-      setLicensePath(globalSettings.licensePath);
-    }
-    setModalOpen(true);
+  // Handle new project creation callback
+  const handleProjectCreated = async (project: Project) => {
+    const allProjects = await window.electronAPI.getAllProjects();
+    setProjects(allProjects);
+    setSelectedProject(project);
+    await window.electronAPI.setLastProjectId(project.id);
+    await window.electronAPI.refreshMenu();
   };
 
   // Load all projects and last selected project on startup
@@ -56,14 +50,6 @@ const App: React.FC = () => {
             setSelectedProject(project);
           }
         }
-        // Load global settings
-        const globalSettings = await window.electronAPI.getGlobalSettings();
-        if (globalSettings.aemSdkPath) {
-          setAemSdkPath(globalSettings.aemSdkPath);
-        }
-        if (globalSettings.licensePath) {
-          setLicensePath(globalSettings.licensePath);
-        }
         
         // Refresh menu to populate recent projects
         await window.electronAPI.refreshMenu();
@@ -77,7 +63,7 @@ const App: React.FC = () => {
 
     // Set up menu event listeners
     const cleanupNewProject = window.electronAPI.onOpenNewProjectDialog(() => {
-      handleOpenCreateProjectModal();
+      setModalOpen(true);
     });
 
     const cleanupOpenProject = window.electronAPI.onOpenProjectFolder(async (folderPath: string) => {
@@ -122,104 +108,19 @@ const App: React.FC = () => {
     handleProjectSelect(project);
   };
 
-
-  // Handle new project creation
-  const handleCreateProject = async () => {
-    if (!newProjectName.trim() || !aemSdkPath || !licensePath) return;
-    setCreating(true);
-    try {
-      const result = await window.electronAPI.showOpenDialog({
-        properties: ['openDirectory', 'createDirectory'],
-        title: 'Select Project Folder',
-        buttonLabel: 'Select Folder',
-        message: 'Select a folder for your project or create a new one'
-      });
-      if (!result.canceled && result.filePaths.length > 0) {
-        const project = await window.electronAPI.createProject(
-          newProjectName,
-          result.filePaths[0],
-          aemSdkPath,
-          licensePath
-        );
-        const allProjects = await window.electronAPI.getAllProjects();
-        setProjects(allProjects);
-        setSelectedProject(project);
-        await window.electronAPI.setLastProjectId(project.id);
-        await window.electronAPI.refreshMenu();
-        setModalOpen(false);
-        setNewProjectName('');
-        setAemSdkPath('');
-        setLicensePath('');
-
-        // Start the installation procedure
-        try {
-          await window.electronAPI.installAEM(project);
-        } catch (error) {
-          console.error('Failed to install AEM:', error);
-        }
-      }
-    } catch (error) {
-      // Show error message to user
-      console.error('Failed to create project:', error);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleSelectAemSdk = async () => {
-    const result = await window.electronAPI.showOpenDialog({
-      properties: ['openFile'],
-      title: 'Select AEM SDK',
-      buttonLabel: 'Select File',
-      message: 'Select the AEM SDK zip file',
-      filters: [{ name: 'ZIP Files', extensions: ['zip'] }]
-    });
-    if (!result.canceled && result.filePaths.length > 0) {
-      const newPath = result.filePaths[0];
-      setAemSdkPath(newPath);
-      await window.electronAPI.setGlobalSettings({ aemSdkPath: newPath });
-    }
-  };
-
-  const handleSelectLicense = async () => {
-    const result = await window.electronAPI.showOpenDialog({
-      properties: ['openFile'],
-      title: 'Select License File',
-      buttonLabel: 'Select File',
-      message: 'Select the license properties file',
-      filters: [{ name: 'Properties Files', extensions: ['properties'] }]
-    });
-    if (!result.canceled && result.filePaths.length > 0) {
-      const newPath = result.filePaths[0];
-      setLicensePath(newPath);
-      await window.electronAPI.setGlobalSettings({ licensePath: newPath });
-    }
-  };
-
-  // Handle project deletion with confirmation
-  const handleDeleteProject = async () => {
-    if (!selectedProject) return;
-    await window.electronAPI.deleteProject(selectedProject.id);
-    const allProjects = await window.electronAPI.getAllProjects();
-    setProjects(allProjects);
-    setSelectedProject(null);
-    await window.electronAPI.setLastProjectId(null);
-    await window.electronAPI.refreshMenu();
-    setDeleteDialogOpen(false);
-  };
-
   // Handle opening an existing project folder
   const handleOpenProjectFolder = async (folderPath: string) => {
     try {
-      // Check if this folder contains an existing AEM Starter project
-      // Look for key indicators: settings.json, author/publisher folders, etc.
+      // Check if this folder contains a complete AEM Starter project installation
       const entries = await window.electronAPI.readDirectory(folderPath);
       const hasSettings = entries.some(entry => entry.name === 'settings.json' && entry.isFile);
       const hasAuthor = entries.some(entry => entry.name === 'author' && entry.isDirectory);
       const hasPublisher = entries.some(entry => entry.name === 'publisher' && entry.isDirectory);
+      const hasDispatcher = entries.some(entry => entry.name === 'dispatcher' && entry.isDirectory);
+      const hasInstall = entries.some(entry => entry.name === 'install' && entry.isDirectory);
       
-      if (hasSettings && (hasAuthor || hasPublisher)) {
-        // This looks like an AEM Starter project
+      if (hasSettings && hasAuthor && hasPublisher && hasDispatcher && hasInstall) {
+        // This is a complete AEM Starter project installation
         // Try to read the settings to get the project name
         let projectName = 'Imported Project';
         try {
@@ -243,22 +144,10 @@ const App: React.FC = () => {
           return;
         }
 
-        // Get global settings for SDK and license paths
-        const globalSettings = await window.electronAPI.getGlobalSettings();
-        const sdkPath = globalSettings.aemSdkPath || '';
-        const licensePath = globalSettings.licensePath || '';
-
-        if (!sdkPath || !licensePath) {
-          alert('Please configure AEM SDK and License paths in global settings before importing a project.');
-          return;
-        }
-
-        // Create a new project entry for this existing folder
-        const project = await window.electronAPI.createProject(
+        // Register this existing complete installation in our project database
+        const project = await window.electronAPI.importProject(
           projectName,
-          folderPath,
-          sdkPath,
-          licensePath
+          folderPath
         );
 
         // Refresh projects list and select the new project
@@ -270,7 +159,14 @@ const App: React.FC = () => {
         
         console.log('Successfully imported existing AEM Starter project:', projectName);
       } else {
-        alert(`The selected folder does not appear to contain an AEM Starter project.\n\nExpected to find:\n- settings.json file\n- author/ or publisher/ directories\n\nSelected: ${folderPath}`);
+        const missingComponents = [];
+        if (!hasSettings) missingComponents.push('settings.json');
+        if (!hasAuthor) missingComponents.push('author/');
+        if (!hasPublisher) missingComponents.push('publisher/');
+        if (!hasDispatcher) missingComponents.push('dispatcher/');
+        if (!hasInstall) missingComponents.push('install/');
+        
+        alert(`The selected folder does not appear to contain a complete AEM Starter project installation.\n\nMissing components:\n${missingComponents.map(c => `- ${c}`).join('\n')}\n\nSelected: ${folderPath}`);
       }
     } catch (error) {
       console.error('Error opening project folder:', error);
@@ -309,7 +205,7 @@ const App: React.FC = () => {
               
               <Button
                 leftSection={<IconPlus size={16} />}
-                onClick={handleOpenCreateProjectModal}
+                onClick={() => setModalOpen(true)}
               >
                 New Project
               </Button>
@@ -317,104 +213,11 @@ const App: React.FC = () => {
           </Group>
         </AppShell.Header>
 
-        {/* Delete confirmation dialog */}
-        <Modal
-          opened={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-          title="Delete Project"
-          centered
-        >
-          <Text mb="md">Are you sure you want to delete the project <b>{selectedProject?.name}</b>? This action cannot be undone.</Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button color="red" onClick={handleDeleteProject}>
-              Delete
-            </Button>
-          </Group>
-        </Modal>
-
-        <Modal
+        <NewProjectModal
           opened={modalOpen}
-          onClose={() => { 
-            setModalOpen(false); 
-            setNewProjectName('');
-            setAemSdkPath('');
-            setLicensePath('');
-          }}
-          title="Create New Project"
-          centered
-          overlayProps={{ opacity: 0.55, blur: 3 }}
-        >
-          <Stack gap="md">
-            <TextInput
-              label="Project Name"
-              placeholder="Enter project name"
-              value={newProjectName}
-              onChange={(e) => setNewProjectName(e.target.value)}
-              size="md"
-              required
-              autoFocus
-              disabled={creating}
-            />
-            <Group>
-              <TextInput
-                label="AEM SDK"
-                placeholder="Select AEM SDK zip file"
-                value={aemSdkPath}
-                readOnly
-                style={{ flex: 1 }}
-                disabled={creating}
-              />
-              <Button 
-                onClick={handleSelectAemSdk}
-                disabled={creating}
-                style={{ marginTop: 'auto' }}
-              >
-                Browse
-              </Button>
-            </Group>
-            <Group>
-              <TextInput
-                label="License File"
-                placeholder="Select license properties file"
-                value={licensePath}
-                readOnly
-                style={{ flex: 1 }}
-                disabled={creating}
-              />
-              <Button 
-                onClick={handleSelectLicense}
-                disabled={creating}
-                style={{ marginTop: 'auto' }}
-              >
-                Browse
-              </Button>
-            </Group>
-            <Group justify="flex-end">
-              <Button 
-                variant="default" 
-                onClick={() => { 
-                  setModalOpen(false); 
-                  setNewProjectName('');
-                  setAemSdkPath('');
-                  setLicensePath('');
-                }} 
-                disabled={creating}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleCreateProject} 
-                loading={creating}
-                disabled={!newProjectName.trim() || !aemSdkPath || !licensePath}
-              >
-                Create
-              </Button>
-            </Group>
-          </Stack>
-        </Modal>
+          onClose={() => setModalOpen(false)}
+          onProjectCreated={handleProjectCreated}
+        />
 
         <AppShell.Main>
           {selectedProject ? (
@@ -428,7 +231,7 @@ const App: React.FC = () => {
                 </Text>
                 <Button
                   leftSection={<IconPlus size={16} />}
-                  onClick={handleOpenCreateProjectModal}
+                  onClick={() => setModalOpen(true)}
                   size="lg"
                 >
                   Create New Project

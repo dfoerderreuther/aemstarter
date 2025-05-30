@@ -116,6 +116,27 @@ export class ProjectManager {
     return project;
   }
 
+  importProject(name: string, folderPath: string): Project {
+    // Validate that the folder exists
+    if (!fs.existsSync(folderPath)) {
+      throw new Error('Project folder does not exist');
+    }
+
+    const project: Project = {
+      id: uuidv4(),
+      name,
+      folderPath,
+      aemSdkPath: '', // Not needed for existing installations
+      licensePath: '', // Not needed for existing installations
+      createdAt: new Date(),
+      lastModified: new Date()
+    };
+
+    this.projects.push(project);
+    this.saveProjects();
+    return project;
+  }
+
   updateProject(id: string, updates: Partial<Project>): Project | undefined {
     const index = this.projects.findIndex(p => p.id === id);
     if (index === -1) {

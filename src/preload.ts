@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld(
     // Project management
     createProject: (name: string, folderPath: string, aemSdkPath: string, licensePath: string) => 
       ipcRenderer.invoke('create-project', { name, folderPath, aemSdkPath, licensePath }),
+    importProject: (name: string, folderPath: string) => 
+      ipcRenderer.invoke('import-project', { name, folderPath }),
     loadProject: (id: string) => 
       ipcRenderer.invoke('load-project', id),
     getAllProjects: () => 
