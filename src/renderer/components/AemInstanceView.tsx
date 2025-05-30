@@ -1,5 +1,5 @@
 import { Project } from "../../types/Project";
-import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button, Space } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
@@ -196,47 +196,46 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     <>
       <Stack gap="0" style={{ height: '100%' }}>
         <Box p="xs" style={{ borderBottom: '1px solid #2C2E33', margin: 0 }}>
-          <Group justify="space-between" align="center">
-            <Text size="xs" fw={700} c="dimmed">
+          <Group justify="space-between" align="center" wrap="nowrap" style={{ width: '100%' }}>
+            <Text size="xs" fw={700} c="dimmed" style={{ whiteSpace: 'nowrap' }}>
               {instance.toUpperCase()} INSTANCE 
             </Text>
-            <Group gap="xs" align="center">
-                <TextInput
-                  placeholder="Filter logs..."
-                  value={filterText}
-                  onChange={(event) => setFilterText(event.currentTarget.value)}
-                  size="xs"
-                  style={{ width: '200px' }}
-                  rightSection={
-                    filterText ? (
-                      <ActionIcon
-                        size="xs"
-                        variant="subtle"
-                        onClick={() => setFilterText('')}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <IconX size={12} />
-                      </ActionIcon>
-                    ) : null
-                  }
-                />
-                <MultiSelect
-                  placeholder="Select log files to monitor"
-                  data={availableLogFiles}
-                  value={selectedLogFiles}
-                  onChange={handleLogFileChange}
-                  size="xs"
-                  searchable
-                  clearable
-                  maxDropdownHeight={200}
-                  onFocus={handleInputFocus}
-                  style={{ width: '400px' }}
-                />
-                <Button size="xs" onClick={handleToggleTextSize} title={`Font size: ${terminalFontSize}px`} variant="outline"
-                leftSection={<IconTextSize size={12} />}>
-                  {terminalFontSize}
-                </Button>
-            </Group>
+            <Box style={{ flex: 1 }} />
+            <TextInput
+              placeholder="Filter logs..."
+              value={filterText}
+              onChange={(event) => setFilterText(event.currentTarget.value)}
+              size="xs"
+              style={{ width: '200px' }}
+              rightSection={
+                filterText ? (
+                  <ActionIcon
+                    size="xs"
+                    variant="subtle"
+                    onClick={() => setFilterText('')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <IconX size={12} />
+                  </ActionIcon>
+                ) : null
+              }
+            />
+            <MultiSelect
+              placeholder="Select log files to monitor"
+              data={availableLogFiles}
+              value={selectedLogFiles}
+              onChange={handleLogFileChange}
+              size="xs"
+              searchable
+              clearable
+              maxDropdownHeight={200}
+              onFocus={handleInputFocus}
+              style={{ width: '400px' }}
+            />
+            <Button size="xs" onClick={handleToggleTextSize} title={`Font size: ${terminalFontSize}px`} variant="outline"
+            leftSection={<IconTextSize size={12} />}>
+              {terminalFontSize}
+            </Button>
           </Group>
         </Box>
 

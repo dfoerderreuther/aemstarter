@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserPlus } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserPlus, IconMaximize, IconColumns, IconBrowserCheck, IconColumns3, IconColumns1 } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 
 interface MainActionsViewProps {
   project: Project;
+  viewMode: 'tabs' | 'columns';
+  setViewMode: (mode: 'tabs' | 'columns') => void;
 }
 
-export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => {
+export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewMode, setViewMode }) => {
   const [showInstallConfirm, setShowInstallConfirm] = useState(false);
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -515,7 +517,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
                       onClick={handleOpenPublisherAdmin}
                       disabled={!isPublisherRunning}
                     >
-                      <IconBrowserPlus size={16} />
+                      <IconBrowserCheck size={16} />
                     </Button>
                   </Tooltip>
                 </Button.Group>
@@ -612,6 +614,39 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
             </Button.Group>
           </Stack>
         </Paper>
+
+        <Divider orientation="vertical" />
+
+        <Paper style={sectionStyles}>
+          <Stack gap="xs">
+            <Text size="sm" fw={500} c="dimmed">View</Text>
+            <Button.Group>
+              <Tooltip label="Tabs">
+                <Button
+                  color={viewMode === 'tabs' ? 'blue' : 'gray'}
+                  variant={viewMode === 'tabs' ? 'filled' : 'light'}
+                  size="xs"
+                  styles={installButtonStyles}
+                  onClick={() => setViewMode('tabs')}
+                >
+                  <IconColumns1 size={16} />
+                </Button>
+              </Tooltip>
+              <Tooltip label="Columns">
+                <Button
+                  color={viewMode === 'columns' ? 'blue' : 'gray'}
+                  variant={viewMode === 'columns' ? 'filled' : 'light'}
+                  size="xs"
+                  styles={installButtonStyles}
+                  onClick={() => setViewMode('columns')}
+                >
+                  <IconColumns3 size={16} />
+                </Button>
+              </Tooltip>
+            </Button.Group>
+          </Stack>
+        </Paper>
+
       </Group>
 
       <Modal
