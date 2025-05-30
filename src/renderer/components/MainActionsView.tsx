@@ -585,6 +585,38 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
 
         <Paper style={sectionStyles}>
           <Stack gap="xs">
+            <Text size="sm" fw={500} c="dimmed">View</Text>
+            <Button.Group>
+              <Tooltip label="Tabs">
+                <Button
+                  color={viewMode === 'tabs' ? 'blue' : 'gray'}
+                  variant={viewMode === 'tabs' ? 'filled' : 'light'}
+                  size="xs"
+                  styles={installButtonStyles}
+                  onClick={() => setViewMode('tabs')}
+                >
+                  <IconColumns1 size={16} />
+                </Button>
+              </Tooltip>
+              <Tooltip label="Columns">
+                <Button
+                  color={viewMode === 'columns' ? 'blue' : 'gray'}
+                  variant={viewMode === 'columns' ? 'filled' : 'light'}
+                  size="xs"
+                  styles={installButtonStyles}
+                  onClick={() => setViewMode('columns')}
+                >
+                  <IconColumns3 size={16} />
+                </Button>
+              </Tooltip>
+            </Button.Group>
+          </Stack>
+        </Paper>
+
+        <Divider orientation="vertical" />
+
+        <Paper style={sectionStyles}>
+          <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">Other</Text>
             <Button.Group>
               <Tooltip label="Settings">
@@ -609,38 +641,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   disabled={isAuthorRunning || isPublisherRunning}
                 >
                   <IconPackage size={16} />
-                </Button>
-              </Tooltip>
-            </Button.Group>
-          </Stack>
-        </Paper>
-
-        <Divider orientation="vertical" />
-
-        <Paper style={sectionStyles}>
-          <Stack gap="xs">
-            <Text size="sm" fw={500} c="dimmed">View</Text>
-            <Button.Group>
-              <Tooltip label="Tabs">
-                <Button
-                  color={viewMode === 'tabs' ? 'blue' : 'gray'}
-                  variant={viewMode === 'tabs' ? 'filled' : 'light'}
-                  size="xs"
-                  styles={installButtonStyles}
-                  onClick={() => setViewMode('tabs')}
-                >
-                  <IconColumns1 size={16} />
-                </Button>
-              </Tooltip>
-              <Tooltip label="Columns">
-                <Button
-                  color={viewMode === 'columns' ? 'blue' : 'gray'}
-                  variant={viewMode === 'columns' ? 'filled' : 'light'}
-                  size="xs"
-                  styles={installButtonStyles}
-                  onClick={() => setViewMode('columns')}
-                >
-                  <IconColumns3 size={16} />
                 </Button>
               </Tooltip>
             </Button.Group>
