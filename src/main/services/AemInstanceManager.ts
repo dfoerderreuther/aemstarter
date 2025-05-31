@@ -6,7 +6,7 @@ import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
 import { ProjectSettings } from './ProjectSettings';
 import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
-import { OakRun } from './OakRun';
+import { BackupManager } from './BackupManager';
 
 interface AemInstance {
   process: ChildProcess | null;
@@ -885,7 +885,7 @@ export class AemInstanceManager {
       throw new Error('oak-run.jar is not available. Please load it first.');
     }
 
-    const oakRun = new OakRun(this.project);
+    const oakRun = new BackupManager(this.project);
     await oakRun.compact(instanceType);
   }
 } 

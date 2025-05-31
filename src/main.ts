@@ -10,6 +10,7 @@ import { ProjectSettings } from './main/services/ProjectSettings';
 import { PackageInstaller } from './main/services/PackageInstaller';
 import { ReplicationSettings } from './main/services/ReplicationSettings';
 import { Project } from './types/Project';
+import { BackupManager } from './main/services/BackupManager';
 
 // Set the app name immediately (this affects dock/taskbar display)
 app.setName('AEM Starter');
@@ -73,6 +74,7 @@ const instanceManagers = new Map<string, AemInstanceManager>();
 
 // Store Dispatcher managers
 const dispatcherManagers = new Map<string, DispatcherManager>();
+
 
 // Store reference to main window for menu actions
 let mainWindow: BrowserWindow | null = null;
@@ -551,12 +553,8 @@ ipcMain.handle('load-oak-jar', async (_, project: Project) => {
 
 ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: 'author' | 'publisher') => {
   try {
-    let manager = instanceManagers.get(project.id);
-    if (!manager) {
-      manager = new AemInstanceManager(project);
-      instanceManagers.set(project.id, manager);
-    }
-    await manager.runOakCompaction(instanceType);
+    const backupManager = new BackupManager(project);
+    await backupManager.compact(instanceType);
     return true;
   } catch (error) {
     console.error('Error running oak compaction:', error);
