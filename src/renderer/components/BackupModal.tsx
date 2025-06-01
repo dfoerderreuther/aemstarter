@@ -1,8 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Stack, Text, Button, TextInput, Group, Loader, List, Alert, Box } from '@mantine/core';
+import { 
+  Modal, 
+  Stack, 
+  Text, 
+  Button, 
+  TextInput, 
+  Group, 
+  Loader, 
+  Alert, 
+  Box, 
+  Table,
+  Card,
+  Title,
+  Badge,
+  ActionIcon,
+  Flex,
+  Divider,
+  Center,
+  Paper,
+  ScrollArea
+} from '@mantine/core';
 import { Project } from '../../types/Project';
 import { BackupInfo } from '../../types/BackupInfo';
-import { IconDeviceFloppy, IconRestore, IconAlertCircle } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconRestore, IconAlertCircle, IconPlus, IconCloudUpload } from '@tabler/icons-react';
 import { formatFileSize, formatDate } from '../utils/formatUtils';
 
 interface BackupModalProps {
@@ -67,66 +87,140 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Backups" size="lg">
-      <Stack>
+    <Modal 
+      opened={opened} 
+      onClose={onClose} 
+      title={
+        <Flex align="center" gap="sm">
+          <IconDeviceFloppy size={24} />
+          <Title order={3}>Project Backups</Title>
+        </Flex>
+      } 
+      size="xl"
+      padding="lg"
+    >
+      <Stack gap="lg">
         {error && (
-          <Alert color="red" icon={<IconAlertCircle size={16} />}>
+          <Alert color="red" icon={<IconAlertCircle size={16} />} variant="filled">
             {error}
           </Alert>
         )}
-        <Text size="sm">Existing Backups:</Text>
-        {loading ? (
-          <Loader size="sm" />
-        ) : (
-          <List spacing="sm" size="sm" icon={<IconDeviceFloppy size={16} />}>
-            {backups.length === 0 && <Text c="dimmed">No backups found.</Text>}
-            {backups.map((backup) => (
-              <List.Item key={backup.name}>
-                <Group justify="space-between" align="flex-start">
-                  <Box>
-                    <Text fw={500}>{backup.name}</Text>
-                    <Text size="xs" c="dimmed">
-                      Created: {formatDate(backup.createdDate)}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      Size: {formatFileSize(backup.fileSize)}
-                    </Text>
-                  </Box>
-                  <Button
-                    size="xs"
-                    color="blue"
-                    leftSection={<IconRestore size={14} />}
-                    loading={restoring === backup.name}
-                    disabled={restoring === backup.name}
-                    onClick={() => handleRestore(backup.name)}
-                  >
-                    Restore
-                  </Button>
-                </Group>
-              </List.Item>
-            ))}
-          </List>
-        )}
-        <Text size="sm" mt="md">Create New Backup:</Text>
-        <Group>
-          <TextInput
-            placeholder="Backup name"
-            value={backupName}
-            onChange={(e) => setBackupName(e.currentTarget.value)}
-            disabled={creating}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCreate();
-            }}
-          />
-          <Button
-            color="green"
-            loading={creating}
-            onClick={handleCreate}
-            disabled={!backupName.trim()}
-          >
-            Create
-          </Button>
-        </Group>
+
+        {/* Create New Backup Section */}
+        <Card withBorder shadow="sm" padding="lg">
+          <Stack gap="md">
+            <Group gap="sm">
+              <IconCloudUpload size={20} color="var(--mantine-color-green-6)" />
+              <Title order={4} c="green">Create New Backup</Title>
+            </Group>
+            <Group>
+              <TextInput
+                placeholder="Enter backup name"
+                value={backupName}
+                onChange={(e) => setBackupName(e.currentTarget.value)}
+                disabled={creating}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreate();
+                }}
+                style={{ flex: 1 }}
+              />
+              <Button
+                color="green"
+                loading={creating}
+                onClick={handleCreate}
+                disabled={!backupName.trim()}
+                leftSection={<IconPlus size={16} />}
+              >
+                Create Backup
+              </Button>
+            </Group>
+          </Stack>
+        </Card>
+
+        <Divider />
+
+        {/* Existing Backups Section */}
+        <Stack gap="md">
+          <Group gap="sm">
+            <IconDeviceFloppy size={20} />
+            <Title order={4}>Existing Backups</Title>
+            <Badge variant="light" color="blue">
+              {backups.length} {backups.length === 1 ? 'backup' : 'backups'}
+            </Badge>
+          </Group>
+
+          {loading ? (
+            <Center p="xl">
+              <Loader size="lg" />
+            </Center>
+          ) : backups.length === 0 ? (
+            <Paper withBorder p="xl" bg="gray.0">
+              <Center>
+                <Stack align="center" gap="sm">
+                  <IconDeviceFloppy size={48} color="var(--mantine-color-gray-5)" />
+                  <Text c="dimmed" size="lg">No backups found</Text>
+                  <Text c="dimmed" size="sm">Create your first backup using the form above</Text>
+                </Stack>
+              </Center>
+            </Paper>
+          ) : (
+            <Card withBorder>
+              <ScrollArea h={400}>
+                <Table striped highlightOnHover withTableBorder={false} verticalSpacing="md">
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th style={{ width: '35%' }}>Backup Name</Table.Th>
+                      <Table.Th style={{ width: '25%' }}>Created Date</Table.Th>
+                      <Table.Th style={{ width: '20%' }}>File Size</Table.Th>
+                      <Table.Th style={{ width: '20%', textAlign: 'center' }}>Actions</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {backups.map((backup) => (
+                      <Table.Tr key={backup.name}>
+                        <Table.Td>
+                          <Group gap="sm">
+                            <ActionIcon variant="light" color="blue" size="sm">
+                              <IconDeviceFloppy size={14} />
+                            </ActionIcon>
+                            <Box>
+                              <Text fw={500} size="sm">{backup.name}</Text>
+                            </Box>
+                          </Group>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {formatDate(backup.createdDate)}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge variant="light" color="gray" size="sm">
+                            {formatFileSize(backup.fileSize)}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Center>
+                            <Button
+                              size="xs"
+                              color="blue"
+                              leftSection={<IconRestore size={14} />}
+                              loading={restoring === backup.name}
+                              disabled={restoring === backup.name}
+                              onClick={() => handleRestore(backup.name)}
+                              variant="light"
+                            >
+                              Restore
+                            </Button>
+                          </Center>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </ScrollArea>
+            </Card>
+          )}
+        </Stack>
       </Stack>
     </Modal>
   );
