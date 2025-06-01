@@ -38,13 +38,17 @@ export class BackupManager {
         const logsPath = path.join(instancePath, 'crx-quickstart', 'logs');
         const logFiles = fs.readdirSync(logsPath);
         logFiles.forEach(file => {
-            fs.unlinkSync(path.join(logsPath, file));
+            try {
+                fs.unlinkSync(path.join(logsPath, file));
+            } catch (error) {
+                console.error(`[Backup] Error deleting log file ${file}:`, error);
+            }
         });
     }
 
     async listBackupsAll(): Promise<string[]> {
         const backupFiles = await this.listBackups('author');
-        return backupFiles.filter(file => file.startsWith('all__'));
+        return backupFiles.filter(file => file.startsWith('all__')).map(file => file.replace('all__', '')).map(file => file.replace('.tar', ''));
     }
 
     async listBackups(instance: 'author' | 'publisher' | 'dispatcher'): Promise<string[]> {
@@ -82,13 +86,13 @@ export class BackupManager {
             }
             const backupPath = path.join(backupFolderPath, tarName); 
 
-            const command = `tar -cf "${backupPath}" "${instancePath}/crx-quickstart/repository"`;
+            const command = `tar -cf "${backupPath}" crx-quickstart`;
 
             console.log(`[Backup] Starting backup for ${instance} instance`);
             console.log(`[Backup] Command: ${command}`);
 
             try {
-                await execAsync(command, { cwd: this.project.folderPath });
+                await execAsync(command, { cwd: instancePath });
                 console.log(`[Backup] Backup completed for ${instance} instance`);
             } catch (error) {
                 console.error(`[Backup] Backup failed for ${instance} instance:`, error);
@@ -109,14 +113,23 @@ export class BackupManager {
 
     async restore(instance: 'author' | 'publisher' | 'dispatcher', tarName: string): Promise<void> {
         tarName = this.fixTarName(tarName);
+        console.log(`[Restore] Starting restore for ${instance} instance`);
         if (instance !== 'dispatcher') {  
             const instancePath = path.join(this.project.folderPath, instance);
             const backupPath = path.join(instancePath, 'backup', tarName);
 
-            const command = `tar -xf "${backupPath}" -C "${instancePath}/crx-quickstart/repository"`;
+            const command = `tar -xf "${backupPath}"`;
 
-            console.log(`[Restore] Starting restore for ${instance} instance`);
             console.log(`[Restore] Command: ${command}`);
+            console.log(`[Restore] Instance path: ${instancePath}`);
+
+            try {
+                await execAsync(command, { cwd: instancePath });
+                console.log(`[Restore] Restore completed for ${instance} instance`);
+            } catch (error) {
+                console.error(`[Restore] Restore failed for ${instance} instance:`, error);
+                throw error;
+            }
         }
     }
 }

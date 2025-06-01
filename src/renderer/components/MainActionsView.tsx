@@ -638,6 +638,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   variant="filled"
                   size="xs"
                   styles={installButtonStyles}
+                  disabled={isAuthorRunning || isPublisherRunning || isDispatcherRunning}
                   onClick={() => setShowBackup(true)}
                 >
                   <IconDeviceFloppy size={16} />

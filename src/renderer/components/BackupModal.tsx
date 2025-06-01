@@ -87,6 +87,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
                     color="blue"
                     leftSection={<IconRestore size={14} />}
                     loading={restoring === name}
+                    disabled={restoring === name}
                     onClick={() => handleRestore(name)}
                   >
                     Restore
