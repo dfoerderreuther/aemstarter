@@ -74,7 +74,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
                   borderRight: '1px solid #2C2E33'
                 }}
               >
-                <AemInstanceView instance="author" project={project} visible={activeTab === 'instances'} />
+                <AemInstanceView instance="author" project={project} visible={activeTab === 'instances'} viewMode={viewMode} />
               </div>
               <div
                 style={{
@@ -85,7 +85,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
                   borderRight: '1px solid #2C2E33'
                 }}
               >
-                <AemInstanceView instance="publisher" project={project} visible={activeTab === 'instances'} />
+                <AemInstanceView instance="publisher" project={project} visible={activeTab === 'instances'} viewMode={viewMode} />
               </div>
               <div
                 style={{
@@ -95,7 +95,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
                   flexDirection: 'column'
                 }}
               >
-                <DispatcherView project={project} visible={activeTab === 'instances'} />
+                <DispatcherView project={project} visible={activeTab === 'instances'} viewMode={viewMode} />
               </div>
             </div>
           </Tabs.Panel>
@@ -105,6 +105,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               instance="author" 
               project={project} 
               visible={activeTab === 'author'}
+              viewMode={viewMode}
             />
           </Tabs.Panel>
 
@@ -113,6 +114,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
               instance="publisher" 
               project={project} 
               visible={activeTab === 'publisher'}
+              viewMode={viewMode}
             />
           </Tabs.Panel>
 
@@ -120,6 +122,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             <DispatcherView 
               project={project} 
               visible={activeTab === 'dispatcher'}
+              viewMode={viewMode}
             />
           </Tabs.Panel>
 

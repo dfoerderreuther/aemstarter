@@ -1,5 +1,5 @@
 import { Project } from "../../types/Project";
-import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button, Space } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button, Space, Select } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
@@ -13,9 +13,10 @@ interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
   project: Project;
   visible?: boolean;
+  viewMode?: 'tabs' | 'columns';
 }
 
-export const AemInstanceView = ({ instance, project, visible = true }: AemInstanceViewProps) => {
+export const AemInstanceView = ({ instance, project, visible = true, viewMode = 'tabs' }: AemInstanceViewProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
@@ -172,12 +173,11 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
     terminal.writeln(`AEM ${instance} instance - Log Monitor`);
   };
 
-  // Handle text size toggle (cycles through 11, 13, 16)
-  const handleToggleTextSize = () => {
-    const sizes = [9, 11, 13, 16];
-    const currentIndex = sizes.indexOf(terminalFontSize);
-    const nextIndex = (currentIndex + 1) % sizes.length;
-    setTerminalFontSize(sizes[nextIndex]);
+  // Handle text size change from dropdown
+  const handleFontSizeChange = (value: string | null) => {
+    if (value) {
+      setTerminalFontSize(parseInt(value));
+    }
   };
 
   // Handle collapse/expand with terminal resize
@@ -206,7 +206,7 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
               value={filterText}
               onChange={(event) => setFilterText(event.currentTarget.value)}
               size="xs"
-              style={{ width: '200px' }}
+              style={{ width: viewMode === 'columns' ? '150px' : '200px' }}
               rightSection={
                 filterText ? (
                   <ActionIcon
@@ -230,12 +230,69 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
               clearable
               maxDropdownHeight={200}
               onFocus={handleInputFocus}
-              style={{ width: '400px' }}
+              maxValues={3}
+              hidePickedOptions={false}
+              style={{ 
+                width: viewMode === 'columns' ? '250px' : '400px',
+                minHeight: '32px',
+                maxHeight: '32px'
+              }}
+              styles={{
+                root: {
+                  minHeight: '32px',
+                  maxHeight: '32px'
+                },
+                input: {
+                  minHeight: '32px !important',
+                  maxHeight: '32px !important',
+                  paddingTop: '4px',
+                  paddingBottom: '4px',
+                  overflow: 'hidden'
+                },
+                pill: {
+                  fontSize: '10px',
+                  height: '20px',
+                  lineHeight: '20px',
+                  padding: '0 6px'
+                },
+                pillsList: {
+                  display: 'flex',
+                  flexWrap: 'nowrap',
+                  overflow: 'hidden',
+                  gap: '2px'
+                }
+              }}
             />
-            <Button size="xs" onClick={handleToggleTextSize} title={`Font size: ${terminalFontSize}px`} variant="outline"
-            leftSection={<IconTextSize size={12} />}>
-              {terminalFontSize}
-            </Button>
+            <Select
+              size="xs"
+              value={terminalFontSize.toString()}
+              onChange={handleFontSizeChange}
+              data={[
+                { value: '9', label: '9px' },
+                { value: '11', label: '11px' },
+                { value: '13', label: '13px' },
+                { value: '16', label: '16px' }
+              ]}
+              style={{ width: '32px' }}
+              variant="subtle"
+              comboboxProps={{ withinPortal: true, width: 80 }}
+              leftSection={<IconTextSize size={14} />}
+              styles={{
+                input: {
+                  cursor: 'pointer',
+                  caretColor: 'transparent',
+                  color: 'transparent',
+                  padding: '0 8px',
+                  textAlign: 'center'
+                },
+                section: {
+                  pointerEvents: 'none'
+                },
+                dropdown: {
+                  minWidth: '80px'
+                }
+              }}
+            />
           </Group>
         </Box>
 
@@ -243,17 +300,20 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
         <Box style={{ 
           flex: 1,
           display: 'flex',
+          flexDirection: viewMode === 'columns' ? 'column' : 'row',
           overflow: 'hidden',
           minHeight: 0
         }}>
-          {/* Collapsible Left Column */}
+          {/* Collapsible Column - Left in tabs mode, Top in columns mode */}
           <Box style={{
-            width: isCollapsed ? '20px' : '200px',
-            transition: 'width 0.3s ease',
-            borderRight: '1px solid #2C2E33',
+            width: viewMode === 'columns' ? '100%' : (isCollapsed ? '20px' : '200px'),
+            height: viewMode === 'columns' ? (isCollapsed ? '30px' : '200px') : '100%',
+            transition: viewMode === 'columns' ? 'height 0.3s ease' : 'width 0.3s ease',
+            borderRight: viewMode === 'columns' ? 'none' : '1px solid #2C2E33',
+            borderBottom: viewMode === 'columns' ? '1px solid #2C2E33' : 'none',
             backgroundColor: '#1E1E1E',
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: viewMode === 'columns' ? 'column' : 'column',
             overflow: 'hidden'
           }}>
             {/* Collapse/Expand Button */}
@@ -264,39 +324,57 @@ export const AemInstanceView = ({ instance, project, visible = true }: AemInstan
                 onClick={handleToggleCollapse}
                 style={{ width: '100%' }}
               >
-                {isCollapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
+                {viewMode === 'columns' ? 
+                  (isCollapsed ? <IconChevronRight style={{ transform: 'rotate(90deg)' }} size={16} /> : <IconChevronLeft style={{ transform: 'rotate(90deg)' }} size={16} />) :
+                  (isCollapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />)
+                }
               </ActionIcon>
             </Box>
 
             {/* Column Content */}
             {!isCollapsed && (
-              <Stack gap="sm" p="sm" style={{ flex: 1, overflow: 'auto' }}>
-                <Screenshot
-                  project={project}
-                  instance={instance}
-                  isRunning={isRunning}
-                />
+              <Stack gap="sm" p="sm" style={{ 
+                flex: 1, 
+                overflow: 'auto',
+                display: 'flex',
+                flexDirection: viewMode === 'columns' ? 'row' : 'column'
+              }}>
+                <Box style={{ 
+                  width: '175px',
+                  height: '140px',
+                  flex: 'none',
+                  alignSelf: 'center'
+                }}>
+                  <Screenshot
+                    project={project}
+                    instance={instance}
+                    isRunning={isRunning}
+                  />
+                </Box>
 
-                <PackageMenu
-                  project={project}
-                  instance={instance}
-                  isRunning={isRunning}
-                />
+                <Stack gap="sm" style={{ 
+                  flex: 'none',
+                  width: '175px',
+                  minWidth: 0
+                }}>
+                  <PackageMenu
+                    project={project}
+                    instance={instance}
+                    isRunning={isRunning}
+                  />
 
-
-
-
-                <OakRunMenu
-                  project={project}
-                  instance={instance}
-                  isRunning={isRunning}
-                  onLogFileSwitch={handleLogFileChange}
-                />
-                <SettingsMenu 
-                  project={project}
-                  instance={instance}
-                  isRunning={isRunning}
-                />
+                  <OakRunMenu
+                    project={project}
+                    instance={instance}
+                    isRunning={isRunning}
+                    onLogFileSwitch={handleLogFileChange}
+                  />
+                  <SettingsMenu 
+                    project={project}
+                    instance={instance}
+                    isRunning={isRunning}
+                  />
+                </Stack>
               </Stack>
             )}
           </Box>
