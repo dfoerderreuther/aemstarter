@@ -117,6 +117,13 @@ declare global {
 
       // Dispatcher status streaming
       onDispatcherStatus: (callback: (data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => void) => () => void;
+
+      // Backup Management
+      listBackupsAll: (project: Project) => Promise<string[]>;
+      restoreBackupAll: (project: Project, name: string) => Promise<boolean>;
+      createBackupAll: (project: Project, name: string) => Promise<boolean>;
+      runBackupAll: (project: Project, tarName: string) => Promise<boolean>;
+      runRestoreAll: (project: Project, tarName: string) => Promise<boolean>;
     };
   }
 } 

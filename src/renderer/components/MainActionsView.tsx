@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserPlus, IconMaximize, IconColumns, IconBrowserCheck, IconColumns3, IconColumns1 } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserPlus, IconMaximize, IconColumns, IconBrowserCheck, IconColumns3, IconColumns1, IconDeviceFloppy } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
+import { BackupModal } from './BackupModal';
 
 interface MainActionsViewProps {
   project: Project;
@@ -15,6 +16,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const [showInstallConfirm, setShowInstallConfirm] = useState(false);
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showBackup, setShowBackup] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [isAuthorRunning, setIsAuthorRunning] = useState(false);
   const [isPublisherRunning, setIsPublisherRunning] = useState(false);
@@ -630,6 +632,17 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   <IconSettings size={16} />
                 </Button>
               </Tooltip>
+              <Tooltip label="Backup & Restore">
+                <Button
+                  color="blue"
+                  variant="filled"
+                  size="xs"
+                  styles={installButtonStyles}
+                  onClick={() => setShowBackup(true)}
+                >
+                  <IconDeviceFloppy size={16} />
+                </Button>
+              </Tooltip>
               <Tooltip label="Reinstall">
                 <Button 
                   color="orange" 
@@ -710,6 +723,11 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
       <SettingsModal
         opened={showSettings}
         onClose={() => setShowSettings(false)}
+        project={project}
+      />
+      <BackupModal
+        opened={showBackup}
+        onClose={() => setShowBackup(false)}
         project={project}
       />
     </>

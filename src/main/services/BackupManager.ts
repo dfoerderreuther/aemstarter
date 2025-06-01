@@ -42,7 +42,13 @@ export class BackupManager {
         });
     }
 
+    async listBackupsAll(): Promise<string[]> {
+        const backupFiles = await this.listBackups('author');
+        return backupFiles.filter(file => file.startsWith('all__'));
+    }
+
     async listBackups(instance: 'author' | 'publisher' | 'dispatcher'): Promise<string[]> {
+        console.log(`[Backup] listing backups for ${instance} instance`);
         const instancePath = path.join(this.project.folderPath, instance);
         const backupPath = path.join(instancePath, 'backup');
         const backupFiles = fs.readdirSync(backupPath);
@@ -55,6 +61,7 @@ export class BackupManager {
 
     async backupAll(tarName: string): Promise<void> {
         tarName = "all__" + tarName;
+        console.log(`[Backup] Starting backup all for ${tarName}`);
         await Promise.all([
             this.backup('author', tarName),
             this.backup('publisher', tarName),
@@ -69,7 +76,11 @@ export class BackupManager {
             await this.deleteLogs(instance);
 
             const instancePath = path.join(this.project.folderPath, instance);
-            const backupPath = path.join(instancePath, 'backup', tarName); 
+            const backupFolderPath = path.join(instancePath, 'backup'); 
+            if (!fs.existsSync(backupFolderPath)) {
+                fs.mkdirSync(backupFolderPath);
+            }
+            const backupPath = path.join(backupFolderPath, tarName); 
 
             const command = `tar -cf "${backupPath}" "${instancePath}/crx-quickstart/repository"`;
 
@@ -88,6 +99,7 @@ export class BackupManager {
 
     async restoreAll(tarName: string): Promise<void> {
         tarName = "all__" + tarName;
+        console.log(`[Restore] Starting restore all for ${tarName}`);
         await Promise.all([
             this.restore('author', tarName),
             this.restore('publisher', tarName),

@@ -562,6 +562,38 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
   }
 });
 
+ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string) => {
+  try {
+    const backupManager = new BackupManager(project);
+    await backupManager.backupAll(tarName);
+    return true;
+  } catch (error) {
+    console.error('Error running backup all:', error);  
+    throw error;
+  }
+});
+
+ipcMain.handle('list-backups-all', async (_, project: Project) => {
+  try {
+    const backupManager = new BackupManager(project);
+    return await backupManager.listBackupsAll();
+  } catch (error) {
+    console.error('Error listing backups:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('run-restore-all', async (_, project: Project, tarName: string) => {
+  try {
+    const backupManager = new BackupManager(project);
+    await backupManager.restoreAll(tarName);
+    return true;
+  } catch (error) {
+    console.error('Error running restore all:', error); 
+    throw error;
+  }
+});
+
 // Dispatcher Management
 ipcMain.handle('start-dispatcher', async (_, project: Project) => {
   try {

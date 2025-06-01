@@ -119,8 +119,18 @@ contextBridge.exposeInMainWorld(
     loadOakJar: (project: Project) =>
       ipcRenderer.invoke('load-oak-jar', project),
     
+
     runOakCompaction: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('run-oak-compaction', project, instanceType),
+
+    runBackupAll: (project: Project, tarName: string) =>
+      ipcRenderer.invoke('run-backup-all', project, tarName),
+
+    runRestoreAll: (project: Project, tarName: string) =>
+      ipcRenderer.invoke('run-restore-all', project, tarName),
+
+    listBackupsAll: (project: Project) =>
+      ipcRenderer.invoke('list-backups-all', project),
     
 
 
