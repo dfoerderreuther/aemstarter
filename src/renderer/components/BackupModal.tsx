@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Stack, Text, Button, TextInput, Group, Loader, List, Alert } from '@mantine/core';
+import { Modal, Stack, Text, Button, TextInput, Group, Loader, List, Alert, Box } from '@mantine/core';
 import { Project } from '../../types/Project';
+import { BackupInfo } from '../../types/BackupInfo';
 import { IconDeviceFloppy, IconRestore, IconAlertCircle } from '@tabler/icons-react';
+import { formatFileSize, formatDate } from '../utils/formatUtils';
 
 interface BackupModalProps {
   opened: boolean;
@@ -10,7 +12,7 @@ interface BackupModalProps {
 }
 
 export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, project }) => {
-  const [backups, setBackups] = useState<string[]>([]);
+  const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -65,7 +67,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Backups" size="md">
+    <Modal opened={opened} onClose={onClose} title="Backups" size="lg">
       <Stack>
         {error && (
           <Alert color="red" icon={<IconAlertCircle size={16} />}>
@@ -76,19 +78,27 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
         {loading ? (
           <Loader size="sm" />
         ) : (
-          <List spacing="xs" size="sm" icon={<IconDeviceFloppy size={16} />}>
+          <List spacing="sm" size="sm" icon={<IconDeviceFloppy size={16} />}>
             {backups.length === 0 && <Text c="dimmed">No backups found.</Text>}
-            {backups.map((name) => (
-              <List.Item key={name}>
-                <Group justify="space-between">
-                  <Text>{name}</Text>
+            {backups.map((backup) => (
+              <List.Item key={backup.name}>
+                <Group justify="space-between" align="flex-start">
+                  <Box>
+                    <Text fw={500}>{backup.name}</Text>
+                    <Text size="xs" c="dimmed">
+                      Created: {formatDate(backup.createdDate)}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      Size: {formatFileSize(backup.fileSize)}
+                    </Text>
+                  </Box>
                   <Button
                     size="xs"
                     color="blue"
                     leftSection={<IconRestore size={14} />}
-                    loading={restoring === name}
-                    disabled={restoring === name}
-                    onClick={() => handleRestore(name)}
+                    loading={restoring === backup.name}
+                    disabled={restoring === backup.name}
+                    onClick={() => handleRestore(backup.name)}
                   >
                     Restore
                   </Button>

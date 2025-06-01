@@ -1,4 +1,5 @@
 import { Project } from "../../types/Project";
+import { BackupInfo } from "../../types/BackupInfo";
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -46,9 +47,25 @@ export class BackupManager {
         });
     }
 
-    async listBackupsAll(): Promise<string[]> {
+    async listBackupsAll(): Promise<BackupInfo[]> {
         const backupFiles = await this.listBackups('author');
-        return backupFiles.filter(file => file.startsWith('all__')).map(file => file.replace('all__', '')).map(file => file.replace('.tar', ''));
+        const allBackupFiles = backupFiles.filter(file => file.startsWith('all__'));
+        
+        const instancePath = path.join(this.project.folderPath, 'author');
+        const backupPath = path.join(instancePath, 'backup');
+        
+        const backupInfoPromises = allBackupFiles.map(async (file) => {
+            const filePath = path.join(backupPath, file);
+            const stats = fs.statSync(filePath);
+            
+            return {
+                name: file.replace('all__', '').replace('.tar', ''),
+                createdDate: stats.birthtime,
+                fileSize: stats.size
+            };
+        });
+        
+        return Promise.all(backupInfoPromises);
     }
 
     async listBackups(instance: 'author' | 'publisher' | 'dispatcher'): Promise<string[]> {

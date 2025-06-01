@@ -1,4 +1,5 @@
 import { Project } from './Project';
+import { BackupInfo } from './BackupInfo';
 
 declare global {
   interface Window {
@@ -119,7 +120,7 @@ declare global {
       onDispatcherStatus: (callback: (data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => void) => () => void;
 
       // Backup Management
-      listBackupsAll: (project: Project) => Promise<string[]>;
+      listBackupsAll: (project: Project) => Promise<BackupInfo[]>;
       restoreBackupAll: (project: Project, name: string) => Promise<boolean>;
       createBackupAll: (project: Project, name: string) => Promise<boolean>;
       runBackupAll: (project: Project, tarName: string) => Promise<boolean>;

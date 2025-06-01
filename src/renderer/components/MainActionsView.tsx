@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserPlus, IconMaximize, IconColumns, IconBrowserCheck, IconColumns3, IconColumns1, IconDeviceFloppy } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserCheck, IconColumns3, IconColumns1, IconDeviceFloppy } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
