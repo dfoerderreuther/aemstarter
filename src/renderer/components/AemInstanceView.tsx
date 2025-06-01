@@ -1,12 +1,12 @@
 import { Project } from "../../types/Project";
-import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button, Space, Select } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button, Space, Select, Popover, Checkbox } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
 import { Screenshot } from './Screenshot';
 import { OakRunMenu } from './OakRunMenu';
 import { PackageMenu } from './PackageMenu';
-import { IconX, IconChevronLeft, IconChevronRight, IconTextSize } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconChevronDown } from '@tabler/icons-react';
 import { SettingsMenu } from "./SettingsMenu";
 
 interface AemInstanceViewProps {
@@ -15,6 +15,95 @@ interface AemInstanceViewProps {
   visible?: boolean;
   viewMode?: 'tabs' | 'columns';
 }
+
+interface LogFileSelectorProps {
+  availableFiles: string[];
+  selectedFiles: string[];
+  onChange: (files: string[]) => void;
+  onFocus?: () => void;
+  size?: 'xs' | 'sm' | 'md' | 'lg';
+}
+
+const LogFileSelector = ({ availableFiles, selectedFiles, onChange, onFocus, size = 'xs' }: LogFileSelectorProps) => {
+  const [opened, setOpened] = useState(false);
+
+  const handleFileToggle = (file: string) => {
+    const newSelection = selectedFiles.includes(file)
+      ? selectedFiles.filter(f => f !== file)
+      : [...selectedFiles, file];
+    onChange(newSelection);
+  };
+
+  const getDisplayText = () => {
+    if (selectedFiles.length === 0) return 'Select logs';
+    if (selectedFiles.length === 1) return selectedFiles[0];
+    return `${selectedFiles[0]} +${selectedFiles.length - 1}`;
+  };
+
+  const handlePopoverOpen = () => {
+    if (onFocus) onFocus();
+    setOpened(true);
+  };
+
+  return (
+    <Popover
+      width={200}
+      position="bottom-start"
+      opened={opened}
+      onChange={setOpened}
+      shadow="md"
+      withinPortal
+    >
+      <Popover.Target>
+        <Button
+          variant="default"
+          size={size}
+          onClick={handlePopoverOpen}
+          rightSection={<IconChevronDown size={12} />}
+          style={{
+            fontSize: '11px',
+            height: '28px',
+            padding: '0 8px',
+            maxWidth: '120px',
+            justifyContent: 'space-between'
+          }}
+          styles={{
+            label: {
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              textAlign: 'left'
+            }
+          }}
+        >
+          {getDisplayText()}
+        </Button>
+      </Popover.Target>
+      
+      <Popover.Dropdown>
+        <Stack gap="xs">
+          <Text size="xs" fw={500} c="dimmed">Select log files to monitor:</Text>
+          {availableFiles.map((file) => (
+            <Checkbox
+              key={file}
+              label={file}
+              size="xs"
+              checked={selectedFiles.includes(file)}
+              onChange={() => handleFileToggle(file)}
+              styles={{
+                label: { fontSize: '11px' }
+              }}
+            />
+          ))}
+          {availableFiles.length === 0 && (
+            <Text size="xs" c="dimmed">No log files available</Text>
+          )}
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
+  );
+};
 
 export const AemInstanceView = ({ instance, project, visible = true, viewMode = 'tabs' }: AemInstanceViewProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -220,48 +309,12 @@ export const AemInstanceView = ({ instance, project, visible = true, viewMode = 
                 ) : null
               }
             />
-            <MultiSelect
-              placeholder="Select log files to monitor"
-              data={availableLogFiles}
-              value={selectedLogFiles}
+            <LogFileSelector
+              availableFiles={availableLogFiles}
+              selectedFiles={selectedLogFiles}
               onChange={handleLogFileChange}
-              size="xs"
-              searchable
-              clearable
-              maxDropdownHeight={200}
               onFocus={handleInputFocus}
-              maxValues={3}
-              hidePickedOptions={false}
-              style={{ 
-                width: viewMode === 'columns' ? '250px' : '400px',
-                minHeight: '32px',
-                maxHeight: '32px'
-              }}
-              styles={{
-                root: {
-                  minHeight: '32px',
-                  maxHeight: '32px'
-                },
-                input: {
-                  minHeight: '32px !important',
-                  maxHeight: '32px !important',
-                  paddingTop: '4px',
-                  paddingBottom: '4px',
-                  overflow: 'hidden'
-                },
-                pill: {
-                  fontSize: '10px',
-                  height: '20px',
-                  lineHeight: '20px',
-                  padding: '0 6px'
-                },
-                pillsList: {
-                  display: 'flex',
-                  flexWrap: 'nowrap',
-                  overflow: 'hidden',
-                  gap: '2px'
-                }
-              }}
+              size="xs"
             />
             <Select
               size="xs"
