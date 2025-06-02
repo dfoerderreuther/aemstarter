@@ -42,7 +42,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   };
 
   const handleCreateProject = async () => {
-    if (!newProjectName.trim() || !aemSdkPath || !licensePath) return;
+    if (!newProjectName.trim() || !aemSdkPath) return;
     setCreating(true);
     try {
       const result = await window.electronAPI.showOpenDialog({
@@ -107,6 +107,11 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     }
   };
 
+  const handleClearLicense = async () => {
+    setLicensePath('');
+    await window.electronAPI.setGlobalSettings({ licensePath: '' });
+  };
+
   return (
     <Modal
       opened={opened}
@@ -145,8 +150,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         </Group>
         <Group>
           <TextInput
-            label="License File"
-            placeholder="Select license properties file"
+            label="License File (Optional)"
+            placeholder="Select license properties file (optional)"
             value={licensePath}
             readOnly
             style={{ flex: 1 }}
@@ -159,6 +164,17 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           >
             Browse
           </Button>
+          {licensePath && (
+            <Button 
+              onClick={handleClearLicense}
+              disabled={creating}
+              variant="outline"
+              color="red"
+              style={{ marginTop: 'auto' }}
+            >
+              ✕
+            </Button>
+          )}
         </Group>
         <Group justify="flex-end">
           <Button 
@@ -171,7 +187,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           <Button 
             onClick={handleCreateProject} 
             loading={creating}
-            disabled={!newProjectName.trim() || !aemSdkPath || !licensePath}
+            disabled={!newProjectName.trim() || !aemSdkPath}
           >
             Create
           </Button>

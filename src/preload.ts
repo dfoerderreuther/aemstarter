@@ -45,7 +45,7 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('open-url', url),
       
     // File system operations
-    readDirectory: (dirPath: string, showHidden: boolean = false) =>
+    readDirectory: (dirPath: string, showHidden = false) =>
       ipcRenderer.invoke('read-directory', dirPath, showHidden),
     readFile: (filePath: string) =>
       ipcRenderer.invoke('read-file', filePath),
@@ -62,10 +62,8 @@ contextBridge.exposeInMainWorld(
     startAemInstance: (
       project: Project,
       instanceType: 'author' | 'publisher',
-      options?: {
-        debug?: boolean;
-      }
-    ) => ipcRenderer.invoke('start-aem-instance', project, instanceType, options),
+      debug = false
+    ) => ipcRenderer.invoke('start-aem-instance', project, instanceType, debug),
     
     stopAemInstance: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('stop-aem-instance', project, instanceType),

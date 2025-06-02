@@ -73,13 +73,13 @@ export class AemHealthChecker {
       };
 
       // If healthy, take a screenshot
-      if (response.ok) {
+      //if (response.ok) {
         try {
           status.screenshotPath = await this.takeScreenshot(instanceType, port);
         } catch (screenshotError) {
           console.warn(`Failed to take screenshot for ${instanceType}:`, screenshotError);
         }
-      }
+      //}
 
       this.lastHealthStatus.set(instanceType, status);
       this.sendHealthUpdate(instanceType, status);
@@ -192,7 +192,7 @@ export class AemHealthChecker {
     }
   }
 
-  startHealthChecking(instanceType: 'author' | 'publisher' | 'dispatcher', port: number, intervalMs: number = 30000) {
+  startHealthChecking(instanceType: 'author' | 'publisher' | 'dispatcher', port: number, intervalMs = 30000) {
     // Stop any existing health check
     this.stopHealthChecking(instanceType);
 

@@ -368,7 +368,7 @@ export class DispatcherManager {
         return this.healthChecker.checkHealth('dispatcher', this.instance.port);
     }
 
-    startHealthChecking(intervalMs: number = 30000) {
+    startHealthChecking(intervalMs = 30000) {
         if (!this.isDispatcherRunning()) {
             console.warn('Cannot start health checking for dispatcher: not running');
             return;
@@ -384,4 +384,5 @@ export class DispatcherManager {
     cleanup() {
         this.healthChecker.cleanup();
     }
+
 }

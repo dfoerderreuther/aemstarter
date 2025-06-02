@@ -40,9 +40,7 @@ declare global {
       startAemInstance: (
         project: Project,
         instanceType: 'author' | 'publisher',
-        options?: {
-          debug?: boolean;
-        }
+        debug?: boolean
       ) => Promise<boolean>;
       
       stopAemInstance: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;

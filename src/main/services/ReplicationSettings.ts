@@ -28,7 +28,7 @@ export class ReplicationSettings {
     private async setReplicationPublisher(project: Project, instance: 'author' | 'publisher') {
         console.log('setReplicationPublisher', project, instance);
 
-        let data = '/sling:resourceType=cq/replication/components/agent&' + 
+        const data = '/sling:resourceType=cq/replication/components/agent&' + 
         './jcr:lastModified=&' + 
         './jcr:lastModifiedBy=&' + 
         '_charset_=utf-8&' + 
@@ -81,8 +81,8 @@ export class ReplicationSettings {
         './queueBatchWaitTime=&' + 
         './queueBatchMaxSize=';
         
-        let dataRaw = encodeURI(data);
-        let command = "curl -u admin:admin 'http://localhost:4503/etc/replication/agents.publish/flush/jcr:content' " + 
+        const dataRaw = encodeURI(data);
+        const command = "curl -u admin:admin 'http://localhost:4503/etc/replication/agents.publish/flush/jcr:content' " + 
                     "-H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' " + 
                     "--data-raw '." + dataRaw + "'"
 
@@ -98,7 +98,7 @@ export class ReplicationSettings {
 
     private async setReplicationAuthor(project: Project, instance: 'author' | 'publisher') {
         // TODO: dynamic ports
-        let data = '/sling:resourceType=cq/replication/components/agent&' + 
+        const data = '/sling:resourceType=cq/replication/components/agent&' + 
         './jcr:lastModified=&' + 
         './jcr:lastModifiedBy=&' + 
         '_charset_=utf-8&' + 
@@ -143,8 +143,8 @@ export class ReplicationSettings {
         './queueBatchWaitTime=&' + 
         './queueBatchMaxSize=';
         
-        let dataRaw = encodeURI(data);
-        let command = "curl -u admin:admin 'http://localhost:4502/etc/replication/agents.author/publish/jcr:content' " + 
+        const dataRaw = encodeURI(data);
+        const command = "curl -u admin:admin 'http://localhost:4502/etc/replication/agents.author/publish/jcr:content' " + 
                     "-H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' " + 
                     "--data-raw '." + dataRaw + "'"
 

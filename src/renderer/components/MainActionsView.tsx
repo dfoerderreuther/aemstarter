@@ -167,8 +167,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const handleDebugAll = async () => {
     try {
       await Promise.all([
-        window.electronAPI.startAemInstance(project, 'author', { debug: true }),
-        window.electronAPI.startAemInstance(project, 'publisher', { debug: true })
+        window.electronAPI.startAemInstance(project, 'author', true),
+        window.electronAPI.startAemInstance(project, 'publisher', true)
       ]);
       setIsAuthorRunning(true);
       setIsPublisherRunning(true);
@@ -205,7 +205,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
 
   const handleDebugAuthor = async () => {
     try {
-      await window.electronAPI.startAemInstance(project, 'author', { debug: true });
+      await window.electronAPI.startAemInstance(project, 'author', true);
       setIsAuthorRunning(true);
     } catch (error) {
       console.error('Error starting author instance in debug mode:', error);
@@ -224,7 +224,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
 
   const handleStartPublisher = async () => {
     try {
-      await window.electronAPI.startAemInstance(project, 'publisher', {});
+      await window.electronAPI.startAemInstance(project, 'publisher');
       setIsPublisherRunning(true);
     } catch (error) {
       console.error('Error starting publisher instance:', error);
@@ -233,7 +233,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
 
   const handleDebugPublisher = async () => {
     try {
-      await window.electronAPI.startAemInstance(project, 'publisher', { debug: true });
+      await window.electronAPI.startAemInstance(project, 'publisher', true);
       setIsPublisherRunning(true);
     } catch (error) {
       console.error('Error starting publisher instance in debug mode:', error);

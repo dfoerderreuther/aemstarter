@@ -6,7 +6,7 @@ import { Terminal, TerminalRef } from './Terminal';
 import { Screenshot } from './Screenshot';
 import { OakRunMenu } from './OakRunMenu';
 import { PackageMenu } from './PackageMenu';
-import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconChevronDown } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconChevronDown, IconClearAll, IconEraser } from '@tabler/icons-react';
 import { SettingsMenu } from "./SettingsMenu";
 import { LogFileSelector } from './LogFileSelector';
 
@@ -191,6 +191,14 @@ export const AemInstanceView = ({ instance, project, visible = true, viewMode = 
     }, 350); // Slightly longer than the 300ms CSS transition
   };
 
+  // Handle clear terminal
+  const handleClearTerminal = () => {
+    if (terminalRef.current) {
+      terminalRef.current.clear();
+      hasShownAemOutputRef.current = false;
+    }
+  };
+
   return (
     <>
       <Stack gap="0" style={{ height: '100%' }}>
@@ -226,6 +234,15 @@ export const AemInstanceView = ({ instance, project, visible = true, viewMode = 
               onFocus={handleInputFocus}
               size="xs"
             />
+            <ActionIcon
+              size="xs"
+              variant="subtle"
+              onClick={handleClearTerminal}
+              title="Clear terminal"
+              style={{ cursor: 'pointer' }}
+            >
+              <IconEraser size={14} />
+            </ActionIcon>
             <Select
               size="xs"
               value={terminalFontSize.toString()}

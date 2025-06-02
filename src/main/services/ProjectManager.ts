@@ -89,7 +89,7 @@ export class ProjectManager {
     if (!aemSdkPath.toLowerCase().endsWith('.zip')) {
       throw new Error('AEM SDK path must be a .zip file');
     }
-    if (!licensePath.toLowerCase().endsWith('.properties')) {
+    if (licensePath && !licensePath.toLowerCase().endsWith('.properties')) {
       throw new Error('License path must be a .properties file');
     }
 
@@ -97,7 +97,7 @@ export class ProjectManager {
     if (!fs.existsSync(aemSdkPath)) {
       throw new Error('AEM SDK file does not exist');
     }
-    if (!fs.existsSync(licensePath)) {
+    if (licensePath && !fs.existsSync(licensePath)) {
       throw new Error('License file does not exist');
     }
 

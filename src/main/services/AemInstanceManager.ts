@@ -148,7 +148,7 @@ export class AemInstanceManager {
     });
   }
 
-  private async findJavaProcessWithRetry(port: number, maxRetries: number = 10, delayMs: number = 2000): Promise<number | null> {
+  private async findJavaProcessWithRetry(port: number, maxRetries = 10, delayMs = 2000): Promise<number | null> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       console.log(`[AemInstanceManager] Attempting to find Java process on port ${port} (attempt ${attempt}/${maxRetries})`);
       
@@ -167,7 +167,7 @@ export class AemInstanceManager {
     return null;
   }
 
-  private async waitForLogFile(logPath: string, maxWaitSeconds: number = 60): Promise<boolean> {
+  private async waitForLogFile(logPath: string, maxWaitSeconds = 60): Promise<boolean> {
     const startTime = Date.now();
     while (!fs.existsSync(logPath)) {
       if (Date.now() - startTime > maxWaitSeconds * 1000) {
@@ -749,7 +749,7 @@ export class AemInstanceManager {
     return this.healthChecker.checkHealth(instanceType, instance.port);
   }
 
-  startHealthChecking(instanceType: 'author' | 'publisher', intervalMs: number = 30000) {
+  startHealthChecking(instanceType: 'author' | 'publisher', intervalMs = 30000) {
     const instance = this.instances.get(instanceType);
     if (!instance || !instance.pid) {
       console.warn(`Cannot start health checking for ${instanceType}: instance not running`);
@@ -811,12 +811,12 @@ export class AemInstanceManager {
     //   1.78.3-SNAPSHOT -> 1.78.3
     //   1.78.3.T20240610123456 -> 1.78.3
     //   1.78.0 -> 1.78.0
-    let versionMatch = oakVersion.match(/^(\d+)\.(\d+)\.(\d+)/);
+    const versionMatch = oakVersion.match(/^(\d+)\.(\d+)\.(\d+)/);
     if (!versionMatch) {
       throw new Error(`Could not parse Oak version: ${oakVersion}`);
     }
-    let major = parseInt(versionMatch[1], 10);
-    let minor = parseInt(versionMatch[2], 10);
+    const major = parseInt(versionMatch[1], 10);
+    const minor = parseInt(versionMatch[2], 10);
     let patch = parseInt(versionMatch[3], 10);
 
     // Create install directory if it doesn't exist
@@ -827,7 +827,7 @@ export class AemInstanceManager {
 
     // Try up to 5 lower patch versions
     let found = false;
-    let triedVersions: string[] = [];
+    const triedVersions: string[] = [];
     let jarPath = '';
     let lastError: any = null;
     for (let i = 0; i < 5; i++) {

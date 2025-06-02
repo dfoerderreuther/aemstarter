@@ -4,6 +4,10 @@ import fs from 'fs';
 import extract from 'extract-zip';
 import process from 'process';
 import { ProjectSettings } from "../services/ProjectSettings";
+import { exec } from "child_process";
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 
 const README_TEMPLATE = `
@@ -82,7 +86,7 @@ export class Installer {
     }
 
     private validate() {
-        if (!fs.existsSync(this.licensePropertiesPath)) {
+        if (this.licensePropertiesPath && !fs.existsSync(this.licensePropertiesPath)) {
             throw new Error('license.properties file not found ' + this.licensePropertiesPath);
         }
         
@@ -108,24 +112,26 @@ export class Installer {
 
     private async installAemInstance(instanceDir: string, quickstartFile: string, type: string) {
         console.log('installing aem instance for linux', type, instanceDir, quickstartFile);
-        fs.copyFileSync(this.licensePropertiesPath, `${instanceDir}/license.properties`);
+        if (fs.existsSync(this.licensePropertiesPath)) {
+            fs.copyFileSync(this.licensePropertiesPath, `${instanceDir}/license.properties`);
+        }
         fs.symlinkSync(
             quickstartFile,
             `${instanceDir}/aem-sdk-quickstart.jar`
         );
-        process.chdir(instanceDir);
-        const { execSync } = require('child_process');
-        execSync(`java -jar aem-sdk-quickstart.jar -unpack`);
+        await execAsync(`java -jar aem-sdk-quickstart.jar -unpack`, { cwd: instanceDir });
     }
 
-    private async installDispatcherLinux(dispatcherDir: string, dispatcherScript: string) {
+    private async installDispatcherLinux(installDir: string, dispatcherScript: string) {
         // Change to dispatcher directory and execute script
-        console.log('installing dispatcher for linux', dispatcherDir, dispatcherScript);
-        process.chdir(dispatcherDir);
+        console.log('installing dispatcher for linux', installDir, dispatcherScript);
+        process.chdir(installDir);
         if (dispatcherScript) {
-            const { execSync } = require('child_process');
-            execSync(`chmod +x ${dispatcherScript}`);
-            execSync(`${dispatcherScript}`);
+
+
+            await execAsync(`chmod +x ${dispatcherScript}`, { cwd: installDir });
+            await execAsync(`${dispatcherScript}`, { cwd: installDir });
+
 
             const files = fs.readdirSync(`${this.project.folderPath}/dispatcher`);
             const dispatcherDir = files.find(file => file.startsWith('dispatcher-sdk'));

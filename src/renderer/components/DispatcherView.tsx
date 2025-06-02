@@ -3,7 +3,7 @@ import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Button, Select }
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
-import { IconX, IconChevronLeft, IconChevronRight, IconTextSize } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconClearAll, IconEraser } from '@tabler/icons-react';
 import { Screenshot } from "./Screenshot";
 
 interface DispatcherViewProps {
@@ -159,7 +159,13 @@ export const DispatcherView = ({ project, visible = true, viewMode = 'tabs' }: D
     }, 350); // Slightly longer than the 300ms CSS transition
   };
 
-
+  // Handle clear terminal
+  const handleClearTerminal = () => {
+    if (terminalRef.current) {
+      terminalRef.current.clear();
+      hasShownDispatcherOutputRef.current = false;
+    }
+  };
 
   return (
     <>
@@ -189,6 +195,15 @@ export const DispatcherView = ({ project, visible = true, viewMode = 'tabs' }: D
                     ) : null
                   }
                 />
+                <ActionIcon
+                  size="xs"
+                  variant="subtle"
+                  onClick={handleClearTerminal}
+                  title="Clear terminal"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <IconEraser size={14} />
+                </ActionIcon>
                 <Select
                   size="xs"
                   value={terminalFontSize.toString()}
