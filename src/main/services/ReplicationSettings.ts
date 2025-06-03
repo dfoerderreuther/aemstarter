@@ -41,7 +41,7 @@ export class ReplicationSettings {
         './userId=&' + 
         './logLevel=error&' + 
         './reverseReplication@Delete=&' + 
-        './transportUri=http://wknd.local/dispatcher/invalidate.cache&' + 
+        './transportUri=http://localhost:80/dispatcher/invalidate.cache&' + 
         './transportUser=&' + 
         './transportPassword=&' + 
         './transportNTLMDomain=&' + 

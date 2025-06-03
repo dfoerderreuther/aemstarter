@@ -19,6 +19,7 @@ interface ProjectSettings {
     jvmOpts: string;
     debugJvmOpts: string;
     healthCheck: boolean;
+    healthCheckPath: string;
   };
   publisher: {
     port: number;
@@ -26,11 +27,13 @@ interface ProjectSettings {
     jvmOpts: string;
     debugJvmOpts: string;
     healthCheck: boolean;
+    healthCheckPath: string;
   };
   dispatcher: {
     port: number;
     config: string;
     healthCheck: boolean;
+    healthCheckPath: string;
   };
 }
 
@@ -176,6 +179,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               checked={settings.author.healthCheck}
               onChange={(event) => updateAuthorSettings('healthCheck', event.currentTarget.checked)}
             />
+            <TextInput
+              label="Health Check Path"
+              description="Path to health check service"
+              value={settings.author.healthCheckPath}
+              onChange={(event) => updateAuthorSettings('healthCheckPath', event.currentTarget.value)}
+            />
           </Stack>
         </Tabs.Panel>
 
@@ -216,6 +225,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               checked={settings.publisher.healthCheck}
               onChange={(event) => updatePublisherSettings('healthCheck', event.currentTarget.checked)}
             />
+            <TextInput
+              label="Health Check Path"
+              description="Path to health check service"
+              value={settings.publisher.healthCheckPath}
+              onChange={(event) => updatePublisherSettings('healthCheckPath', event.currentTarget.value)}
+            />
           </Stack>
         </Tabs.Panel>
 
@@ -243,6 +258,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               description="Enable periodic health checks for the dispatcher"
               checked={settings.dispatcher.healthCheck}
               onChange={(event) => updateDispatcherSettings('healthCheck', event.currentTarget.checked)}
+            />
+            <TextInput
+              label="Health Check Path"
+              description="Path to health check service"
+              value={settings.dispatcher.healthCheckPath}
+              onChange={(event) => updateDispatcherSettings('healthCheckPath', event.currentTarget.value)}
             />
           </Stack>
         </Tabs.Panel>

@@ -562,10 +562,10 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
   }
 });
 
-ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string) => {
+ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string, compress: boolean = true) => {
   try {
     const backupManager = new BackupManager(project);
-    await backupManager.backupAll(tarName);
+    await backupManager.backupAll(tarName, compress);
     return true;
   } catch (error) {
     console.error('Error running backup all:', error);  
@@ -590,6 +590,17 @@ ipcMain.handle('run-restore-all', async (_, project: Project, tarName: string) =
     return true;
   } catch (error) {
     console.error('Error running restore all:', error); 
+    throw error;
+  }
+});
+
+ipcMain.handle('delete-backup-all', async (_, project: Project, tarName: string) => {
+  try {
+    const backupManager = new BackupManager(project);
+    await backupManager.deleteBackupAll(tarName);
+    return true;
+  } catch (error) {
+    console.error('Error deleting backup all:', error);
     throw error;
   }
 });

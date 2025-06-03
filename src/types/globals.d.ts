@@ -121,8 +121,9 @@ declare global {
       listBackupsAll: (project: Project) => Promise<BackupInfo[]>;
       restoreBackupAll: (project: Project, name: string) => Promise<boolean>;
       createBackupAll: (project: Project, name: string) => Promise<boolean>;
-      runBackupAll: (project: Project, tarName: string) => Promise<boolean>;
+      runBackupAll: (project: Project, tarName: string, compress?: boolean) => Promise<boolean>;
       runRestoreAll: (project: Project, tarName: string) => Promise<boolean>;
+      deleteBackupAll: (project: Project, tarName: string) => Promise<boolean>;
     };
   }
 } 

@@ -133,14 +133,15 @@ export class Installer {
             await execAsync(`${dispatcherScript}`, { cwd: installDir });
 
 
-            const files = fs.readdirSync(`${this.project.folderPath}/dispatcher`);
+            const files = fs.readdirSync(`${installDir}`);
             const dispatcherDir = files.find(file => file.startsWith('dispatcher-sdk'));
             if (dispatcherDir) {
                 fs.symlinkSync(
-                    `${this.project.folderPath}/dispatcher/${dispatcherDir}`,
-                    `${this.project.folderPath}/dispatcher/dispatcher-sdk`
+                    `${installDir}/${dispatcherDir}`,
+                    `${installDir}/dispatcher-sdk`
                 );
             }
+            await execAsync(`cp -R ${installDir}/dispatcher-sdk/src ${installDir}/config`, { cwd: installDir });
         }
         //const configPath = `${this.workDir}/dispatcher/config`;
         //fs.mkdirSync(configPath, { recursive: true });

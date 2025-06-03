@@ -116,14 +116,31 @@ export class AemHealthChecker {
       const screenshotWindow = new BrowserWindow({
         width: 1200,
         height: 800,
-        show: false,
+        show: true,
         webPreferences: {
           nodeIntegration: false,
-          contextIsolation: true
+          contextIsolation: true,
+          webSecurity: false,
+          allowRunningInsecureContent: true
         }
       });
 
-      screenshotWindow.loadURL(`http://localhost:${port}/`);
+      const settings = ProjectSettings.getSettings(this.project);
+      const instanceSettings = settings[instanceType];
+      const healthCheckPath = instanceSettings?.healthCheckPath || '';
+
+      screenshotWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+        // Remove or modify restrictive Content Security Policy
+        if (details.responseHeaders && details.responseHeaders['Content-Security-Policy']) {
+          // Allow external images by modifying img-src directive
+          details.responseHeaders['Content-Security-Policy'] = details.responseHeaders['Content-Security-Policy'].map(csp => {
+            return csp.replace(/img-src '[^']*'[^;]*;?/g, "img-src 'self' data: https: http:;");
+          });
+        }
+        callback({ responseHeaders: details.responseHeaders });
+      });
+
+      screenshotWindow.loadURL(`http://localhost:${port}${healthCheckPath}`);
 
       screenshotWindow.webContents.once('did-finish-load', async () => {
         try {

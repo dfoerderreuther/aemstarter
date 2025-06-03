@@ -15,19 +15,22 @@ export class ProjectSettings {
         "runmode": "author,default",
         "jvmOpts": "-server -Xmx4096m -XX:MaxPermSize=256M -Djava.awt.headless=true",
         "debugJvmOpts": " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5005,suspend=n,server=y", 
-        "healthCheck": true
+        "healthCheck": true, 
+        "healthCheckPath": ""
     },
     "publisher": {
         "port": 4503,
         "runmode": "publish,default", 
         "jvmOpts": "-server -Xmx4096m -XX:MaxPermSize=256M -Djava.awt.headless=true",
         "debugJvmOpts": " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5006,suspend=n,server=y", 
-        "healthCheck": true
+        "healthCheck": true, 
+        "healthCheckPath": ""
     }, 
     "dispatcher": {
         "port": 80,
-        "config": "./dispatcher-sdk/src",
-        "healthCheck": true
+        "config": "./config",
+        "healthCheck": true, 
+        "healthCheckPath": ""
     }
 }
     `;

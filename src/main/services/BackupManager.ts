@@ -1,5 +1,6 @@
 import { Project } from "../../types/Project";
 import { BackupInfo } from "../../types/BackupInfo";
+import { ProjectSettings } from "./ProjectSettings";
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -57,11 +58,18 @@ export class BackupManager {
         const backupInfoPromises = allBackupFiles.map(async (file) => {
             const filePath = path.join(backupPath, file);
             const stats = fs.statSync(filePath);
+            const statsPublish = fs.statSync(filePath.replace('/author/', '/publisher/'));
+            const statsDispatcher = fs.statSync(filePath.replace('/author/', '/dispatcher/'));
+
+            const fileSize = stats.size;
+            const fileSizePublish = statsPublish.size;
+            const fileSizeDispatcher = statsDispatcher.size;
             
             return {
-                name: file.replace('all__', '').replace('.tar', ''),
+                name: file.replace('all__', '').replace('.tar.gz', '').replace('.tar', ''),
                 createdDate: stats.birthtime,
-                fileSize: stats.size
+                fileSize: fileSize + fileSizePublish + fileSizeDispatcher, 
+                compressed: file.endsWith('.tar.gz')
             };
         });
         
@@ -76,34 +84,50 @@ export class BackupManager {
         return backupFiles;
     }
 
-    private fixTarName(tarName: string): string {
-        return tarName.replace(/ /g, '_') + '.tar';
+    private fixTarName(tarName: string, compress: boolean): string {
+        return tarName.replace(/ /g, '_') + (compress ? '.tar.gz' : '.tar');
     }
 
-    async backupAll(tarName: string): Promise<void> {
+
+    async backupAll(tarName: string, compress: boolean = true): Promise<void> {
         tarName = "all__" + tarName;
         console.log(`[Backup] Starting backup all for ${tarName}`);
         await Promise.all([
-            this.backup('author', tarName),
-            this.backup('publisher', tarName),
-            this.backup('dispatcher', tarName)
+            this.backup('author', tarName, compress),
+            this.backup('publisher', tarName, compress),
+            this.backup('dispatcher', tarName, compress)
         ]);
     }
 
-    async backup(instance: 'author' | 'publisher' | 'dispatcher', tarName: string): Promise<void> {
-        tarName = this.fixTarName(tarName);
+    async backup(instance: 'author' | 'publisher' | 'dispatcher', tarName: string, compress: boolean = true): Promise<void> {
+        tarName = this.fixTarName(tarName, compress);
+        const instancePath = path.join(this.project.folderPath, instance);
+        const backupFolderPath = path.join(instancePath, 'backup'); 
+        if (!fs.existsSync(backupFolderPath)) {
+            fs.mkdirSync(backupFolderPath);
+        }
+        const backupPath = path.join(backupFolderPath, tarName); 
+
+        const tarCommand = compress ? 'tar -czf' : 'tar -cf';
+
         if (instance !== 'dispatcher') {
             await this.compact(instance);
             await this.deleteLogs(instance);
 
-            const instancePath = path.join(this.project.folderPath, instance);
-            const backupFolderPath = path.join(instancePath, 'backup'); 
-            if (!fs.existsSync(backupFolderPath)) {
-                fs.mkdirSync(backupFolderPath);
-            }
-            const backupPath = path.join(backupFolderPath, tarName); 
+            const command = `${tarCommand} "${backupPath}" crx-quickstart`;
 
-            const command = `tar -cf "${backupPath}" crx-quickstart`;
+            console.log(`[Backup] Starting backup for ${instance} instance`);
+            console.log(`[Backup] Command: ${command}`);
+
+            try {
+                await execAsync(command, { cwd: instancePath });
+                console.log(`[Backup] Backup completed for ${instance} instance`);
+            } catch (error) {
+                console.error(`[Backup] Backup failed for ${instance} instance:`, error);
+                throw error;
+            }
+        } else {
+            const command = `${tarCommand} "${backupPath}" "${ProjectSettings.getSettings(this.project).dispatcher.config}" cache`;
 
             console.log(`[Backup] Starting backup for ${instance} instance`);
             console.log(`[Backup] Command: ${command}`);
@@ -128,25 +152,74 @@ export class BackupManager {
         ]);
     }
 
+    private findTarName(tarName: string, instance: 'author' | 'publisher' | 'dispatcher'): string {
+        const searchName = tarName.replace(/ /g, '_');
+        const instancePath = path.join(this.project.folderPath, instance);
+        const backupFolderPath = path.join(instancePath, 'backup');
+        
+        if (!fs.existsSync(backupFolderPath)) {
+            throw new Error(`Backup folder does not exist: ${backupFolderPath}`);
+        }
+        
+        const backupFiles = fs.readdirSync(backupFolderPath);
+        
+        // Look for exact matches first (.tar.gz or .tar)
+        const exactMatches = backupFiles.filter(file => 
+            file === `${searchName}.tar.gz` || file === `${searchName}.tar`
+        );
+        
+        if (exactMatches.length > 0) {
+            // Prefer .tar.gz over .tar if both exist
+            const preferredFile = exactMatches.find(file => file.endsWith('.tar.gz')) || exactMatches[0];
+            return preferredFile;
+        }
+        
+        throw new Error(`Backup file not found for: ${searchName} (looking for ${searchName}.tar or ${searchName}.tar.gz)`);
+    }
+
+    async deleteBackupAll(tarName: string): Promise<void> {
+        tarName = "all__" + tarName;
+        console.log(`[Delete] Starting delete for ${tarName}`);
+        await Promise.all([
+            this.delete('author', tarName),
+            this.delete('publisher', tarName),
+            this.delete('dispatcher', tarName)
+        ]);
+    }
+    
+    private async delete(instance: 'author' | 'publisher' | 'dispatcher', tarName: string): Promise<void> {
+        const actualFileName = this.findTarName(tarName, instance);
+        const instancePath = path.join(this.project.folderPath, instance);  
+        const backupPath = path.join(instancePath, 'backup', actualFileName);
+        if (fs.existsSync(backupPath)) {
+            fs.unlinkSync(backupPath);
+            console.log(`[Delete] Deleted backup for ${instance} instance`);
+        } else {
+            console.log(`[Delete] Backup not found for ${instance} instance`);
+        }
+    }
+
     async restore(instance: 'author' | 'publisher' | 'dispatcher', tarName: string): Promise<void> {
-        tarName = this.fixTarName(tarName);
+        const actualFileName = this.findTarName(tarName, instance);
+        const instancePath = path.join(this.project.folderPath, instance);
+        const backupPath = path.join(instancePath, 'backup', actualFileName);
+
         console.log(`[Restore] Starting restore for ${instance} instance`);
-        if (instance !== 'dispatcher') {  
-            const instancePath = path.join(this.project.folderPath, instance);
-            const backupPath = path.join(instancePath, 'backup', tarName);
+        console.log(`[Restore] Found backup file: ${actualFileName}`);
 
-            const command = `tar -xf "${backupPath}"`;
+        const tarCommand = actualFileName.endsWith('.tar.gz') ? 'tar -xzf' : 'tar -xf';
 
-            console.log(`[Restore] Command: ${command}`);
-            console.log(`[Restore] Instance path: ${instancePath}`);
+        const command = `${tarCommand} "${backupPath}"`;
 
-            try {
-                await execAsync(command, { cwd: instancePath });
-                console.log(`[Restore] Restore completed for ${instance} instance`);
-            } catch (error) {
-                console.error(`[Restore] Restore failed for ${instance} instance:`, error);
-                throw error;
-            }
+        console.log(`[Restore] Command: ${command}`);
+        console.log(`[Restore] Instance path: ${instancePath}`);
+
+        try {
+            await execAsync(command, { cwd: instancePath });
+            console.log(`[Restore] Restore completed for ${instance} instance`);
+        } catch (error) {
+            console.error(`[Restore] Restore failed for ${instance} instance:`, error);
+            throw error;
         }
     }
 }
