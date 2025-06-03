@@ -26,10 +26,16 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
   // Expose resize method to parent
   useImperativeHandle(ref, () => ({
     resize: () => {
-      if (fitAddonRef.current) {
+      if (fitAddonRef.current && xtermRef.current) {
         try {
-          console.log('Resizing terminal');
-          fitAddonRef.current.fit();
+          // First, temporarily reduce terminal size to measure true available space
+          xtermRef.current.resize(1, 1);
+          // Now measure the available space
+          setTimeout(() => {
+            if (fitAddonRef.current) {
+              fitAddonRef.current.fit();
+            }
+          }, 10);
         } catch (error) {
           console.warn('Failed to fit terminal:', error);
         }
@@ -42,12 +48,12 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     if (xtermRef.current && fontSize) {
       xtermRef.current.options.fontSize = fontSize;
       // Trigger a resize to apply the new font size
-      if (fitAddonRef.current) {
-        try {
+      try {
+        if (fitAddonRef.current) {
           fitAddonRef.current.fit();
-        } catch (error) {
-          console.warn('Failed to fit terminal after font size change:', error);
         }
+      } catch (error) {
+        console.warn('Failed to fit terminal:', error);
       }
     }
   }, [fontSize]);
