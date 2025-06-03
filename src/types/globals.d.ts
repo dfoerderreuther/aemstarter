@@ -48,6 +48,7 @@ declare global {
       isAemInstanceRunning: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
       
       getAemInstancePid: (project: Project, instanceType: 'author' | 'publisher') => Promise<number | null>;
+      getAemInstanceDebugStatus: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
       
       getAvailableLogFiles: (project: Project, instanceType: 'author' | 'publisher') => Promise<string[]>;
       

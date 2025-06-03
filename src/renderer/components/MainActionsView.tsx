@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
+import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider, Space } from '@mantine/core';
 import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserCheck, IconColumns3, IconColumns1, IconDeviceFloppy } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
@@ -19,7 +19,9 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const [showBackup, setShowBackup] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [isAuthorRunning, setIsAuthorRunning] = useState(false);
+  const [isAuthorDebugging, setIsAuthorDebugging] = useState(false);
   const [isPublisherRunning, setIsPublisherRunning] = useState(false);
+  const [isPublisherDebugging, setIsPublisherDebugging] = useState(false);
   const [isDispatcherRunning, setIsDispatcherRunning] = useState(false);
   const [authorPid, setAuthorPid] = useState<number | null>(null);
   const [publisherPid, setPublisherPid] = useState<number | null>(null);
@@ -28,17 +30,21 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const [authorRunning, publisherRunning, authorPidValue, publisherPidValue, dispatcherStatus] = await Promise.all([
+        const [authorRunning, publisherRunning, authorPidValue, publisherPidValue, authorDebugValue, publisherDebugValue, dispatcherStatus] = await Promise.all([
           window.electronAPI.isAemInstanceRunning(project, 'author'),
           window.electronAPI.isAemInstanceRunning(project, 'publisher'),
           window.electronAPI.getAemInstancePid(project, 'author'),
           window.electronAPI.getAemInstancePid(project, 'publisher'),
+          window.electronAPI.getAemInstanceDebugStatus(project, 'author'),
+          window.electronAPI.getAemInstanceDebugStatus(project, 'publisher'),
           window.electronAPI.getDispatcherStatus(project)
         ]);
         setIsAuthorRunning(authorRunning);
         setIsPublisherRunning(publisherRunning);
         setAuthorPid(authorPidValue);
         setPublisherPid(publisherPidValue);
+        setIsAuthorDebugging(authorDebugValue);
+        setIsPublisherDebugging(publisherDebugValue);
         setIsDispatcherRunning(dispatcherStatus.isRunning);
       } catch (error) {
         console.error('Error checking instance status:', error);
@@ -101,10 +107,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
     try {
       await window.electronAPI.killAllAemInstances(project);
       setShowKillAllConfirm(false);
-      setIsAuthorRunning(false);
-      setIsPublisherRunning(false);
-      setAuthorPid(null);
-      setPublisherPid(null);
     } catch (error) {
       console.error('Failed to kill all instances:', error);
     }
@@ -117,11 +119,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
         window.electronAPI.startAemInstance(project, 'author'),
         window.electronAPI.startAemInstance(project, 'publisher')
       ]);
-      setIsAuthorRunning(true);
-      setIsPublisherRunning(true);
 
       await handleStartDispatcherAfterPublisher();
-
 
     } catch (error) {
       console.error('Error starting all instances:', error);
@@ -152,7 +151,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
       if (publisherReady) {
         try {
           await window.electronAPI.startDispatcher(project);
-          setIsDispatcherRunning(true);
         } catch (err) {
           console.error('Error starting dispatcher:', err);
         }
@@ -170,8 +168,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
         window.electronAPI.startAemInstance(project, 'author', true),
         window.electronAPI.startAemInstance(project, 'publisher', true)
       ]);
-      setIsAuthorRunning(true);
-      setIsPublisherRunning(true);
       await handleStartDispatcherAfterPublisher();
     } catch (error) {
       console.error('Error starting all instances in debug mode:', error);
@@ -185,10 +181,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
         window.electronAPI.stopAemInstance(project, 'publisher'),
         window.electronAPI.stopDispatcher(project)
       ]);
-      setIsAuthorRunning(false);
-      setIsPublisherRunning(false);
-      setAuthorPid(null);
-      setPublisherPid(null);
     } catch (error) {
       console.error('Error stopping all instances:', error);
     }
@@ -197,7 +189,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const handleStartAuthor = async () => {
     try {
       await window.electronAPI.startAemInstance(project, 'author');
-      setIsAuthorRunning(true);
     } catch (error) {
       console.error('Error starting author instance:', error);
     }
@@ -206,7 +197,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const handleDebugAuthor = async () => {
     try {
       await window.electronAPI.startAemInstance(project, 'author', true);
-      setIsAuthorRunning(true);
     } catch (error) {
       console.error('Error starting author instance in debug mode:', error);
     }
@@ -215,8 +205,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const handleStopAuthor = async () => {
     try {
       await window.electronAPI.stopAemInstance(project, 'author');
-      setIsAuthorRunning(false);
-      setAuthorPid(null);
     } catch (error) {
       console.error('Error stopping author instance:', error);
     }
@@ -225,7 +213,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const handleStartPublisher = async () => {
     try {
       await window.electronAPI.startAemInstance(project, 'publisher');
-      setIsPublisherRunning(true);
     } catch (error) {
       console.error('Error starting publisher instance:', error);
     }
@@ -234,7 +221,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const handleDebugPublisher = async () => {
     try {
       await window.electronAPI.startAemInstance(project, 'publisher', true);
-      setIsPublisherRunning(true);
     } catch (error) {
       console.error('Error starting publisher instance in debug mode:', error);
     }
@@ -243,8 +229,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const handleStopPublisher = async () => {
     try {
       await window.electronAPI.stopAemInstance(project, 'publisher');
-      setIsPublisherRunning(false);
-      setPublisherPid(null);
     } catch (error) {
       console.error('Error stopping publisher instance:', error);
     }
@@ -385,8 +369,12 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Author</Text>
               <Badge variant="light" color={isAuthorRunning ? "green" : "red"} size="sm">
-                {isAuthorRunning && authorPid ? `PID: ${authorPid}` : "STOPPED"}
+                {isAuthorDebugging && (
+                  <IconBug size={14} style={{ marginTop: '3px', marginBottom: '-3px' }} />
+                )} 
+                {isAuthorRunning && authorPid ? ` PID: ${authorPid}` : " STOPPED"}
               </Badge>
+
             </Group>
             <Group gap="xs">
               <Button.Group>
@@ -452,7 +440,10 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
             <Group justify="space-between" align="center">
               <Text size="sm" fw={500} c="dimmed">Publisher</Text>
               <Badge variant="light" color={isPublisherRunning ? "green" : "red"} size="sm">
-                {isPublisherRunning && publisherPid ? `PID: ${publisherPid}` : "STOPPED"}
+              {isPublisherDebugging && (
+                  <IconBug size={14} style={{ marginTop: '3px', marginBottom: '-3px' }} />
+                )} 
+                {isPublisherRunning && publisherPid ? ` PID: ${publisherPid}` : " STOPPED"}
               </Badge>
             </Group>
             <Group gap="xs">

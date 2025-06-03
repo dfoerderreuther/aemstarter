@@ -63,7 +63,7 @@ contextBridge.exposeInMainWorld(
       project: Project,
       instanceType: 'author' | 'publisher',
       debug = false
-    ) => ipcRenderer.invoke('start-aem-instance', project, instanceType, debug),
+    ) => ipcRenderer.invoke('start-aem-instance', project, instanceType, { debug }),
     
     stopAemInstance: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('stop-aem-instance', project, instanceType),
@@ -73,6 +73,9 @@ contextBridge.exposeInMainWorld(
 
     getAemInstancePid: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('get-aem-instance-pid', project, instanceType),
+
+    getAemInstanceDebugStatus: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('get-aem-instance-debug-status', project, instanceType),
 
     getAvailableLogFiles: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('get-available-log-files', project, instanceType),

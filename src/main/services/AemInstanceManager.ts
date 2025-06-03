@@ -14,6 +14,7 @@ interface AemInstance {
   port: number;
   runmode: string;
   jvmOpts: string;
+  isDebugMode: boolean; // Add debug mode tracking
   tailProcesses: Map<string, ChildProcess>; // Map of log file name to tail process
   selectedLogFiles: string[]; // Currently selected log files for tailing
 }
@@ -346,6 +347,7 @@ export class AemInstanceManager {
         port: 0,
         runmode: '',
         jvmOpts: '',
+        isDebugMode: false,
         tailProcesses: new Map(),
         selectedLogFiles: logFiles
       };
@@ -489,6 +491,7 @@ export class AemInstanceManager {
       port,
       runmode,
       jvmOpts,
+      isDebugMode: startType === 'debug', // Set debug mode based on start type
       tailProcesses: new Map(),
       selectedLogFiles: this.getSelectedLogFiles(instanceType) // Use previously selected files or default
     };
@@ -651,6 +654,7 @@ export class AemInstanceManager {
     // Clean up instance data
     instance.process = null;
     instance.pid = null;
+    instance.isDebugMode = false; // Reset debug mode when stopping
 
     // Send final PID status update
     this.sendPidStatusUpdate(instanceType, null, false);
@@ -687,6 +691,7 @@ export class AemInstanceManager {
       this.stopTailing(instanceType);
       instance.process = null;
       instance.pid = null;
+      instance.isDebugMode = false; // Reset debug mode when killing
       // Send PID status update for each instance
       this.sendPidStatusUpdate(instanceType, null, false);
     }
@@ -887,5 +892,11 @@ export class AemInstanceManager {
 
     const oakRun = new BackupManager(this.project);
     await oakRun.compact(instanceType);
+  }
+
+  // Add method to get debug status
+  isInstanceInDebugMode(instanceType: 'author' | 'publisher'): boolean {
+    const instance = this.instances.get(instanceType);
+    return instance?.isDebugMode || false;
   }
 } 

@@ -324,6 +324,11 @@ ipcMain.handle('get-aem-instance-pid', (_, project: Project, instanceType: 'auth
   return manager ? manager.getInstancePid(instanceType) : null;
 });
 
+ipcMain.handle('get-aem-instance-debug-status', (_, project: Project, instanceType: 'author' | 'publisher') => {
+  const manager = instanceManagers.get(project.id);
+  return manager ? manager.isInstanceInDebugMode(instanceType) : false;
+});
+
 ipcMain.handle('get-available-log-files', (_, project: Project, instanceType: 'author' | 'publisher') => {
   let manager = instanceManagers.get(project.id);
   if (!manager) {
