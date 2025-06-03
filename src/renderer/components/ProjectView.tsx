@@ -12,7 +12,7 @@ interface ProjectViewProps {
 
 export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
   const [activeTab, setActiveTab] = useState<string | null>('author');
-  const [viewMode, setViewMode] = useState<'tabs' | 'columns'>('tabs');
+  const [viewMode, setViewMode] = useState<'tabs' | 'columns'>('columns');
 
   useEffect(() => {
     if (viewMode === 'columns') {

@@ -589,17 +589,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
           <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">View</Text>
             <Button.Group>
-              <Tooltip label="Tabs">
-                <Button
-                  color={viewMode === 'tabs' ? 'blue' : 'gray'}
-                  variant={viewMode === 'tabs' ? 'filled' : 'light'}
-                  size="xs"
-                  styles={installButtonStyles}
-                  onClick={() => setViewMode('tabs')}
-                >
-                  <IconColumns1 size={16} />
-                </Button>
-              </Tooltip>
               <Tooltip label="Columns">
                 <Button
                   color={viewMode === 'columns' ? 'blue' : 'gray'}
@@ -609,6 +598,17 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   onClick={() => setViewMode('columns')}
                 >
                   <IconColumns3 size={16} />
+                </Button>
+              </Tooltip>
+              <Tooltip label="Tabs">
+                <Button
+                  color={viewMode === 'tabs' ? 'blue' : 'gray'}
+                  variant={viewMode === 'tabs' ? 'filled' : 'light'}
+                  size="xs"
+                  styles={installButtonStyles}
+                  onClick={() => setViewMode('tabs')}
+                >
+                  <IconColumns1 size={16} />
                 </Button>
               </Tooltip>
             </Button.Group>

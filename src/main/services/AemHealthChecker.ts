@@ -116,7 +116,7 @@ export class AemHealthChecker {
       const screenshotWindow = new BrowserWindow({
         width: 1200,
         height: 800,
-        show: true,
+        show: false,
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true,
