@@ -466,13 +466,13 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
     const manager = instanceManagers.get(project.id);
     if (manager) {
       // Check author instance
-      if (settings.author?.healthCheck && manager.isInstanceRunning('author')) {
+      if (settings.general?.healthCheck && manager.isInstanceRunning('author')) {
         console.log('[main] Starting health checking for author instance after settings change');
         manager.startHealthChecking('author');
       }
       
       // Check publisher instance  
-      if (settings.publisher?.healthCheck && manager.isInstanceRunning('publisher')) {
+      if (settings.general?.healthCheck && manager.isInstanceRunning('publisher')) {
         console.log('[main] Starting health checking for publisher instance after settings change');
         manager.startHealthChecking('publisher');
       }
@@ -481,10 +481,10 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
     // Check dispatcher health checking
     const dispatcherManager = dispatcherManagers.get(project.id);
     if (dispatcherManager) {
-      if (settings.dispatcher?.healthCheck && dispatcherManager.isDispatcherRunning()) {
+      if (settings.general?.healthCheck && dispatcherManager.isDispatcherRunning()) {
         console.log('[main] Starting health checking for dispatcher after settings change');
         dispatcherManager.startHealthChecking();
-      } else if (!settings.dispatcher?.healthCheck) {
+      } else if (!settings.general?.healthCheck) {
         console.log('[main] Stopping health checking for dispatcher after settings change');
         dispatcherManager.stopHealthChecking();
       }

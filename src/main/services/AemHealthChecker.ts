@@ -17,6 +17,7 @@ export class AemHealthChecker {
   private project: Project;
   private healthCheckIntervals: Map<string, NodeJS.Timeout> = new Map();
   private lastHealthStatus: Map<string, HealthStatus> = new Map();
+  private currentIntervals: Map<string, { intervalMs: number; port: number }> = new Map();
 
   constructor(project: Project) {
     this.project = project;
@@ -25,11 +26,10 @@ export class AemHealthChecker {
   async checkHealth(instanceType: 'author' | 'publisher' | 'dispatcher', port: number): Promise<HealthStatus> {
     // Read configuration on every health check run
     const settings = ProjectSettings.getSettings(this.project);
-    const instanceSettings = settings[instanceType];
     
-    // Skip health check if disabled in configuration
-    if (!instanceSettings?.healthCheck) {
-      console.log(`[AemHealthChecker] Health check disabled for ${instanceType}, skipping`);
+    // Skip health check if disabled in general configuration
+    if (!settings.general?.healthCheck) {
+      console.log(`[AemHealthChecker] Health check disabled in general settings, skipping ${instanceType}`);
       return {
         status: 'unknown',
         timestamp: Date.now()
@@ -84,6 +84,9 @@ export class AemHealthChecker {
       this.lastHealthStatus.set(instanceType, status);
       this.sendHealthUpdate(instanceType, status);
       
+      // Adjust interval based on health status
+      this.adjustHealthCheckInterval(instanceType, port, status);
+      
       return status;
     } catch (error) {
       const responseTime = Date.now() - startTime;
@@ -96,6 +99,9 @@ export class AemHealthChecker {
 
       this.lastHealthStatus.set(instanceType, status);
       this.sendHealthUpdate(instanceType, status);
+      
+      // Adjust interval based on health status
+      this.adjustHealthCheckInterval(instanceType, port, status);
       
       return status;
     }
@@ -209,16 +215,50 @@ export class AemHealthChecker {
     }
   }
 
+  private adjustHealthCheckInterval(instanceType: 'author' | 'publisher' | 'dispatcher', port: number, status: HealthStatus) {
+    const currentConfig = this.currentIntervals.get(instanceType);
+    if (!currentConfig) return;
+
+    // Determine the appropriate interval based on health status
+    const isHealthy = status.status === 'healthy' && status.statusCode === 200;
+    const fastInterval = 5000; // 5 seconds for unhealthy instances
+    const normalInterval = 30000; // 30 seconds for healthy instances
+    
+    const desiredInterval = isHealthy ? normalInterval : fastInterval;
+    
+    // Only restart the interval if it needs to change
+    if (currentConfig.intervalMs !== desiredInterval) {
+      console.log(`[AemHealthChecker] Adjusting health check interval for ${instanceType} from ${currentConfig.intervalMs}ms to ${desiredInterval}ms (status: ${status.status}, statusCode: ${status.statusCode})`);
+      
+      // Stop current interval
+      const interval = this.healthCheckIntervals.get(instanceType);
+      if (interval) {
+        clearInterval(interval);
+      }
+      
+      // Start new interval with adjusted timing
+      const newInterval = setInterval(() => {
+        this.checkHealth(instanceType, port);
+      }, desiredInterval);
+      
+      this.healthCheckIntervals.set(instanceType, newInterval);
+      this.currentIntervals.set(instanceType, { intervalMs: desiredInterval, port });
+    }
+  }
+
   startHealthChecking(instanceType: 'author' | 'publisher' | 'dispatcher', port: number, intervalMs = 30000) {
     // Stop any existing health check
     this.stopHealthChecking(instanceType);
 
     console.log(`[AemHealthChecker] Starting health checks for ${instanceType} on port ${port} (will check config on each run)`);
     
+    // Store the current configuration
+    this.currentIntervals.set(instanceType, { intervalMs, port });
+    
     // Initial check
     this.checkHealth(instanceType, port);
 
-    // Set up periodic checks - always start regardless of current config
+    // Set up periodic checks - start with the provided interval
     const interval = setInterval(() => {
       this.checkHealth(instanceType, port);
     }, intervalMs);
@@ -231,6 +271,7 @@ export class AemHealthChecker {
     if (interval) {
       clearInterval(interval);
       this.healthCheckIntervals.delete(instanceType);
+      this.currentIntervals.delete(instanceType);
       console.log(`[AemHealthChecker] Stopped health checks for ${instanceType}`);
     }
   }
@@ -256,5 +297,6 @@ export class AemHealthChecker {
       this.stopHealthChecking(instanceType as 'author' | 'publisher' | 'dispatcher');
     }
     this.lastHealthStatus.clear();
+    this.currentIntervals.clear();
   }
 } 

@@ -8,14 +8,14 @@ export class ProjectSettings {
 {
     "version": "1.0.0",
     "general": {
-        "name": "{{PROJECT_NAME}}"
+        "name": "{{PROJECT_NAME}}", 
+        "healthCheck": true, 
     }, 
     "author": {
         "port": 4502,
         "runmode": "author,default",
         "jvmOpts": "-server -Xmx4096m -XX:MaxPermSize=256M -Djava.awt.headless=true",
         "debugJvmOpts": " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5005,suspend=n,server=y", 
-        "healthCheck": true, 
         "healthCheckPath": ""
     },
     "publisher": {
@@ -23,13 +23,11 @@ export class ProjectSettings {
         "runmode": "publish,default", 
         "jvmOpts": "-server -Xmx4096m -XX:MaxPermSize=256M -Djava.awt.headless=true",
         "debugJvmOpts": " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5006,suspend=n,server=y", 
-        "healthCheck": true, 
         "healthCheckPath": ""
     }, 
     "dispatcher": {
         "port": 80,
         "config": "./config",
-        "healthCheck": true, 
         "healthCheckPath": ""
     }
 }

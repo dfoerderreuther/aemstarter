@@ -27,8 +27,7 @@ export const Screenshot = ({
     const checkHealthCheckConfig = async () => {
       try {
         const settings = await window.electronAPI.getProjectSettings(project);
-        const instanceSettings = settings[instance];
-        const newHealthCheckEnabled = instanceSettings?.healthCheck || false;
+        const newHealthCheckEnabled = settings.general?.healthCheck || false;
         
         // If health checking was just enabled and instance is running, 
         // we might need to wait a moment for the backend to start health checking
@@ -318,13 +317,16 @@ export const Screenshot = ({
       )}
       
       {/* Health status badge */}
-      {healthCheckEnabled && healthStatus && (
+      {healthCheckEnabled && (
         <Badge 
           size="xs" 
-          color={healthStatus.status === 'healthy' ? 'green' : 'red'}
+          color={!isRunning ? 'red' : (healthStatus?.status === 'healthy' ? 'green' : 'red')}
           variant="light"
         >
-          {healthStatus.statusCode ? `HTTP ${healthStatus.statusCode}` : healthStatus.status}
+          {!isRunning 
+            ? 'Stopped' 
+            : (healthStatus?.statusCode ? `HTTP ${healthStatus.statusCode}` : (healthStatus?.status || 'Unknown'))
+          }
         </Badge>
       )}
     </Stack>

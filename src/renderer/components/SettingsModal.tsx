@@ -12,13 +12,13 @@ interface ProjectSettings {
   version: string;
   general: {
     name: string;
+    healthCheck: boolean;
   };
   author: {
     port: number;
     runmode: string;
     jvmOpts: string;
     debugJvmOpts: string;
-    healthCheck: boolean;
     healthCheckPath: string;
   };
   publisher: {
@@ -26,13 +26,11 @@ interface ProjectSettings {
     runmode: string;
     jvmOpts: string;
     debugJvmOpts: string;
-    healthCheck: boolean;
     healthCheckPath: string;
   };
   dispatcher: {
     port: number;
     config: string;
-    healthCheck: boolean;
     healthCheckPath: string;
   };
 }
@@ -139,6 +137,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               value={settings.general.name}
               onChange={(event) => updateGeneralSettings('name', event.currentTarget.value)}
             />
+            <Checkbox
+              label="Health Check"
+              checked={settings.general.healthCheck}
+              onChange={(event) => updateGeneralSettings('healthCheck', event.currentTarget.checked)}
+            />
           </Stack>
         </Tabs.Panel>
 
@@ -174,11 +177,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               onChange={(event) => updateAuthorSettings('debugJvmOpts', event.currentTarget.value)}
             />
             
-            <Checkbox
-              label="Health Check"
-              checked={settings.author.healthCheck}
-              onChange={(event) => updateAuthorSettings('healthCheck', event.currentTarget.checked)}
-            />
             <TextInput
               label="Health Check Path"
               description="Path to health check service"
@@ -220,11 +218,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               onChange={(event) => updatePublisherSettings('debugJvmOpts', event.currentTarget.value)}
             />
             
-            <Checkbox
-              label="Health Check"
-              checked={settings.publisher.healthCheck}
-              onChange={(event) => updatePublisherSettings('healthCheck', event.currentTarget.checked)}
-            />
             <TextInput
               label="Health Check Path"
               description="Path to health check service"
@@ -251,13 +244,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               description="Path to dispatcher configuration"
               value={settings.dispatcher.config}
               onChange={(event) => updateDispatcherSettings('config', event.currentTarget.value)}
-            />
-            
-            <Checkbox
-              label="Health Check"
-              description="Enable periodic health checks for the dispatcher"
-              checked={settings.dispatcher.healthCheck}
-              onChange={(event) => updateDispatcherSettings('healthCheck', event.currentTarget.checked)}
             />
             <TextInput
               label="Health Check Path"
