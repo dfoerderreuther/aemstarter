@@ -10,10 +10,17 @@ interface DispatcherViewProps {
   project: Project;
   visible?: boolean;
   viewMode?: 'tabs' | 'columns';
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export const DispatcherView = ({ project, visible = true, viewMode = 'tabs' }: DispatcherViewProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export const DispatcherView = ({ 
+  project, 
+  visible = true, 
+  viewMode = 'tabs',
+  isCollapsed = false,
+  onToggleCollapse = () => {}
+}: DispatcherViewProps) => {
   const [isRunning, setIsRunning] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [terminalFontSize, setTerminalFontSize] = useState(9);
@@ -22,6 +29,18 @@ export const DispatcherView = ({ project, visible = true, viewMode = 'tabs' }: D
   const terminalRef = useRef<XTerm | null>(null);
   const terminalComponentRef = useRef<TerminalRef>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
+
+
+  // Resize terminal after collapse state changes (CSS transition completes)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (terminalComponentRef.current) {
+        terminalComponentRef.current.resize();
+      }
+    }, 350); // Slightly longer than the 300ms CSS transition
+
+    return () => clearTimeout(timer);
+  }, [isCollapsed]);
 
   useEffect(() => {
     // Cleanup on unmount
@@ -56,9 +75,7 @@ export const DispatcherView = ({ project, visible = true, viewMode = 'tabs' }: D
 // Listen for dispatcher status updates
   useEffect(() => {
     const cleanup = window.electronAPI.onDispatcherStatus((data) => {
-      console.log(`[DispatcherView] Received status update:`, data);
       if (data.projectId === project.id) {
-        console.log(`[DispatcherView] Updating status for project ${project.id}: isRunning=${data.isRunning}`);
         setIsRunning(data.isRunning);
 
       } else {
@@ -145,18 +162,6 @@ export const DispatcherView = ({ project, visible = true, viewMode = 'tabs' }: D
     if (value) {
       setTerminalFontSize(parseInt(value));
     }
-  };
-
-  // Handle collapse/expand with terminal resize
-  const handleToggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-    
-    // Trigger terminal resize after CSS transition completes
-    setTimeout(() => {
-      if (terminalComponentRef.current) {
-        terminalComponentRef.current.resize();
-      }
-    }, 350); // Slightly longer than the 300ms CSS transition
   };
 
   // Handle clear terminal
@@ -263,7 +268,7 @@ export const DispatcherView = ({ project, visible = true, viewMode = 'tabs' }: D
               <ActionIcon
                 variant="subtle"
                 size="sm"
-                onClick={handleToggleCollapse}
+                onClick={onToggleCollapse}
                 style={{ width: '100%' }}
               >
                 {viewMode === 'columns' ? 

@@ -28,6 +28,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     resize: () => {
       if (fitAddonRef.current) {
         try {
+          console.log('Resizing terminal');
           fitAddonRef.current.fit();
         } catch (error) {
           console.warn('Failed to fit terminal:', error);
@@ -90,7 +91,9 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     // Simple resize handler
     const handleResize = () => {
       try {
-        fitAddon.fit();
+        if (fitAddonRef.current) {
+          fitAddonRef.current.fit();
+        }
       } catch (error) {
         console.warn('Failed to fit terminal:', error);
       }

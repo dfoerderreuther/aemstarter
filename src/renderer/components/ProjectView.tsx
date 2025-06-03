@@ -13,6 +13,7 @@ interface ProjectViewProps {
 export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
   const [activeTab, setActiveTab] = useState<string | null>('author');
   const [viewMode, setViewMode] = useState<'tabs' | 'columns'>('columns');
+  const [isColumnsCollapsed, setIsColumnsCollapsed] = useState(false);
 
   useEffect(() => {
     if (viewMode === 'columns') {
@@ -21,6 +22,10 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       setActiveTab('author');
     }
   }, [viewMode]);
+
+  const handleColumnsToggleCollapse = () => {
+    setIsColumnsCollapsed(!isColumnsCollapsed);
+  };
 
   return (
     <Stack 
@@ -74,7 +79,14 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
                   borderRight: '1px solid #2C2E33'
                 }}
               >
-                <AemInstanceView instance="author" project={project} visible={activeTab === 'instances'} viewMode={viewMode} />
+                <AemInstanceView 
+                  instance="author" 
+                  project={project} 
+                  visible={activeTab === 'instances'} 
+                  viewMode={viewMode}
+                  isCollapsed={viewMode === 'columns' ? isColumnsCollapsed : undefined}
+                  onToggleCollapse={viewMode === 'columns' ? handleColumnsToggleCollapse : undefined}
+                />
               </div>
               <div
                 style={{
@@ -85,7 +97,14 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
                   borderRight: '1px solid #2C2E33'
                 }}
               >
-                <AemInstanceView instance="publisher" project={project} visible={activeTab === 'instances'} viewMode={viewMode} />
+                <AemInstanceView 
+                  instance="publisher" 
+                  project={project} 
+                  visible={activeTab === 'instances'} 
+                  viewMode={viewMode}
+                  isCollapsed={viewMode === 'columns' ? isColumnsCollapsed : undefined}
+                  onToggleCollapse={viewMode === 'columns' ? handleColumnsToggleCollapse : undefined}
+                />
               </div>
               <div
                 style={{
@@ -95,7 +114,13 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
                   flexDirection: 'column'
                 }}
               >
-                <DispatcherView project={project} visible={activeTab === 'instances'} viewMode={viewMode} />
+                <DispatcherView 
+                  project={project} 
+                  visible={activeTab === 'instances'} 
+                  viewMode={viewMode}
+                  isCollapsed={viewMode === 'columns' ? isColumnsCollapsed : undefined}
+                  onToggleCollapse={viewMode === 'columns' ? handleColumnsToggleCollapse : undefined}
+                />
               </div>
             </div>
           </Tabs.Panel>

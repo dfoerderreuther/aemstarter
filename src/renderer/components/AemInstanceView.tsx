@@ -15,10 +15,18 @@ interface AemInstanceViewProps {
   project: Project;
   visible?: boolean;
   viewMode?: 'tabs' | 'columns';
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export const AemInstanceView = ({ instance, project, visible = true, viewMode = 'tabs' }: AemInstanceViewProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export const AemInstanceView = ({ 
+  instance, 
+  project, 
+  visible = true, 
+  viewMode = 'tabs',
+  isCollapsed = false,
+  onToggleCollapse = () => {}
+}: AemInstanceViewProps) => {
   const [isRunning, setIsRunning] = useState(false);
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
   const [selectedLogFiles, setSelectedLogFiles] = useState<string[]>(['error.log']);
@@ -29,6 +37,18 @@ export const AemInstanceView = ({ instance, project, visible = true, viewMode = 
   const terminalRef = useRef<XTerm | null>(null);
   const terminalComponentRef = useRef<TerminalRef>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
+
+
+  // Resize terminal after collapse state changes (CSS transition completes)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (terminalComponentRef.current) {
+        terminalComponentRef.current.resize();
+      }
+    }, 350); // Slightly longer than the 300ms CSS transition
+
+    return () => clearTimeout(timer);
+  }, [isCollapsed]);
 
   useEffect(() => {
     
@@ -179,18 +199,6 @@ export const AemInstanceView = ({ instance, project, visible = true, viewMode = 
     }
   };
 
-  // Handle collapse/expand with terminal resize
-  const handleToggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-    
-    // Trigger terminal resize after CSS transition completes
-    setTimeout(() => {
-      if (terminalComponentRef.current) {
-        terminalComponentRef.current.resize();
-      }
-    }, 350); // Slightly longer than the 300ms CSS transition
-  };
-
   // Handle clear terminal
   const handleClearTerminal = () => {
     if (terminalRef.current) {
@@ -301,7 +309,7 @@ export const AemInstanceView = ({ instance, project, visible = true, viewMode = 
               <ActionIcon
                 variant="subtle"
                 size="sm"
-                onClick={handleToggleCollapse}
+                onClick={onToggleCollapse}
                 style={{ width: '100%' }}
               >
                 {viewMode === 'columns' ? 
