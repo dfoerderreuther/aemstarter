@@ -88,13 +88,22 @@ export const OakRunMenu = ({
         <Menu.Target>
           <Button 
             size="xs" 
-            variant="outline" 
+            variant="subtle" 
             leftSection={<IconPackage size={12} />}
             rightSection={<IconChevronDown size={12} />}
             disabled={!isOakJarAvailable}
             style={{ 
-              width: '100%',
-              opacity: !isOakJarAvailable ? 0.5 : 1 
+              opacity: !isOakJarAvailable ? 0.5 : 1,
+              justifyContent: 'flex-start',
+              padding: '4px 8px',
+              height: 'auto',
+              fontWeight: 400
+            }}
+            styles={{
+              root: {
+                '&:focus': { outline: 'none', boxShadow: 'none' },
+                '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
+              }
             }}
           >
             Oak Tools
@@ -129,7 +138,6 @@ export const OakRunMenu = ({
       {!isOakJarAvailable && instance === 'author' && (
         <Button 
           mt="xs"
-          w="100%"
           leftSection={<IconPackage size={14} />}
           disabled={!isRunning}
           onClick={handleLoadOakJar}

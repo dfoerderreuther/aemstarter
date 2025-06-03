@@ -253,57 +253,86 @@ export const DispatcherView = ({
         }}>
           {/* Collapsible Column - Left in tabs mode, Top in columns mode */}
           <Box style={{
-            width: viewMode === 'columns' ? '100%' : (isCollapsed ? '20px' : '200px'),
-            height: viewMode === 'columns' ? (isCollapsed ? '30px' : '200px') : '100%',
+            width: viewMode === 'columns' ? '100%' : (isCollapsed ? '40px' : '160px'),
+            height: viewMode === 'columns' ? (isCollapsed ? '40px' : '160px') : '100%',
             transition: viewMode === 'columns' ? 'height 0.3s ease' : 'width 0.3s ease',
             borderRight: viewMode === 'columns' ? 'none' : '1px solid #2C2E33',
             borderBottom: viewMode === 'columns' ? '1px solid #2C2E33' : 'none',
             backgroundColor: '#1E1E1E',
             display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
+            flexDirection: viewMode === 'columns' ? 'column' : 'column',
+            overflow: 'hidden',
+            position: 'relative'
           }}>
-            {/* Collapse/Expand Button */}
-            <Box>
+            {/* Collapse/Expand Button - Integrated */}
+            <Box style={{
+              position: 'absolute',
+              top: viewMode === 'columns' ? '8px' : '50%',
+              right: viewMode === 'columns' ? '8px' : '8px',
+              transform: viewMode === 'columns' ? 'none' : 'translateY(-50%)',
+              zIndex: 10
+            }}>
               <ActionIcon
                 variant="subtle"
                 size="sm"
                 onClick={onToggleCollapse}
-                style={{ width: '100%' }}
+                style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '4px'
+                }}
               >
                 {viewMode === 'columns' ? 
-                  (isCollapsed ? <IconChevronRight style={{ transform: 'rotate(90deg)' }} size={16} /> : <IconChevronLeft style={{ transform: 'rotate(90deg)' }} size={16} />) :
-                  (isCollapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />)
+                  (isCollapsed ? 
+                    <IconChevronRight style={{ transform: 'rotate(90deg)' }} size={14} /> : 
+                    <IconChevronLeft style={{ transform: 'rotate(90deg)' }} size={14} />
+                  ) :
+                  (isCollapsed ? 
+                    <IconChevronRight size={14} /> : 
+                    <IconChevronLeft size={14} />
+                  )
                 }
               </ActionIcon>
             </Box>
 
             {/* Column Content */}
             {!isCollapsed && (
-              <Stack gap="sm" p="sm" style={{ 
+              <Box p="sm" style={{ 
                 flex: 1, 
                 overflow: 'auto',
                 display: 'flex',
-                flexDirection: viewMode === 'columns' ? 'row' : 'column'
+                flexDirection: viewMode === 'columns' ? 'row' : 'column',
+                gap: '12px',
+                alignItems: viewMode === 'columns' ? 'flex-start' : 'stretch'
               }}>
+                {/* Screenshot Block */}
                 <Box style={{ 
-                  width: '175px',
-                  height: '140px',
+                  width: '150px',
                   flex: 'none',
-                  alignSelf: 'center'
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start'
                 }}>
                   <Screenshot project={project} instance="dispatcher" isRunning={isRunning} />
                 </Box>
                 
-                {/* Future menu items can be added here in a Stack */}
-                <Stack gap="sm" style={{ 
+                {/* Future menu items can be added here */}
+                <Box style={{ 
+                  width: '120px',
                   flex: 'none',
-                  width: '175px',
-                  minWidth: 0
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  borderLeft: viewMode === 'columns' ? '1px dashed rgba(255,255,255,0.2)' : 'none',
+                  borderTop: viewMode === 'columns' ? 'none' : '1px dashed rgba(255,255,255,0.2)',
+                  paddingLeft: viewMode === 'columns' ? '12px' : '0',
+                  paddingTop: viewMode === 'columns' ? '0' : '12px'
                 }}>
-                  {/* Additional dispatcher-specific menus can be added here */}
-                </Stack>
-              </Stack>
+                  <Stack gap="xs" style={{ alignItems: 'flex-start' }}>
+                    {/* Additional dispatcher-specific menus can be added here */}
+                  </Stack>
+                </Box>
+              </Box>
             )}
           </Box>
 

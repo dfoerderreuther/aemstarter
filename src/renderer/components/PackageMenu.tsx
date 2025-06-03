@@ -135,13 +135,22 @@ export const PackageMenu = ({
         <Menu.Target>
           <Button 
             size="xs" 
-            variant="outline" 
+            variant="subtle" 
             leftSection={<IconPackage size={12} />}
             rightSection={<IconChevronDown size={12} />}
             disabled={!isRunning || isLoading}
             style={{ 
-              width: '100%',
-              opacity: (!isRunning || isLoading) ? 0.5 : 1 
+              opacity: (!isRunning || isLoading) ? 0.5 : 1,
+              justifyContent: 'flex-start',
+              padding: '4px 8px',
+              height: 'auto',
+              fontWeight: 400
+            }}
+            styles={{
+              root: {
+                '&:focus': { outline: 'none', boxShadow: 'none' },
+                '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
+              }
             }}
           >
             Packages

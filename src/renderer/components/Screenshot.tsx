@@ -1,4 +1,4 @@
-import { Box, Stack, Text, ActionIcon } from '@mantine/core';
+import { Box, Stack, Text, ActionIcon, Badge } from '@mantine/core';
 import { IconCamera } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { useState, useEffect, useRef } from 'react';
@@ -188,110 +188,87 @@ export const Screenshot = ({
   };
 
   return (
-    <>
-      {/* Clickable Screenshot Frame */}
-      <Box
-        onClick={healthCheckEnabled ? undefined : takeScreenshot}
-        style={{
-          cursor: healthCheckEnabled ? 'default' : (isRunning ? 'pointer' : 'not-allowed'),
-          border: healthCheckEnabled ? '2px solid #4C6EF5' : '2px dashed #2C2E33',
-          borderRadius: '8px',
-          minHeight: '120px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: screenshotDataUrl ? 'transparent' : '#1A1A1A',
-          transition: 'border-color 0.2s ease',
-          opacity: isRunning ? 1 : 0.5,
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-        onMouseEnter={(e) => {
-          if (!healthCheckEnabled && isRunning) {
-            e.currentTarget.style.borderColor = '#4C6EF5';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!healthCheckEnabled) {
-            e.currentTarget.style.borderColor = '#2C2E33';
-          }
-        }}
-      >
-        {screenshotDataUrl ? (
-          <>
-            <img 
-              src={screenshotDataUrl}
-              alt={`${instance} screenshot`}
-              style={{ 
-                width: '100%', 
-                height: 'auto',
-                borderRadius: '6px',
-                display: 'block'
+    <Stack gap="xs" style={{ alignItems: 'flex-start' }}>
+      {/* Screenshot Display */}
+      {screenshotDataUrl ? (
+        <Box style={{ position: 'relative', width: '140px' }}>
+          <img 
+            src={screenshotDataUrl}
+            alt={`${instance} screenshot`}
+            style={{ 
+              width: '140px', 
+              height: 'auto',
+              borderRadius: '4px',
+              display: 'block',
+              cursor: healthCheckEnabled ? 'default' : (isRunning ? 'pointer' : 'not-allowed'),
+              opacity: isRunning ? 1 : 0.5
+            }}
+            onClick={healthCheckEnabled ? undefined : takeScreenshot}
+          />
+          
+          {/* Overlay for click indication - only when health checking is disabled */}
+          {!healthCheckEnabled && (
+            <Box
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background-color 0.2s ease',
+                borderRadius: '4px',
+                cursor: isRunning ? 'pointer' : 'not-allowed'
               }}
-            />
-            {/* Health status indicator */}
-            {healthCheckEnabled && healthStatus && (
-              <Box
-                style={{
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  backgroundColor: healthStatus.status === 'healthy' ? '#51cf66' : '#ff6b6b',
-                  borderRadius: '50%',
-                  width: '12px',
-                  height: '12px',
-                  border: '2px solid white',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                }}
-              />
-            )}
-            {/* Overlay for click indication - only when health checking is disabled */}
-            {!healthCheckEnabled && (
-              <Box
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'rgba(0, 0, 0, 0)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background-color 0.2s ease',
-                  borderRadius: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  if (isRunning) {
-                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0)';
-                }}
-              >
-                {isRunning && (
-                  <ActionIcon
-                    variant="filled"
-                    size="lg"
-                    style={{
-                      opacity: 0,
-                      transition: 'opacity 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.opacity = '1';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.opacity = '0';
-                    }}
-                  >
-                    <IconCamera size={20} />
-                  </ActionIcon>
-                )}
-              </Box>
-            )}
-          </>
-        ) : (
+              onClick={takeScreenshot}
+              onMouseEnter={(e) => {
+                if (isRunning) {
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+              }}
+            >
+              {isRunning && (
+                <ActionIcon
+                  variant="filled"
+                  size="lg"
+                  style={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '0';
+                  }}
+                >
+                  <IconCamera size={20} />
+                </ActionIcon>
+              )}
+            </Box>
+          )}
+        </Box>
+      ) : (
+        <Box
+          onClick={healthCheckEnabled ? undefined : takeScreenshot}
+          style={{
+            cursor: healthCheckEnabled ? 'default' : (isRunning ? 'pointer' : 'not-allowed'),
+            width: '140px',
+            height: '105px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#1A1A1A',
+            borderRadius: '4px',
+            opacity: isRunning ? 1 : 0.5
+          }}
+        >
           <Stack align="center" gap="xs">
             {isLoadingScreenshot ? (
               <>
@@ -326,15 +303,30 @@ export const Screenshot = ({
               </>
             )}
           </Stack>
-        )}
-      </Box>
-      
-      {/* Timestamp display */}
-      {lastUpdateTime && (
-        <Text size="xs" c="dimmed" ta="center">
-          Last updated: {formatTimestamp(lastUpdateTime)}
-        </Text>
+        </Box>
       )}
-    </>
+      
+      {/* Timestamp display - left aligned on next line */}
+      {lastUpdateTime && (
+        <Badge 
+          size="xs" 
+          color='gray'
+          variant="light"
+        >
+          Last updated: {formatTimestamp(lastUpdateTime)}
+          </Badge>
+      )}
+      
+      {/* Health status badge */}
+      {healthCheckEnabled && healthStatus && (
+        <Badge 
+          size="xs" 
+          color={healthStatus.status === 'healthy' ? 'green' : 'red'}
+          variant="light"
+        >
+          {healthStatus.statusCode ? `HTTP ${healthStatus.statusCode}` : healthStatus.status}
+        </Badge>
+      )}
+    </Stack>
   );
 }; 
