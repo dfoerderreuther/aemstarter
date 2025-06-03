@@ -101,9 +101,12 @@ export const PackageMenu = ({
   };
 
   return (
-    <Box>
-      <Divider />
+    
       
+
+
+
+      <Menu shadow="md" width={200}>
       <Modal
         opened={isModalOpen}
         onClose={handleCloseModal}
@@ -129,10 +132,6 @@ export const PackageMenu = ({
           </Button>
         </Box>
       </Modal>
-
-
-
-      <Menu shadow="md" width={200}>
         <Menu.Target>
           <Button 
             size="xs" 
@@ -191,6 +190,6 @@ export const PackageMenu = ({
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
-    </Box>
+    
   );
 }; 

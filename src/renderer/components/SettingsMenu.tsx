@@ -30,8 +30,7 @@ export const SettingsMenu = ({ project, instance, isRunning = true }: SettingsMe
   };
 
   return (
-    <Box>
-      <Divider />
+    <>
       
       <Menu shadow="md" width={200}>
         <Menu.Target>
@@ -60,6 +59,6 @@ export const SettingsMenu = ({ project, instance, isRunning = true }: SettingsMe
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
-    </Box>
+    </>
   );
 };

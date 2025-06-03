@@ -82,8 +82,7 @@ export const OakRunMenu = ({
   };
 
   return (
-    <Box>
-      <Divider />
+    <>
       
       <Menu shadow="md" width={200}>
         <Menu.Target>
@@ -141,6 +140,6 @@ export const OakRunMenu = ({
           {isLoadingOakJar ? 'Loading...' : 'Load Oak Jar'}
         </Button>
       )}
-    </Box>
+    </>
   );
 }; 

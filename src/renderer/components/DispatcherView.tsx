@@ -1,9 +1,9 @@
 import { Project } from "../../types/Project";
-import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Button, Select } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Select } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
-import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconClearAll, IconEraser } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser } from '@tabler/icons-react';
 import { Screenshot } from "./Screenshot";
 
 interface DispatcherViewProps {

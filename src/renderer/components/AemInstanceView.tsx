@@ -1,12 +1,12 @@
 import { Project } from "../../types/Project";
-import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, MultiSelect, Button, Space, Select, Popover, Checkbox } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Select, Menu, Button } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
 import { Screenshot } from './Screenshot';
 import { OakRunMenu } from './OakRunMenu';
 import { PackageMenu } from './PackageMenu';
-import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconChevronDown, IconClearAll, IconEraser } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser, IconExternalLink } from '@tabler/icons-react';
 import { SettingsMenu } from "./SettingsMenu";
 import { LogFileSelector } from './LogFileSelector';
 
@@ -31,6 +31,7 @@ export const AemInstanceView = ({
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
   const [selectedLogFiles, setSelectedLogFiles] = useState<string[]>(['error.log']);
   const [filterText, setFilterText] = useState('');
+  const [projectSettings, setProjectSettings] = useState<any>(null);
 
   const [terminalFontSize, setTerminalFontSize] = useState(9);
   const hasShownAemOutputRef = useRef(false);
@@ -99,6 +100,19 @@ export const AemInstanceView = ({
     return cleanup;
   }, [project.id, instance]);
 
+  // Load project settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await window.electronAPI.getProjectSettings(project);
+        setProjectSettings(settings);
+      } catch (error) {
+        console.error('Error loading project settings:', error);
+      }
+    };
+    loadSettings();
+  }, [project]);
+
   // Handle log file selection changes
   const handleLogFileChange = async (newSelectedFiles: string[]) => {
     setSelectedLogFiles(newSelectedFiles);
@@ -117,6 +131,37 @@ export const AemInstanceView = ({
       setAvailableLogFiles(logFiles);
     } catch (error) {
       console.error('Error refreshing log files:', error);
+    }
+  };
+
+  // Browser navigation functions
+  const handleOpenAem = async () => {
+    if (!projectSettings) return;
+    const port = projectSettings[instance]?.port || (instance === 'author' ? 4502 : 4503);
+    try {
+      await window.electronAPI.openUrl(`http://localhost:${port}`);
+    } catch (error) {
+      console.error('Error opening AEM URL:', error);
+    }
+  };
+
+  const handleOpenCrxDe = async () => {
+    if (!projectSettings) return;
+    const port = projectSettings[instance]?.port || (instance === 'author' ? 4502 : 4503);
+    try {
+      await window.electronAPI.openUrl(`http://localhost:${port}/crx/de`);
+    } catch (error) {
+      console.error('Error opening CRX/DE URL:', error);
+    }
+  };
+
+  const handleOpenConsole = async () => {
+    if (!projectSettings) return;
+    const port = projectSettings[instance]?.port || (instance === 'author' ? 4502 : 4503);
+    try {
+      await window.electronAPI.openUrl(`http://localhost:${port}/system/console`);
+    } catch (error) {
+      console.error('Error opening Console URL:', error);
     }
   };
 
@@ -339,6 +384,43 @@ export const AemInstanceView = ({
                     isRunning={isRunning}
                   />
                 </Box>
+
+                <Stack gap="sm" style={{ 
+                  flex: 'none',
+                  width: '175px',
+                  minWidth: 0
+                }}>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    onClick={handleOpenAem}
+                    disabled={!isRunning}
+                    leftSection={<IconExternalLink size={12} />}
+                    style={{ justifyContent: 'flex-start' }}
+                  >
+                    AEM
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    onClick={handleOpenCrxDe}
+                    disabled={!isRunning}
+                    leftSection={<IconExternalLink size={12} />}
+                    style={{ justifyContent: 'flex-start' }}
+                  >
+                    CRX/DE
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    onClick={handleOpenConsole}
+                    disabled={!isRunning}
+                    leftSection={<IconExternalLink size={12} />}
+                    style={{ justifyContent: 'flex-start' }}
+                  >
+                    Console
+                  </Button>
+                </Stack>
 
                 <Stack gap="sm" style={{ 
                   flex: 'none',
