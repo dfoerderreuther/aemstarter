@@ -118,20 +118,7 @@ export const OakRunMenu = ({
           >
             {isRunningCompaction ? 'Running Compaction...' : 'Compaction'}
           </Menu.Item>
-          
-          <Menu.Item 
-            leftSection={<IconDeviceFloppy size={14} />}
-            disabled={!isOakJarAvailable || isRunning}
-          >
-            Checkpoints
-          </Menu.Item>
-          
-          <Menu.Item 
-            leftSection={<IconRestore size={14} />}
-            disabled={!isOakJarAvailable || isRunning}
-          >
-            Backup & Restore
-          </Menu.Item>
+        
         </Menu.Dropdown>
       </Menu>
 

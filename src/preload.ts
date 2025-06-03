@@ -241,6 +241,9 @@ contextBridge.exposeInMainWorld(
     flushDispatcher: (project: Project) =>
       ipcRenderer.invoke('flush-dispatcher', project),
 
+    clearDispatcherCache: (project: Project) =>
+      ipcRenderer.invoke('clear-dispatcher-cache', project),
+
     // Dispatcher Health Checking
     takeDispatcherScreenshot: (project: Project) =>
       ipcRenderer.invoke('take-dispatcher-screenshot', project),

@@ -1,9 +1,9 @@
 import { Project } from "../../types/Project";
-import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Select } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Select, Button } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
-import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser, IconExternalLink, IconTrash } from '@tabler/icons-react';
 import { Screenshot } from "./Screenshot";
 
 interface DispatcherViewProps {
@@ -24,6 +24,7 @@ export const DispatcherView = ({
   const [isRunning, setIsRunning] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [terminalFontSize, setTerminalFontSize] = useState(9);
+  const [projectSettings, setProjectSettings] = useState<any>(null);
 
   const hasShownDispatcherOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
@@ -85,6 +86,19 @@ export const DispatcherView = ({
 
     return cleanup;
   }, [project.id]);
+
+  // Load project settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await window.electronAPI.getProjectSettings(project);
+        setProjectSettings(settings);
+      } catch (error) {
+        console.error('Error loading project settings:', error);
+      }
+    };
+    loadSettings();
+  }, [project]);
 
   // Helper function to highlight filtered text with red background
   const highlightFilteredText = (text: string, filter: string): string => {
@@ -172,6 +186,27 @@ export const DispatcherView = ({
     }
   };
 
+  // Browser navigation function
+  const handleOpenDispatcher = async () => {
+    if (!projectSettings) return;
+    const port = projectSettings.dispatcher?.port || 80;
+    try {
+      await window.electronAPI.openUrl(`http://localhost:${port}`);
+    } catch (error) {
+      console.error('Error opening Dispatcher URL:', error);
+    }
+  };
+
+  // Handle clear cache
+  const handleClearCache = async () => {
+    try {
+      await window.electronAPI.clearDispatcherCache(project);
+      // The clearCache method will send log data to the terminal, so no additional UI feedback needed
+    } catch (error) {
+      console.error('Error clearing dispatcher cache:', error);
+    }
+  };
+
   return (
     <>
       <Stack gap="0" style={{ height: '100%' }}>
@@ -254,7 +289,7 @@ export const DispatcherView = ({
           {/* Collapsible Column - Left in tabs mode, Top in columns mode */}
           <Box style={{
             width: viewMode === 'columns' ? '100%' : (isCollapsed ? '40px' : '160px'),
-            height: viewMode === 'columns' ? (isCollapsed ? '40px' : '160px') : '100%',
+            height: viewMode === 'columns' ? (isCollapsed ? '40px' : '170px') : '100%',
             transition: viewMode === 'columns' ? 'height 0.3s ease' : 'width 0.3s ease',
             borderRight: viewMode === 'columns' ? 'none' : '1px solid #2C2E33',
             borderBottom: viewMode === 'columns' ? '1px solid #2C2E33' : 'none',
@@ -316,7 +351,7 @@ export const DispatcherView = ({
                   <Screenshot project={project} instance="dispatcher" isRunning={isRunning} />
                 </Box>
                 
-                {/* Future menu items can be added here */}
+                {/* Links Block */}
                 <Box style={{ 
                   width: '120px',
                   flex: 'none',
@@ -329,7 +364,63 @@ export const DispatcherView = ({
                   paddingTop: viewMode === 'columns' ? '0' : '12px'
                 }}>
                   <Stack gap="xs" style={{ alignItems: 'flex-start' }}>
-                    {/* Additional dispatcher-specific menus can be added here */}
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      onClick={handleOpenDispatcher}
+                      disabled={!isRunning}
+                      leftSection={<IconExternalLink size={12} />}
+                      style={{ 
+                        justifyContent: 'flex-start',
+                        padding: '4px 8px',
+                        height: 'auto',
+                        fontWeight: 400
+                      }}
+                      styles={{
+                        root: {
+                          '&:focus': { outline: 'none', boxShadow: 'none' },
+                          '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
+                        }
+                      }}
+                    >
+                      Dispatcher
+                    </Button>
+                  </Stack>
+                </Box>
+
+                {/* Actions Block */}
+                <Box style={{ 
+                  width: '120px',
+                  flex: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  borderLeft: viewMode === 'columns' ? '1px dashed rgba(255,255,255,0.2)' : 'none',
+                  borderTop: viewMode === 'columns' ? 'none' : '1px dashed rgba(255,255,255,0.2)',
+                  paddingLeft: viewMode === 'columns' ? '12px' : '0',
+                  paddingTop: viewMode === 'columns' ? '0' : '12px'
+                }}>
+                  <Stack gap="xs" style={{ alignItems: 'flex-start' }}>
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      onClick={handleClearCache}
+                      leftSection={<IconTrash size={12} />}
+                      style={{ 
+                        justifyContent: 'flex-start',
+                        padding: '4px 8px',
+                        height: 'auto',
+                        fontWeight: 400
+                      }}
+                      styles={{
+                        root: {
+                          '&:focus': { outline: 'none', boxShadow: 'none' },
+                          '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
+                        }
+                      }}
+                    >
+                      Clear Cache
+                    </Button>
                   </Stack>
                 </Box>
               </Box>

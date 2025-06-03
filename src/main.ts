@@ -668,6 +668,20 @@ ipcMain.handle('flush-dispatcher', async (_, project: Project) => {
   }
 });
 
+ipcMain.handle('clear-dispatcher-cache', async (_, project: Project) => {
+  try {
+    const manager = dispatcherManagers.get(project.id);
+    if (!manager) {
+      throw new Error('Dispatcher manager not found');
+    }
+    manager.clearCache();
+    return true;
+  } catch (error) {
+    console.error('Error clearing dispatcher cache:', error);
+    throw error;
+  }
+});
+
 // Dispatcher Health Checking
 ipcMain.handle('take-dispatcher-screenshot', async (_, project: Project) => {
   try {

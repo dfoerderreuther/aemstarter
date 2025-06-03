@@ -286,6 +286,45 @@ export class DispatcherManager {
         return true;
     }
 
+    clearCache(): void {
+        try {
+            const cacheDir = path.join(this.project.folderPath, 'dispatcher', 'cache', 'html');
+            
+            // Check if cache directory exists
+            if (!fs.existsSync(cacheDir)) {
+                this.sendLogData(`Cache directory does not exist: ${cacheDir}\n`);
+                return;
+            }
+            
+            // Read directory contents and delete each item
+            const items = fs.readdirSync(cacheDir);
+            
+            if (items.length === 0) {
+                this.sendLogData(`Cache directory is already empty\n`);
+                return;
+            }
+            
+            let deletedCount = 0;
+            for (const item of items) {
+                const itemPath = path.join(cacheDir, item);
+                try {
+                    fs.rmSync(itemPath, { recursive: true, force: true });
+                    deletedCount++;
+                } catch (itemError) {
+                    console.error(`[DispatcherManager] Error deleting cache item ${itemPath}:`, itemError);
+                    this.sendLogData(`Warning: Could not delete ${item}: ${itemError instanceof Error ? itemError.message : String(itemError)}\n`);
+                }
+            }
+            
+            this.sendLogData(`Cache cleared: ${deletedCount} items deleted\n`);
+            
+        } catch (error) {
+            console.error('[DispatcherManager] Error clearing cache:', error);
+            this.sendLogData(`Error clearing cache: ${error instanceof Error ? error.message : String(error)}\n`);
+            throw error;
+        }
+    }
+
     /**
      * Clean up any stale process references and ensure consistent state
      */
