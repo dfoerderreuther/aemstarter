@@ -95,7 +95,7 @@ export const OakRunMenu = ({
             style={{ 
               opacity: !isOakJarAvailable ? 0.5 : 1,
               justifyContent: 'flex-start',
-              padding: '4px 8px',
+              padding: '2px',
               height: 'auto',
               fontWeight: 400
             }}

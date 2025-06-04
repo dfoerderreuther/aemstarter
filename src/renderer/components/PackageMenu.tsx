@@ -142,7 +142,7 @@ export const PackageMenu = ({
             style={{ 
               opacity: (!isRunning || isLoading) ? 0.5 : 1,
               justifyContent: 'flex-start',
-              padding: '4px 8px',
+              padding: '2px',
               height: 'auto',
               fontWeight: 400
             }}

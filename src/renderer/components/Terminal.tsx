@@ -91,6 +91,12 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     // Open terminal
     xterm.open(terminalRef.current);
     
+    // Add internal padding by styling the xterm screen element
+    const xtermScreen = terminalRef.current.querySelector('.xterm-screen');
+    if (xtermScreen) {
+      (xtermScreen as HTMLElement).style.padding = '8px';
+    }
+    
     // Fit terminal to container
     fitAddon.fit();
 

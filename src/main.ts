@@ -642,6 +642,20 @@ ipcMain.handle('stop-dispatcher', async (_, project: Project) => {
   }
 });
 
+ipcMain.handle('kill-dispatcher', async (_, project: Project) => {
+  try {
+    const manager = dispatcherManagers.get(project.id);
+    if (!manager) {
+      throw new Error('Dispatcher manager not found');
+    }
+    await manager.killDispatcher();
+    return true;
+  } catch (error) {
+    console.error('Error killing dispatcher:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('get-dispatcher-status', async (_, project: Project) => {
   try {
     let manager = dispatcherManagers.get(project.id);

@@ -104,6 +104,7 @@ declare global {
       // Dispatcher Management
       startDispatcher: (project: Project) => Promise<boolean>;
       stopDispatcher: (project: Project) => Promise<boolean>;
+      killDispatcher: (project: Project) => Promise<boolean>;
       getDispatcherStatus: (project: Project) => Promise<{ isRunning: boolean; pid: number | null; port: number; config: string }>;
       flushDispatcher: (project: Project) => Promise<boolean>;
       clearDispatcherCache: (project: Project) => Promise<boolean>;

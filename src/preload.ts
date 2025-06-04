@@ -238,6 +238,9 @@ contextBridge.exposeInMainWorld(
     stopDispatcher: (project: Project) =>
       ipcRenderer.invoke('stop-dispatcher', project),
     
+    killDispatcher: (project: Project) =>
+      ipcRenderer.invoke('kill-dispatcher', project),
+    
     getDispatcherStatus: (project: Project) =>
       ipcRenderer.invoke('get-dispatcher-status', project),
     

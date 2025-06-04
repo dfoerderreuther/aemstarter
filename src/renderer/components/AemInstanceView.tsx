@@ -39,6 +39,19 @@ export const AemInstanceView = ({
   const terminalComponentRef = useRef<TerminalRef>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  const buttonStyle = {
+    justifyContent: 'flex-start' as const,
+    padding: '2px',
+    height: 'auto',
+    fontWeight: 400
+  };
+
+  const buttonStyles = {
+    root: {
+      '&:focus': { outline: 'none', boxShadow: 'none' },
+      '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
+    }
+  };
 
   // Resize terminal after collapse state changes (CSS transition completes)
   useEffect(() => {
@@ -140,6 +153,17 @@ export const AemInstanceView = ({
     const port = projectSettings[instance]?.port || (instance === 'author' ? 4502 : 4503);
     try {
       await window.electronAPI.openUrl(`http://localhost:${port}`);
+    } catch (error) {
+      console.error('Error opening AEM URL:', error);
+    }
+  };
+
+  // Browser navigation functions
+  const handleOpenAemLogin = async () => {
+    if (!projectSettings) return;
+    const port = projectSettings[instance]?.port || (instance === 'author' ? 4502 : 4503);
+    try {
+      await window.electronAPI.openUrl(`http://localhost:${port}/libs/granite/core/content/login.html`);
     } catch (error) {
       console.error('Error opening AEM URL:', error);
     }
@@ -348,7 +372,7 @@ export const AemInstanceView = ({
             display: 'flex',
             flexDirection: viewMode === 'columns' ? 'column' : 'column',
             overflow: 'hidden',
-            position: 'relative'
+            position: 'relative',
           }}>
             {/* Collapse/Expand Button - Integrated */}
             <Box style={{
@@ -363,7 +387,7 @@ export const AemInstanceView = ({
                 size="sm"
                 onClick={onToggleCollapse}
                 style={{ 
-                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(58,58,58,1)',
                   border: '1px solid rgba(255,255,255,0.2)',
                   borderRadius: '4px'
                 }}
@@ -408,7 +432,7 @@ export const AemInstanceView = ({
 
                 {/* Links Block */}
                 <Box style={{ 
-                  width: '120px',
+                  width: '100px',
                   flex: 'none',
                   display: 'flex',
                   flexDirection: 'column',
@@ -425,20 +449,21 @@ export const AemInstanceView = ({
                       onClick={handleOpenAem}
                       disabled={!isRunning}
                       leftSection={<IconExternalLink size={12} />}
-                      style={{ 
-                        justifyContent: 'flex-start',
-                        padding: '4px 8px',
-                        height: 'auto',
-                        fontWeight: 400
-                      }}
-                      styles={{
-                        root: {
-                          '&:focus': { outline: 'none', boxShadow: 'none' },
-                          '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
-                        }
-                      }}
+                      style={buttonStyle}
+                      styles={buttonStyles}
                     >
                       AEM
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      onClick={handleOpenAemLogin}
+                      disabled={!isRunning}
+                      leftSection={<IconExternalLink size={12} />}
+                      style={buttonStyle}
+                      styles={buttonStyles}
+                    >
+                      AEM Login
                     </Button>
                     <Button
                       size="xs"
@@ -446,18 +471,8 @@ export const AemInstanceView = ({
                       onClick={handleOpenCrxDe}
                       disabled={!isRunning}
                       leftSection={<IconExternalLink size={12} />}
-                      style={{ 
-                        justifyContent: 'flex-start',
-                        padding: '4px 8px',
-                        height: 'auto',
-                        fontWeight: 400
-                      }}
-                      styles={{
-                        root: {
-                          '&:focus': { outline: 'none', boxShadow: 'none' },
-                          '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
-                        }
-                      }}
+                      style={buttonStyle}
+                      styles={buttonStyles}
                     >
                       CRX/DE
                     </Button>
@@ -467,18 +482,8 @@ export const AemInstanceView = ({
                       onClick={handleOpenConsole}
                       disabled={!isRunning}
                       leftSection={<IconExternalLink size={12} />}
-                      style={{ 
-                        justifyContent: 'flex-start',
-                        padding: '4px 8px',
-                        height: 'auto',
-                        fontWeight: 400
-                      }}
-                      styles={{
-                        root: {
-                          '&:focus': { outline: 'none', boxShadow: 'none' },
-                          '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
-                        }
-                      }}
+                      style={buttonStyle}
+                      styles={buttonStyles}
                     >
                       Console
                     </Button>
@@ -487,7 +492,7 @@ export const AemInstanceView = ({
 
                 {/* Menus Block */}
                 <Box style={{ 
-                  width: '120px',
+                  width: '100px',
                   flex: 'none',
                   display: 'flex',
                   flexDirection: 'column',
@@ -522,7 +527,7 @@ export const AemInstanceView = ({
           </Box>
 
           {/* Terminal Section */}
-          <Paper shadow="xs" p="sm" style={{ 
+          <Paper shadow="xs" style={{ 
             flex: 1,
             overflow: 'hidden',
             minHeight: 0,

@@ -269,6 +269,84 @@ export class DispatcherManager {
         }
     }
 
+    async killDispatcher(): Promise<void> {
+        const port = this.instance.port;
+        console.log(`[DispatcherManager] Force killing dispatcher containers on port ${port}`);
+        
+        try {
+            // Stop health checking first
+            this.healthChecker.stopHealthChecking('dispatcher');
+            
+            // Import exec to run shell commands
+            const { exec } = require('child_process');
+            const { promisify } = require('util');
+            const execAsync = promisify(exec);
+            
+            // Find containers using the dispatcher port
+            console.log(`Looking for Docker containers using port ${port}...`);
+            
+            // First, try to find containers by port mapping
+            let containerIds: string[] = [];
+            
+            try {
+                const { stdout: portOutput } = await execAsync(`docker ps --format "{{.ID}} {{.Ports}}" | grep ":${port}->"`, { timeout: 10000 });
+                if (portOutput.trim()) {
+                    containerIds = portOutput.trim().split('\n').map((line: string) => line.split(' ')[0]);
+                    console.log(`Found containers by port mapping: ${containerIds.join(', ')}`);
+                }
+            } catch (portError) {
+                console.log('No containers found by port mapping or error occurred:', portError instanceof Error ? portError.message : String(portError));
+            }
+            
+            if (containerIds.length === 0) {
+                console.log('No Docker containers found to kill');
+                this.sendLogData('No Docker containers found to kill\n');
+            } else {
+                console.log(`Found ${containerIds.length} container(s) to kill: ${containerIds.join(', ')}`);
+                this.sendLogData(`Killing ${containerIds.length} Docker container(s): ${containerIds.join(', ')}\n`);
+                
+                // Kill each container
+                for (const containerId of containerIds) {
+                    try {
+                        console.log(`Killing container ${containerId}...`);
+                        await execAsync(`docker kill ${containerId}`, { timeout: 10000 });
+                        this.sendLogData(`Killed container ${containerId}\n`);
+                        
+                        // Also remove the container to clean up
+                        try {
+                            await execAsync(`docker rm ${containerId}`, { timeout: 5000 });
+                            console.log(`Removed container ${containerId}`);
+                        } catch (rmError) {
+                            console.warn(`Could not remove container ${containerId}:`, rmError instanceof Error ? rmError.message : String(rmError));
+                        }
+                    } catch (killError) {
+                        console.error(`Error killing container ${containerId}:`, killError);
+                        this.sendLogData(`Error killing container ${containerId}: ${killError instanceof Error ? killError.message : String(killError)}\n`);
+                    }
+                }
+            }
+            
+            // Clean up our internal state
+            this.instance.process = null;
+            this.instance.pid = null;
+            this.sendStatusUpdate(false);
+            
+            console.log('Docker dispatcher kill operation completed');
+            this.sendLogData('Docker dispatcher kill operation completed\n');
+            
+        } catch (error) {
+            console.error('Error during killDispatcher:', error);
+            this.sendLogData(`Error during force kill: ${error instanceof Error ? error.message : String(error)}\n`);
+            
+            // Still clean up our state even if Docker operations failed
+            this.instance.process = null;
+            this.instance.pid = null;
+            this.sendStatusUpdate(false);
+            
+            throw error;
+        }
+    }
+
     isDispatcherRunning(): boolean {
         if (!this.instance.process) {
             return false;

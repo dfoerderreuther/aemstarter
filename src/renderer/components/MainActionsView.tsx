@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider, Space } from '@mantine/core';
+import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
 import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserCheck, IconColumns3, IconColumns1, IconDeviceFloppy } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
@@ -106,6 +106,9 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const confirmKillAll = async () => {
     try {
       await window.electronAPI.killAllAemInstances(project);
+      console.log('About to call killDispatcher...'); // Debug log
+      await window.electronAPI.killDispatcher(project);
+      console.log('killDispatcher call completed'); // Debug log
       setShowKillAllConfirm(false);
     } catch (error) {
       console.error('Failed to kill all instances:', error);
@@ -697,6 +700,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
             <li>Hard kill all processes containing "quickstart" in their name</li>
             <li>This will affect all AEM instances or other processes with "quickstart" in their name, regardless of who started them</li>
+            <li>Hard killing your Dispatcher by stopping all Docker instances running on your Dispatcher port</li>
           </ul>
           <Text size="sm" c="red" mt="md">
             Are you sure you want to proceed?

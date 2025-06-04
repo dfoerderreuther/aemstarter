@@ -14,6 +14,20 @@ interface DispatcherViewProps {
   onToggleCollapse?: () => void;
 }
 
+const websiteButtonStyle = {
+  justifyContent: 'flex-start',
+  padding: '2px',
+  height: 'auto',
+  fontWeight: 400
+} as const;
+
+const websiteButtonStyles = {
+  root: {
+    '&:focus': { outline: 'none', boxShadow: 'none' },
+    '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
+  }
+} as const;
+
 export const DispatcherView = ({ 
   project, 
   visible = true, 
@@ -312,7 +326,7 @@ export const DispatcherView = ({
                 size="sm"
                 onClick={onToggleCollapse}
                 style={{ 
-                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(58,58,58,1)',
                   border: '1px solid rgba(255,255,255,0.2)',
                   borderRadius: '4px'
                 }}
@@ -353,7 +367,7 @@ export const DispatcherView = ({
                 
                 {/* Links Block */}
                 <Box style={{ 
-                  width: '120px',
+                  width: '100px',
                   flex: 'none',
                   display: 'flex',
                   flexDirection: 'column',
@@ -370,27 +384,17 @@ export const DispatcherView = ({
                       onClick={handleOpenDispatcher}
                       disabled={!isRunning}
                       leftSection={<IconExternalLink size={12} />}
-                      style={{ 
-                        justifyContent: 'flex-start',
-                        padding: '4px 8px',
-                        height: 'auto',
-                        fontWeight: 400
-                      }}
-                      styles={{
-                        root: {
-                          '&:focus': { outline: 'none', boxShadow: 'none' },
-                          '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
-                        }
-                      }}
+                      style={websiteButtonStyle}
+                      styles={websiteButtonStyles}
                     >
-                      Dispatcher
+                      Website
                     </Button>
                   </Stack>
                 </Box>
 
                 {/* Actions Block */}
                 <Box style={{ 
-                  width: '120px',
+                  width: '100px',
                   flex: 'none',
                   display: 'flex',
                   flexDirection: 'column',
@@ -406,18 +410,8 @@ export const DispatcherView = ({
                       variant="subtle"
                       onClick={handleClearCache}
                       leftSection={<IconTrash size={12} />}
-                      style={{ 
-                        justifyContent: 'flex-start',
-                        padding: '4px 8px',
-                        height: 'auto',
-                        fontWeight: 400
-                      }}
-                      styles={{
-                        root: {
-                          '&:focus': { outline: 'none', boxShadow: 'none' },
-                          '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
-                        }
-                      }}
+                      style={websiteButtonStyle}
+                      styles={websiteButtonStyles}
                     >
                       Clear Cache
                     </Button>
@@ -428,7 +422,7 @@ export const DispatcherView = ({
           </Box>
 
           {/* Terminal Section */}
-          <Paper shadow="xs" p="sm" style={{ 
+          <Paper shadow="xs" style={{ 
             flex: 1,
             overflow: 'hidden',
             minHeight: 0,
