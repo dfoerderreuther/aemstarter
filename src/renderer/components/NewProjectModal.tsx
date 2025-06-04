@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Stack, TextInput, Group, Button } from '@mantine/core';
+import { Modal, Stack, TextInput, Group, Button, Anchor } from '@mantine/core';
 import { Project } from '../../types/Project';
+import { SystemCheckView } from './SystemCheckView';
 
 interface NewProjectModalProps {
   opened: boolean;
@@ -17,6 +18,13 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [creating, setCreating] = useState(false);
   const [aemSdkPath, setAemSdkPath] = useState('');
   const [licensePath, setLicensePath] = useState('');
+
+  // Helper function to extract filename from path
+  const getFileName = (path: string) => {
+    if (!path) return '';
+    const parts = path.split(/[/\\]/);
+    return parts[parts.length - 1];
+  };
 
   // Load global settings when opening the modal
   useEffect(() => {
@@ -118,9 +126,11 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
       onClose={handleClose}
       title="Create New Project"
       centered
+      size="lg"
       overlayProps={{ opacity: 0.55, blur: 3 }}
     >
       <Stack gap="md">
+        <SystemCheckView />
         <TextInput
           label="Project Name"
           placeholder="Enter project name"
@@ -135,10 +145,11 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           <TextInput
             label="AEM SDK"
             placeholder="Select AEM SDK zip file"
-            value={aemSdkPath}
+            value={getFileName(aemSdkPath)}
             readOnly
             style={{ flex: 1 }}
             disabled={creating}
+            title={aemSdkPath} // Show full path on hover
           />
           <Button 
             onClick={handleSelectAemSdk}
@@ -148,6 +159,13 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             Browse
           </Button>
         </Group>
+        <Anchor
+          onClick={() => window.electronAPI.openUrl("https://experience.adobe.com/#/downloads/content/software-distribution/en/aemcloud.html?fulltext=AEM*+SDK*&1_group.propertyvalues.property=.%2Fjcr%3Acontent%2Fmetadata%2Fdc%3AsoftwareType&1_group.propertyvalues.operation=equals&1_group.propertyvalues.0_values=software-type%3Atooling&orderby=%40jcr%3Acontent%2Fjcr%3AlastModified&orderby.sort=desc&layout=list&p.offset=0&p.limit=24")}
+          size="sm"
+          style={{ marginTop: '-8px', marginBottom: '8px', cursor: 'pointer' }}
+        >
+          Download AEM SDK from experience.adobe.com
+        </Anchor>
         <Group>
           <TextInput
             label="License File (Optional)"

@@ -11,6 +11,7 @@ import { PackageInstaller } from './main/services/PackageInstaller';
 import { ReplicationSettings } from './main/services/ReplicationSettings';
 import { Project } from './types/Project';
 import { BackupManager } from './main/services/BackupManager';
+import { SystemCheck } from './main/services/SystemCheck';
 
 // Set the app name immediately (this affects dock/taskbar display)
 app.setName('AEM Starter');
@@ -737,6 +738,17 @@ ipcMain.handle('check-dispatcher-health', async (_, project: Project) => {
     return await manager.checkHealth();
   } catch (error) {
     console.error('Error checking dispatcher health:', error);
+    throw error;
+  }
+});
+
+// System check IPC handler
+ipcMain.handle('run-system-check', async () => {
+  try {
+    const systemCheck = new SystemCheck();
+    return await systemCheck.runAllChecks();
+  } catch (error) {
+    console.error('Error running system check:', error);
     throw error;
   }
 });

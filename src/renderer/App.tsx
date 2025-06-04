@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { MantineProvider, AppShell, Title, Container, Center, Paper, Text, ThemeIcon, Group, Stack, createTheme, rem, Select, Button } from '@mantine/core';
+import { MantineProvider, AppShell, Title, Container, Center, Text, ThemeIcon, Group, Stack, createTheme, rem, Select, Button } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { ProjectView } from './components/ProjectView';
 import { NewProjectModal } from './components/NewProjectModal';
 import { Project } from '../types/Project';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus } from '@tabler/icons-react';
 import AemLogo from './assets/AEM.svg';
+import { SystemCheckView } from './components/SystemCheckView';
 
 const theme = createTheme({
   primaryColor: 'blue',
@@ -202,7 +203,7 @@ const App: React.FC = () => {
               </Title>
             </Group>
             <Group align="center" gap={8}>
-              
+              <SystemCheckView />
               <Button
                 leftSection={<IconPlus size={16} />}
                 onClick={() => setModalOpen(true)}

@@ -52,23 +52,47 @@ export class BackupManager {
         const backupFiles = await this.listBackups('author');
         const allBackupFiles = backupFiles.filter(file => file.startsWith('all__'));
         
+        if (allBackupFiles.length === 0) {
+            return [];
+        }
+        
         const instancePath = path.join(this.project.folderPath, 'author');
         const backupPath = path.join(instancePath, 'backup');
         
         const backupInfoPromises = allBackupFiles.map(async (file) => {
             const filePath = path.join(backupPath, file);
-            const stats = fs.statSync(filePath);
-            const statsPublish = fs.statSync(filePath.replace('/author/', '/publisher/'));
-            const statsDispatcher = fs.statSync(filePath.replace('/author/', '/dispatcher/'));
-
-            const fileSize = stats.size;
-            const fileSizePublish = statsPublish.size;
-            const fileSizeDispatcher = statsDispatcher.size;
+            const publisherFilePath = filePath.replace('/author/', '/publisher/');
+            const dispatcherFilePath = filePath.replace('/author/', '/dispatcher/');
+            
+            let fileSize = 0;
+            let createdDate = new Date();
+            
+            try {
+                const stats = fs.statSync(filePath);
+                fileSize += stats.size;
+                createdDate = stats.birthtime;
+            } catch (error) {
+                console.log(`[Backup] Author backup file not found: ${filePath}`);
+            }
+            
+            try {
+                const statsPublish = fs.statSync(publisherFilePath);
+                fileSize += statsPublish.size;
+            } catch (error) {
+                console.log(`[Backup] Publisher backup file not found: ${publisherFilePath}`);
+            }
+            
+            try {
+                const statsDispatcher = fs.statSync(dispatcherFilePath);
+                fileSize += statsDispatcher.size;
+            } catch (error) {
+                console.log(`[Backup] Dispatcher backup file not found: ${dispatcherFilePath}`);
+            }
             
             return {
                 name: file.replace('all__', '').replace('.tar.gz', '').replace('.tar', ''),
-                createdDate: stats.birthtime,
-                fileSize: fileSize + fileSizePublish + fileSizeDispatcher, 
+                createdDate: createdDate,
+                fileSize: fileSize, 
                 compressed: file.endsWith('.tar.gz')
             };
         });
@@ -80,6 +104,12 @@ export class BackupManager {
         console.log(`[Backup] listing backups for ${instance} instance`);
         const instancePath = path.join(this.project.folderPath, instance);
         const backupPath = path.join(instancePath, 'backup');
+        
+        if (!fs.existsSync(backupPath)) {
+            console.log(`[Backup] Backup directory does not exist: ${backupPath}`);
+            return [];
+        }
+        
         const backupFiles = fs.readdirSync(backupPath);
         return backupFiles;
     }

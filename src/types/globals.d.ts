@@ -1,5 +1,6 @@
 import { Project } from './Project';
 import { BackupInfo } from './BackupInfo';
+import { SystemCheckResults } from './SystemCheckResults';
 
 declare global {
   interface Window {
@@ -20,6 +21,9 @@ declare global {
       
       // Menu
       refreshMenu: () => Promise<boolean>;
+
+      // System Check
+      runSystemCheck: () => Promise<SystemCheckResults>;
       
       // File system operations
       readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;

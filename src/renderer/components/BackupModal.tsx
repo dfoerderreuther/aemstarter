@@ -51,7 +51,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
       const result = await window.electronAPI.listBackupsAll(project);
       setBackups(Array.isArray(result) ? result : []);
     } catch (err: any) {
-      setError('Failed to load backups');
+      // Don't show error for common cases like "no backup directory exists yet"
+      console.log('No backups found or backup directory not initialized:', err);
+      setBackups([]); // Just show empty state instead of error
     } finally {
       setLoading(false);
     }
@@ -59,6 +61,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
 
   useEffect(() => {
     if (opened) {
+      setError(null); // Clear any previous errors when opening modal
       loadBackups();
     }
   }, [opened, project]);
@@ -181,7 +184,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
                 <Loader size="lg" />
               </Center>
             ) : backups.length === 0 ? (
-              <Paper withBorder p="xl" bg="gray.0">
+              <Paper withBorder p="xl" bg="dark.6">
                 <Center>
                   <Stack align="center" gap="sm">
                     <IconDeviceFloppy size={48} color="var(--mantine-color-gray-5)" />
