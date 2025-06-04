@@ -9,7 +9,7 @@ export class ProjectSettings {
     "version": "1.0.0",
     "general": {
         "name": "{{PROJECT_NAME}}", 
-        "healthCheck": true, 
+        "healthCheck": true
     }, 
     "author": {
         "port": 4502,

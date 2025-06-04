@@ -830,17 +830,24 @@ export class AemInstanceManager {
       fs.mkdirSync(installDir, { recursive: true });
     }
 
-    // Try up to 5 lower patch versions
+    // Try multiple versions with different strategies
     let found = false;
     const triedVersions: string[] = [];
     let jarPath = '';
     let lastError: any = null;
-    for (let i = 0; i < 5; i++) {
-      const tryVersion = `${major}.${minor}.${patch}`;
+    
+    // Strategy 1: Try current and lower patch versions
+    let currentMajor = major;
+    let currentMinor = minor;
+    let currentPatch = patch;
+    
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const tryVersion = `${currentMajor}.${currentMinor}.${currentPatch}`;
       triedVersions.push(tryVersion);
       const oakJarUrl = `https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/${tryVersion}/oak-run-${tryVersion}.jar`;
       jarPath = path.join(installDir, `oak-run-${tryVersion}.jar`);
       console.log(`[AemInstanceManager] Attempting to download oak-run.jar from ${oakJarUrl}`);
+      
       try {
         const jarResponse = await fetch(oakJarUrl);
         if (jarResponse.ok) {
@@ -857,8 +864,54 @@ export class AemInstanceManager {
         lastError = err;
         console.warn(`[AemInstanceManager] Error downloading oak-run.jar for version ${tryVersion}: ${err}`);
       }
-      patch--;
-      if (patch < 0) break;
+      
+      // Decrement patch version
+      currentPatch--;
+      
+      // If patch goes below 0, try the previous minor version
+      if (currentPatch < 0) {
+        currentMinor--;
+        currentPatch = 10; // Start with patch version 10 for the new minor version
+        
+        // If minor goes below 70, stop (oak versions usually don't go that low)
+        if (currentMinor < 70) {
+          break;
+        }
+      }
+    }
+    
+    // Strategy 2: If still not found, try some known stable versions
+    if (!found) {
+      const knownVersions = ['1.78.0', '1.76.0', '1.74.0', '1.72.0', '1.70.0', '1.68.0', '1.66.0', '1.64.0', '1.62.0', '1.60.0'];
+      console.log(`[AemInstanceManager] Trying known stable versions: ${knownVersions.join(', ')}`);
+      
+      for (const tryVersion of knownVersions) {
+        if (triedVersions.includes(tryVersion)) {
+          continue; // Skip if already tried
+        }
+        
+        triedVersions.push(tryVersion);
+        const oakJarUrl = `https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/${tryVersion}/oak-run-${tryVersion}.jar`;
+        jarPath = path.join(installDir, `oak-run-${tryVersion}.jar`);
+        console.log(`[AemInstanceManager] Attempting to download oak-run.jar from ${oakJarUrl}`);
+        
+        try {
+          const jarResponse = await fetch(oakJarUrl);
+          if (jarResponse.ok) {
+            const jarBuffer = await jarResponse.arrayBuffer();
+            fs.writeFileSync(jarPath, Buffer.from(jarBuffer));
+            console.log(`[AemInstanceManager] Downloaded oak-run.jar to ${jarPath}`);
+            found = true;
+            oakVersion = tryVersion;
+            break;
+          } else {
+            console.warn(`[AemInstanceManager] oak-run.jar not found for version ${tryVersion}: ${jarResponse.statusText}`);
+          }
+        } catch (err) {
+          lastError = err;
+          console.warn(`[AemInstanceManager] Error downloading oak-run.jar for version ${tryVersion}: ${err}`);
+        }
+      }
     }
     if (!found) {
       throw new Error(`Failed to download oak-run.jar for versions: ${triedVersions.join(', ')}${lastError ? `\nLast error: ${lastError}` : ''}`);
