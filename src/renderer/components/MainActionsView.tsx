@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconBrowserCheck, IconColumns3, IconColumns1, IconDeviceFloppy } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconColumns3, IconColumns1, IconDeviceFloppy, IconBrandFinder, IconBrandVisualStudio } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
+import cursorWhiteIcon from '../assets/cursor_white_sm.png';
 
 interface MainActionsViewProps {
   project: Project;
@@ -253,14 +254,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
     }
   };
 
-  const handleOpenPublisherAdmin = async () => {
-    try {
-      await window.electronAPI.openUrl('http://localhost:4503/libs/granite/core/content/login.html');
-    } catch (error) {
-      console.error('Error opening publisher URL:', error);
-    }
-  };
-
   const handleOpenDispatcher = async () => {
     try {
       await window.electronAPI.openUrl('http://localhost:80');
@@ -312,6 +305,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
         <Paper style={sectionStyles}>
           <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">All</Text>
+            <Group>
             <Button.Group>
               <Tooltip label="Start all">
                 <Button 
@@ -349,19 +343,20 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   <IconPlayerStop size={16} />
                 </Button>
               </Tooltip>
-              
-              <Tooltip label="Kill all">
-                <Button 
-                  color="orange" 
-                  variant="filled" 
-                  size="xs"
-                  styles={buttonStyles}
-                  onClick={handleKillAll}
-                >
-                  <IconSkull size={16} />
-                </Button>
-              </Tooltip>
             </Button.Group>
+            
+            <Tooltip label="Kill all">
+              <Button 
+                color="orange" 
+                variant="filled" 
+                size="xs"
+                styles={buttonStyles}
+                onClick={handleKillAll}
+              >
+                <IconSkull size={16} />
+              </Button>
+            </Tooltip>
+            </Group>
           </Stack>
         </Paper>
 
@@ -503,19 +498,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                     <IconBrowser size={16} />
                   </Button>
                 </Tooltip>
-
-                <Tooltip label="Open publisher admin">
-                    <Button
-                      color="green" 
-                      variant="filled" 
-                      size="xs"
-                      styles={buttonStyles}
-                      onClick={handleOpenPublisherAdmin}
-                      disabled={!isPublisherRunning}
-                    >
-                      <IconBrowserCheck size={16} />
-                    </Button>
-                  </Tooltip>
                 </Button.Group>
             </Group>
           </Stack>
@@ -651,6 +633,42 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   <IconPackage size={16} />
                 </Button>
               </Tooltip>
+            </Button.Group>
+          </Stack>
+        </Paper>
+        <Divider orientation="vertical" />
+
+        <Paper style={sectionStyles}>
+          <Stack gap="xs">
+            <Text size="sm" fw={500} c="dimmed">AEM Dev Project</Text>
+            <Button.Group>
+              <Button 
+                color="blue" 
+                variant="filled" 
+                size="xs"
+                styles={installButtonStyles}
+                onClick={() => {}}
+              >
+                <IconBrandFinder size={16} />
+              </Button>
+              <Button 
+                color="blue" 
+                variant="filled" 
+                size="xs"
+                styles={installButtonStyles}
+                onClick={() => {}}
+              >
+                <IconBrandVisualStudio size={16} />
+              </Button>
+              <Button 
+                color="blue" 
+                variant="filled" 
+                size="xs"
+                styles={installButtonStyles}
+                onClick={() => {}}
+              >
+                <img src={cursorWhiteIcon} alt="Cursor" width={16} height={16} />
+              </Button>
             </Button.Group>
           </Stack>
         </Paper>

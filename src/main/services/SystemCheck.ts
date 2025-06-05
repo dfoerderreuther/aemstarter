@@ -29,7 +29,7 @@ export class SystemCheck {
         };
     }
 
-    async checkJavaAvailability(): Promise<boolean> {
+    private async checkJavaAvailability(): Promise<boolean> {
         try {
             await execAsync('java -version');
             return true;
@@ -38,7 +38,7 @@ export class SystemCheck {
         }
     }
 
-    async checkJavaVersion(): Promise<string> {
+    private async checkJavaVersion(): Promise<string> {
         try {
             const { stdout, stderr } = await execAsync('java -version');
             const versionOutput = stderr || stdout;
@@ -56,7 +56,7 @@ export class SystemCheck {
         }
     }
 
-    async checkDockerAvailability(): Promise<boolean> {
+    private async checkDockerAvailability(): Promise<boolean> {
         try {
             await execAsync('docker --version');
             return true;
@@ -65,7 +65,7 @@ export class SystemCheck {
         }
     }
 
-    async checkDockerDaemonRunning(): Promise<boolean> {
+    private async checkDockerDaemonRunning(): Promise<boolean> {
         try {
             await execAsync('docker info');
             return true;
@@ -74,7 +74,7 @@ export class SystemCheck {
         }
     }
 
-    async checkDockerVersion(): Promise<string> {
+    private async checkDockerVersion(): Promise<string> {
         try {
             const { stdout } = await execAsync('docker --version');
             // Extract version from "Docker version X.X.X, build ..."
@@ -88,7 +88,7 @@ export class SystemCheck {
         }
     }
 
-    async checkPortAvailable(port: number): Promise<boolean> {
+    private async checkPortAvailable(port: number): Promise<boolean> {
         return new Promise((resolve) => {
             const server = net.createServer();
             
@@ -105,15 +105,15 @@ export class SystemCheck {
         });
     }
 
-    async checkPort80Available(): Promise<boolean> {
+    private async checkPort80Available(): Promise<boolean> {
         return this.checkPortAvailable(80);
     }
 
-    async checkPort4502Available(): Promise<boolean> {
+    private async checkPort4502Available(): Promise<boolean> {
         return this.checkPortAvailable(4502);
     }
 
-    async checkPort4503Available(): Promise<boolean> {
+    private async checkPort4503Available(): Promise<boolean> {
         return this.checkPortAvailable(4503);
     }
 }
