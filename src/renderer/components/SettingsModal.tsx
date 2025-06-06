@@ -238,13 +238,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               max={65535}
             />
             
-            
-            <TextInput
-              label="Config Path"
-              description="Path to dispatcher configuration"
-              value={settings.dispatcher.config}
-              onChange={(event) => updateDispatcherSettings('config', event.currentTarget.value)}
-            />
+            <Group align="end" gap="xs">
+              <TextInput
+                label="Config Path"
+                description="Path to dispatcher configuration"
+                value={settings.dispatcher.config}
+                onChange={(event) => updateDispatcherSettings('config', event.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={async () => {
+                  const result = await window.electronAPI.showOpenDialog({
+                    properties: ['openDirectory'],
+                    title: 'Select Dispatcher Configuration Folder',
+                    buttonLabel: 'Select Folder',
+                    message: 'Select the dispatcher configuration folder'
+                  });
+                  if (!result.canceled && result.filePaths.length > 0) {
+                    updateDispatcherSettings('config', result.filePaths[0]);
+                  }
+                }}
+              >
+                Browse
+              </Button>
+            </Group>
             <TextInput
               label="Health Check Path"
               description="Path to health check service"

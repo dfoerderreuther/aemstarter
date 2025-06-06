@@ -5,6 +5,7 @@ import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
 import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser, IconExternalLink, IconTrash } from '@tabler/icons-react';
 import { Screenshot } from "./Screenshot";
+import { SettingsMenu } from "./SettingsMenu";
 
 interface DispatcherViewProps {
   project: Project;
@@ -414,7 +415,8 @@ export const DispatcherView = ({
                       styles={websiteButtonStyles}
                     >
                       Clear Cache
-                    </Button>
+                    </Button> 
+                    <SettingsMenu project={project} instance="dispatcher" />
                   </Stack>
                 </Box>
               </Box>

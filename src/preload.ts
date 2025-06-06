@@ -94,7 +94,7 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('install-package', project, instance, packageUrl),
 
     // Replication Settings
-    setupReplication: (project: Project, instance: 'author' | 'publisher') =>
+    setupReplication: (project: Project, instance: 'author' | 'publisher' | 'dispatcher') =>
       ipcRenderer.invoke('setup-replication', project, instance),
 
     // Screenshot and Health Check functionality

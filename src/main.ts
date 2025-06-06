@@ -516,7 +516,7 @@ ipcMain.handle('install-package', async (_, project: Project, instance: 'author'
 });
 
 // Replication Settings
-ipcMain.handle('setup-replication', async (_, project: Project, instance: 'author' | 'publisher') => {
+ipcMain.handle('setup-replication', async (_, project: Project, instance: 'author' | 'publisher' | 'dispatcher') => {
   try {
     const replicationSettings = ReplicationSettings.getInstance();
     const result = await replicationSettings.setReplication(project, instance);

@@ -1,6 +1,9 @@
 import { Project } from "../../types/Project";
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { ProjectSettings } from "./ProjectSettings";
+import path from "path";
+import fs from 'fs';
 
 const execAsync = promisify(exec);
 
@@ -17,11 +20,103 @@ export class ReplicationSettings {
         }
         return ReplicationSettings.instance;
     }
-    async setReplication(project: Project, instance: 'author' | 'publisher') {
-        if (instance === 'author') {
+    async setReplication(project: Project, instance: 'author' | 'publisher' | 'dispatcher') {
+        console.log('setReplication', project, instance);
+        if (instance === 'dispatcher') {
+            await this.setReplicationDispatcher(project);
+        } else if (instance === 'author') {
             await this.setReplicationAuthor(project, instance);
-        } else {
+        } else if (instance === 'publisher') {
             await this.setReplicationPublisher(project, instance);
+        } else {
+            throw new Error(`Invalid instance: ${instance}`);
+        }
+    }
+
+    private async setReplicationDispatcher(project: Project) {
+        const settings = ProjectSettings.getSettings(project);
+        
+        const dispatcherConfig = settings.dispatcher.config;
+
+        const dispatcherConfigPath = dispatcherConfig.startsWith('/') ? dispatcherConfig : path.join(project.folderPath, 'dispatcher', dispatcherConfig);
+
+        console.log('dispatcherConfigPath', dispatcherConfigPath);
+        
+        try {
+            // Use Node.js fs operations instead of shell commands for better cross-platform compatibility
+            const enabledFarmsDir = path.join(dispatcherConfigPath, 'conf.dispatcher.d', 'enabled_farms');
+            const availableFarmsDir = path.join(dispatcherConfigPath, 'conf.dispatcher.d', 'available_farms');
+            const defaultFarmPath = path.join(enabledFarmsDir, 'default.farm');
+            const sourceFarmPath = path.join(availableFarmsDir, 'default.farm');
+            const targetFarmPath = path.join(availableFarmsDir, 'aem-starter.farm');
+            const symlinkPath = path.join(enabledFarmsDir, 'aem-starter.farm');
+
+            console.log('Disabling default.farm');
+            // Remove default.farm if it exists
+            if (fs.existsSync(defaultFarmPath)) {
+                await fs.promises.unlink(defaultFarmPath);
+            }
+
+            console.log('Copying default.farm to aem-starter.farm');
+            // Copy default.farm to aem-starter.farm
+            if (fs.existsSync(sourceFarmPath)) {
+                await fs.promises.copyFile(sourceFarmPath, targetFarmPath);
+            } else {
+                throw new Error(`Source farm file not found: ${sourceFarmPath}`);
+            }
+    
+            // Modify the aem-starter.farm file to update allowedClients configuration
+            console.log('Updating farm file configuration');
+
+            // Read the farm file
+            const farmFileContent = await fs.promises.readFile(targetFarmPath, 'utf8');
+
+            // Handle comments starting with #
+            let updatedContent = farmFileContent;
+            
+            // Remove all lines starting with # using regex
+            updatedContent = updatedContent.replace(/^#.*$/gm, '');
+            
+            // Remove any resulting empty lines at the beginning
+            updatedContent = updatedContent.replace(/^\s*\n/, '');
+            
+            // Add the new comment at the beginning
+            updatedContent = '#\n# AEM-Starter farm file. Feel free to change.\n#\n\n' + updatedContent;
+            
+            // Define the search pattern and replacement
+            const searchPattern = /\/allowedClients\s*\{\s*\$include\s+"\.\.\/cache\/default_invalidate\.any"\s*\}/g;
+            const replacement = `/allowedClients {
+
+            $include "../cache/default_invalidate.any"
+            /0003 {
+                /type "allow"
+                /glob "*"
+            }
+		}`;
+            
+            // Replace the pattern with the new configuration
+            const finalContent = updatedContent.replace(searchPattern, replacement);
+            
+            // Write the modified content back to the file
+            await fs.promises.writeFile(targetFarmPath, finalContent, 'utf8');
+
+            console.log('Creating symbolic link');
+            // Create symbolic link using fs.symlink instead of shell command
+            const relativePath = '../available_farms/aem-starter.farm';
+            
+            // Remove existing symlink if it exists
+            if (fs.existsSync(symlinkPath)) {
+                await fs.promises.unlink(symlinkPath);
+            }
+            
+            // Create new symlink
+            await fs.promises.symlink(relativePath, symlinkPath);
+            
+            console.log('Successfully updated dispatcher farm configuration');
+            return { success: true, message: 'Dispatcher replication configured successfully' };
+        } catch (error) {
+            console.error('Error updating dispatcher farm configuration:', error);
+            throw error;
         }
     }
 
