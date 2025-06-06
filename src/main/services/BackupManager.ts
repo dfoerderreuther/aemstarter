@@ -18,6 +18,12 @@ export class BackupManager {
     async compact(instance: 'author' | 'publisher'): Promise<void> {
         const instancePath = path.join(this.project.folderPath, instance);
         const oakRunJar = path.join(instancePath, 'oak-run.jar');
+
+        if (!fs.existsSync(oakRunJar)) {
+            console.log(`[OakRun] Oak run jar not found: ${oakRunJar}`);
+            return;
+        }
+
         const segmentStorePath = path.join(instancePath, 'crx-quickstart', 'repository', 'segmentstore');
         const logPath = path.join(instancePath, 'crx-quickstart', 'logs', 'oak-run-compact.log');
         
@@ -115,7 +121,7 @@ export class BackupManager {
     }
 
     private fixTarName(tarName: string, compress: boolean): string {
-        return tarName.replace(/ /g, '_') + (compress ? '.tar.gz' : '.tar');
+        return tarName.replace(/[^a-zA-Z0-9 _]/g, '').replace(/ /g, '_') + (compress ? '.tar.gz' : '.tar');
     }
 
 
@@ -236,6 +242,27 @@ export class BackupManager {
 
         console.log(`[Restore] Starting restore for ${instance} instance`);
         console.log(`[Restore] Found backup file: ${actualFileName}`);
+
+
+        if (instance !== 'dispatcher') {
+
+            const command = `rm -Rf crx-quickstart`;
+
+            try {
+                await execAsync(command, { cwd: instancePath });
+            } catch (error) {
+                console.error(`[Backup] Backup error:`, error);
+                throw error;
+            }
+        } else {
+            const command = `rm -Rf "${ProjectSettings.getSettings(this.project).dispatcher.config}" cache`;
+            try {
+                await execAsync(command, { cwd: instancePath });
+            } catch (error) {
+                console.error(`[Backup] Backup error:`, error);
+                throw error;
+            }
+        }
 
         const tarCommand = actualFileName.endsWith('.tar.gz') ? 'tar -xzf' : 'tar -xf';
 

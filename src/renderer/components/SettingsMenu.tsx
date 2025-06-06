@@ -5,7 +5,7 @@ import { Project } from '../../types/Project';
 
 interface SettingsMenuProps {
   project: Project;
-  instance: 'author' | 'publisher';
+  instance: 'author' | 'publisher' | 'dispatcher';
   isRunning?: boolean;
 }
 

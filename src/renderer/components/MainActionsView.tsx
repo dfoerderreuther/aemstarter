@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconColumns3, IconColumns1, IconDeviceFloppy, IconCode, IconFolder, IconTerminal2 } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconSkull, IconSettings, IconBug, IconBrowser, IconColumns3, IconColumns1, IconDeviceFloppy, IconBrandFinder, IconBrandVisualStudio, IconRobot } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
+import { AutomationModal } from './AutomationModal';
 
 interface ProjectSettings {
   version: string;
@@ -49,6 +50,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
+  const [showAutomation, setShowAutomation] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [isAuthorRunning, setIsAuthorRunning] = useState(false);
   const [isAuthorDebugging, setIsAuthorDebugging] = useState(false);
@@ -124,9 +126,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
     };
   }, [project]);
 
-  const handleInstall = () => {
-    setShowInstallConfirm(true);
-  };
 
   const confirmInstall = async () => {
     try {
@@ -656,6 +655,17 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   <IconSettings size={16} />
                 </Button>
               </Tooltip>
+              <Tooltip label="Automation">
+                <Button 
+                  color="green" 
+                  variant="filled" 
+                  size="xs"
+                  styles={installButtonStyles}
+                  onClick={() => setShowAutomation(true)}
+                >
+                  <IconRobot size={16} />
+                </Button>
+              </Tooltip>
               <Tooltip label="Backup & Restore">
                 <Button
                   color="blue"
@@ -668,19 +678,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   <IconDeviceFloppy size={16} />
                 </Button>
               </Tooltip>
-              <Tooltip label="Reinstall">
-                <Button 
-                  color="orange" 
-                  variant="filled" 
-                  size="xs"
-                  styles={installButtonStyles}
-                  onClick={handleInstall}
-                  loading={isInstalling}
-                  disabled={isAuthorRunning || isPublisherRunning}
-                >
-                  <IconPackage size={16} />
-                </Button>
-              </Tooltip>
+             
             </Button.Group>
           </Stack>
         </Paper>
@@ -830,6 +828,14 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
         opened={showBackup}
         onClose={() => setShowBackup(false)}
         project={project}
+      />
+      <AutomationModal
+        opened={showAutomation}
+        onClose={() => setShowAutomation(false)}
+        project={project}
+        isAuthorRunning={isAuthorRunning}
+        isPublisherRunning={isPublisherRunning}
+        isDispatcherRunning={isDispatcherRunning}
       />
     </>
   );
