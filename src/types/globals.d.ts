@@ -1,6 +1,7 @@
 import { Project } from './Project';
 import { BackupInfo } from './BackupInfo';
 import { SystemCheckResults } from './SystemCheckResults';
+import { EditorAvailableResults } from './EditorAvailableResults';
 
 declare global {
   interface Window {
@@ -88,6 +89,12 @@ declare global {
       // Project Settings
       getProjectSettings: (project: Project) => Promise<any>;
       saveProjectSettings: (project: Project, settings: any) => Promise<boolean>;
+      
+      // Editor Availability Check
+      checkEditorAvailability: () => Promise<EditorAvailableResults>;
+      
+      // Dev project utilities
+      openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') => Promise<boolean>;
       
       // Log streaming
       onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => () => void;

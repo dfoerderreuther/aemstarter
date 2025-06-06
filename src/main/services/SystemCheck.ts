@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as net from 'net';
 import { SystemCheckResults } from '../../types/SystemCheckResults';
+import { EditorAvailableResults } from '../../types/EditorAvailableResults';
 
 const execAsync = promisify(exec);
 
@@ -29,9 +30,21 @@ export class SystemCheck {
         };
     }
 
+    async checkEditorAvailability(): Promise<EditorAvailableResults> {
+        return {
+            visualStudioCode: await this.checkAvailability('code --version'),
+            cursor: await this.checkAvailability('cursor --version'),
+            idea: await this.checkAvailability('idea --version')
+        };
+    }
+
     private async checkJavaAvailability(): Promise<boolean> {
+        return this.checkAvailability('java -version');
+    }
+
+    private async checkAvailability(command: string): Promise<boolean> {
         try {
-            await execAsync('java -version');
+            await execAsync(command);
             return true;
         } catch (error) {
             return false;
@@ -57,21 +70,11 @@ export class SystemCheck {
     }
 
     private async checkDockerAvailability(): Promise<boolean> {
-        try {
-            await execAsync('docker --version');
-            return true;
-        } catch (error) {
-            return false;
-        }
+        return this.checkAvailability('docker --version');
     }
 
     private async checkDockerDaemonRunning(): Promise<boolean> {
-        try {
-            await execAsync('docker info');
-            return true;
-        } catch (error) {
-            return false;
-        }
+        return this.checkAvailability('docker info');
     }
 
     private async checkDockerVersion(): Promise<string> {

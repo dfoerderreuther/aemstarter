@@ -1,11 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconColumns3, IconColumns1, IconDeviceFloppy, IconBrandFinder, IconBrandVisualStudio } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconSkull, IconPackage, IconSettings, IconBug, IconBrowser, IconColumns3, IconColumns1, IconDeviceFloppy, IconCode, IconFolder, IconTerminal2 } from '@tabler/icons-react';
 import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
-import cursorWhiteIcon from '../assets/cursor_white_sm.png';
+
+interface ProjectSettings {
+  version: string;
+  general: {
+    name: string;
+    healthCheck: boolean;
+  };
+  author: {
+    port: number;
+    runmode: string;
+    jvmOpts: string;
+    debugJvmOpts: string;
+    healthCheckPath: string;
+  };
+  publisher: {
+    port: number;
+    runmode: string;
+    jvmOpts: string;
+    debugJvmOpts: string;
+    healthCheckPath: string;
+  };
+  dispatcher: {
+    port: number;
+    config: string;
+    healthCheckPath: string;
+  };
+  dev: {
+    path: string;
+    editor: string;
+    customEditorPath: string;
+  };
+}
 
 interface MainActionsViewProps {
   project: Project;
@@ -26,6 +57,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const [isDispatcherRunning, setIsDispatcherRunning] = useState(false);
   const [authorPid, setAuthorPid] = useState<number | null>(null);
   const [publisherPid, setPublisherPid] = useState<number | null>(null);
+  const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null);
 
   // Check instance status on mount and periodically
   useEffect(() => {
@@ -52,7 +84,17 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
       }
     };
 
+    const loadProjectSettings = async () => {
+      try {
+        const settings = await window.electronAPI.getProjectSettings(project);
+        setProjectSettings(settings);
+      } catch (error) {
+        console.error('Error loading project settings:', error);
+      }
+    };
+
     checkStatus();
+    loadProjectSettings();
     const interval = setInterval(checkStatus, 5000);
     
     // Set up PID status event listener
@@ -281,6 +323,12 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   const sectionStyles = {
     padding: '12px',
     background: 'none',
+  };
+
+  const disabledSectionStyles = {
+    padding: '12px',
+    background: 'none',
+    opacity: 0.5,
   };
 
   const buttonStyles = {
@@ -638,37 +686,64 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
         </Paper>
         <Divider orientation="vertical" />
 
-        <Paper style={sectionStyles}>
+        <Paper style={projectSettings?.dev?.path ? sectionStyles : disabledSectionStyles}>
           <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">AEM Dev Project</Text>
             <Button.Group>
-              <Button 
-                color="blue" 
-                variant="filled" 
-                size="xs"
-                styles={installButtonStyles}
-                onClick={() => {}}
-              >
-                <IconBrandFinder size={16} />
-              </Button>
-              <Button 
-                color="blue" 
-                variant="filled" 
-                size="xs"
-                styles={installButtonStyles}
-                onClick={() => {}}
-              >
-                <IconBrandVisualStudio size={16} />
-              </Button>
-              <Button 
-                color="blue" 
-                variant="filled" 
-                size="xs"
-                styles={installButtonStyles}
-                onClick={() => {}}
-              >
-                <img src={cursorWhiteIcon} alt="Cursor" width={16} height={16} />
-              </Button>
+              <Tooltip label={!projectSettings?.dev?.path ? "Configure dev path in settings" : "Open files in Finder"}>
+                <Button 
+                  color="blue" 
+                  variant="filled" 
+                  size="xs"
+                  styles={installButtonStyles}
+                  disabled={!projectSettings?.dev?.path}
+                  onClick={async () => {
+                    try {
+                      await window.electronAPI.openDevProject(project, 'files');
+                    } catch (error) {
+                      console.error('Error opening files:', error);
+                    }
+                  }}
+                >
+                  <IconFolder size={16} />
+                </Button>
+              </Tooltip>
+              <Tooltip label={!projectSettings?.dev?.path ? "Configure dev path in settings" : "Open in terminal"}>
+                <Button 
+                  color="blue" 
+                  variant="filled" 
+                  size="xs"
+                  styles={installButtonStyles}
+                  disabled={!projectSettings?.dev?.path}
+                  onClick={async () => {
+                    try {
+                      await window.electronAPI.openDevProject(project, 'terminal');
+                    } catch (error) {
+                      console.error('Error opening terminal:', error);
+                    }
+                  }}
+                >
+                  <IconTerminal2 size={16} />
+                </Button>
+              </Tooltip>
+              <Tooltip label={!projectSettings?.dev?.path ? "Configure dev path in settings" : "Open in editor"}>
+                <Button 
+                  color="blue" 
+                  variant="filled" 
+                  size="xs"
+                  styles={installButtonStyles}
+                  disabled={!projectSettings?.dev?.path}
+                  onClick={async () => {
+                    try {
+                      await window.electronAPI.openDevProject(project, 'editor');
+                    } catch (error) {
+                      console.error('Error opening editor:', error);
+                    }
+                  }}
+                >
+                  <IconCode size={16} />
+                </Button>
+              </Tooltip>
             </Button.Group>
           </Stack>
         </Paper>
@@ -736,7 +811,19 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
       
       <SettingsModal
         opened={showSettings}
-        onClose={() => setShowSettings(false)}
+        onClose={() => {
+          setShowSettings(false);
+          // Reload project settings after closing settings modal
+          const loadProjectSettings = async () => {
+            try {
+              const settings = await window.electronAPI.getProjectSettings(project);
+              setProjectSettings(settings);
+            } catch (error) {
+              console.error('Error loading project settings:', error);
+            }
+          };
+          loadProjectSettings();
+        }}
         project={project}
       />
       <BackupModal

@@ -143,6 +143,14 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('get-project-settings', project),
     saveProjectSettings: (project: Project, settings: any) =>
       ipcRenderer.invoke('save-project-settings', project, settings),
+    
+    // Editor Availability Check
+    checkEditorAvailability: () =>
+      ipcRenderer.invoke('check-editor-availability'),
+
+    // Dev project utilities
+    openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') =>
+      ipcRenderer.invoke('open-dev-project', project, type),
 
     // Log streaming
     onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => {

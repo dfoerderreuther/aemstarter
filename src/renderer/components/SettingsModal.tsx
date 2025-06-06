@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Tabs, Stack, TextInput, NumberInput, Group, Button, Text, Checkbox } from '@mantine/core';
+import { Modal, Tabs, Stack, TextInput, NumberInput, Group, Button, Text, Checkbox, Select, ActionIcon } from '@mantine/core';
+import { IconFolder } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
+import { EditorAvailableResults } from '../../types/EditorAvailableResults';
 
 interface SettingsModalProps {
   opened: boolean;
@@ -33,15 +35,22 @@ interface ProjectSettings {
     config: string;
     healthCheckPath: string;
   };
+  dev: {
+    path: string;
+    editor: string;
+    customEditorPath: string;
+  };
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, project }) => {
   const [settings, setSettings] = useState<ProjectSettings | null>(null);
   const [saving, setSaving] = useState(false);
+  const [editorAvailability, setEditorAvailability] = useState<EditorAvailableResults | null>(null);
 
   useEffect(() => {
     if (opened && project) {
       loadSettings();
+      loadEditorAvailability();
     }
   }, [opened, project]);
 
@@ -52,6 +61,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
     } catch (error) {
       console.error('Error loading settings:', error);
     } 
+  };
+
+  const loadEditorAvailability = async () => {
+    try {
+      const availability = await window.electronAPI.checkEditorAvailability();
+      setEditorAvailability(availability);
+    } catch (error) {
+      console.error('Error checking editor availability:', error);
+    }
   };
 
   const handleSave = async () => {
@@ -112,6 +130,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
     });
   };
 
+  const updateDevSettings = (field: string, value: any) => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      dev: {
+        ...(settings.dev || { path: '', editor: 'code', customEditorPath: '' }),
+        [field]: value
+      }
+    });
+  };
+
+  const handleSelectDevPath = async () => {
+    const result = await window.electronAPI.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Select Development Path',
+      buttonLabel: 'Select Folder',
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      updateDevSettings('path', result.filePaths[0]);
+    }
+  };
+
+  const handleSelectCustomEditorPath = async () => {
+    const result = await window.electronAPI.showOpenDialog({
+      properties: ['openFile'],
+      title: 'Select Custom Editor Executable',
+      buttonLabel: 'Select File',
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      updateDevSettings('customEditorPath', result.filePaths[0]);
+    }
+  };
+
+  const getEditorAvailabilityIcon = (editorKey: 'visualStudioCode' | 'cursor' | 'idea') => {
+    if (!editorAvailability) return '';
+    return editorAvailability[editorKey] ? ' ✓' : ' ✗';
+  };
+
   if (!settings) {
     return (
       <Modal opened={opened} onClose={onClose} title="Project Settings" size="lg">
@@ -128,6 +184,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
           <Tabs.Tab value="author">Author</Tabs.Tab>
           <Tabs.Tab value="publisher">Publisher</Tabs.Tab>
           <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
+          <Tabs.Tab value="dev">Dev</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="general" pt="md">
@@ -251,6 +308,59 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               value={settings.dispatcher.healthCheckPath}
               onChange={(event) => updateDispatcherSettings('healthCheckPath', event.currentTarget.value)}
             />
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="dev" pt="md">
+          <Stack gap="md">
+            <Group gap="xs" align="end">
+              <TextInput
+                label="Development Path"
+                description="Path to development folder"
+                value={settings.dev?.path || ''}
+                onChange={(event) => updateDevSettings('path', event.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <ActionIcon
+                variant="filled"
+                onClick={handleSelectDevPath}
+                size="lg"
+              >
+                <IconFolder size={16} />
+              </ActionIcon>
+            </Group>
+            
+            <Select
+              label="Editor"
+              description="Select your preferred code editor"
+              value={settings.dev?.editor || 'code'}
+              onChange={(value) => updateDevSettings('editor', value)}
+              data={[
+                { value: 'code', label: `Visual Studio Code${getEditorAvailabilityIcon('visualStudioCode')}` },
+                { value: 'cursor', label: `Cursor${getEditorAvailabilityIcon('cursor')}` },
+                { value: 'idea', label: `IntelliJ IDEA${getEditorAvailabilityIcon('idea')}` },
+                { value: 'custom', label: 'Custom' }
+              ]}
+            />
+            
+            {(settings.dev?.editor || 'code') === 'custom' && (
+              <Group gap="xs" align="end">
+                <TextInput
+                  label="Custom Editor Path"
+                  description="Path to custom editor executable"
+                  value={settings.dev?.customEditorPath || ''}
+                  onChange={(event) => updateDevSettings('customEditorPath', event.currentTarget.value)}
+                  style={{ flex: 1 }}
+                />
+                <ActionIcon
+                  variant="filled"
+                  onClick={handleSelectCustomEditorPath}
+                  size="lg"
+                >
+                  <IconFolder size={16} />
+                </ActionIcon>
+              </Group>
+            )}
           </Stack>
         </Tabs.Panel>
       </Tabs>

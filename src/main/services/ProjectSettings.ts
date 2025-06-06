@@ -29,6 +29,11 @@ export class ProjectSettings {
         "port": 80,
         "config": "./config",
         "healthCheckPath": ""
+    }, 
+    "dev": {
+        "path": "",
+        "editor": "", 
+        "customEditorPath": ""
     }
 }
     `;

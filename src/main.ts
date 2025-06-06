@@ -12,6 +12,7 @@ import { ReplicationSettings } from './main/services/ReplicationSettings';
 import { Project } from './types/Project';
 import { BackupManager } from './main/services/BackupManager';
 import { SystemCheck } from './main/services/SystemCheck';
+import { DevProjectUtils } from './main/services/DevProjectUtils';
 
 // Set the app name immediately (this affects dock/taskbar display)
 app.setName('AEM Starter');
@@ -464,6 +465,17 @@ ipcMain.handle('get-project-settings', async (_, project: Project) => {
   }
 });
 
+// System Check - Editor Availability
+ipcMain.handle('check-editor-availability', async () => {
+  try {
+    const systemCheck = new SystemCheck();
+    return await systemCheck.checkEditorAvailability();
+  } catch (error) {
+    console.error('Error checking editor availability:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('save-project-settings', async (_, project: Project, settings: any) => {
   try {
     ProjectSettings.saveSettings(project, settings);
@@ -749,6 +761,18 @@ ipcMain.handle('run-system-check', async () => {
     return await systemCheck.runAllChecks();
   } catch (error) {
     console.error('Error running system check:', error);
+    throw error;
+  }
+});
+
+// Dev project utilities IPC handler
+ipcMain.handle('open-dev-project', async (_, project: Project, type: 'files' | 'terminal' | 'editor') => {
+  try {
+    const devProjectUtils = new DevProjectUtils();
+    await devProjectUtils.open(project, type);
+    return true;
+  } catch (error) {
+    console.error('Error opening dev project:', error);
     throw error;
   }
 });
