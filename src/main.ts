@@ -13,6 +13,7 @@ import { Project } from './types/Project';
 import { BackupManager } from './main/services/BackupManager';
 import { SystemCheck } from './main/services/SystemCheck';
 import { DevProjectUtils } from './main/services/DevProjectUtils';
+import { AemInstanceManagerRegister } from './main/AemInstanceManagerRegister';
 
 // Set the app name immediately (this affects dock/taskbar display)
 app.setName('AEM Starter');
@@ -71,12 +72,8 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 // Initialize project manager
 const projectManager = new ProjectManager();
 
-// Store AEM instance managers
-const instanceManagers = new Map<string, AemInstanceManager>();
-
 // Store Dispatcher managers
 const dispatcherManagers = new Map<string, DispatcherManager>();
-
 
 // Store reference to main window for menu actions
 let mainWindow: BrowserWindow | null = null;
@@ -285,11 +282,7 @@ ipcMain.handle('delete-aem', async (_, project: Project) => {
 // AEM Instance Management
 ipcMain.handle('start-aem-instance', async (_, project: Project, instanceType: 'author' | 'publisher', options?: { debug?: boolean }) => {
   try {
-    let manager = instanceManagers.get(project.id);
-    if (!manager) {
-      manager = new AemInstanceManager(project);
-      instanceManagers.set(project.id, manager);
-    }
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
 
     // Determine start type based on debug flag
     const startType = options?.debug ? 'debug' : 'start';
@@ -303,11 +296,7 @@ ipcMain.handle('start-aem-instance', async (_, project: Project, instanceType: '
 
 ipcMain.handle('stop-aem-instance', async (_, project: Project, instanceType: 'author' | 'publisher') => {
   try {
-    const manager = instanceManagers.get(project.id);
-    if (!manager) {
-      return false;
-    }
-
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
     await manager.stopInstance(instanceType);
     return true;
   } catch (error) {
@@ -317,47 +306,33 @@ ipcMain.handle('stop-aem-instance', async (_, project: Project, instanceType: 'a
 });
 
 ipcMain.handle('is-aem-instance-running', (_, project: Project, instanceType: 'author' | 'publisher') => {
-  const manager = instanceManagers.get(project.id);
-  return manager ? manager.isInstanceRunning(instanceType) : false;
+  const manager = AemInstanceManagerRegister.getInstanceManager(project);
+  return manager.isInstanceRunning(instanceType);
 });
 
 ipcMain.handle('get-aem-instance-pid', (_, project: Project, instanceType: 'author' | 'publisher') => {
-  const manager = instanceManagers.get(project.id);
-  return manager ? manager.getInstancePid(instanceType) : null;
+  const manager = AemInstanceManagerRegister.getInstanceManager(project);
+  return manager.getInstancePid(instanceType);
 });
 
 ipcMain.handle('get-aem-instance-debug-status', (_, project: Project, instanceType: 'author' | 'publisher') => {
-  const manager = instanceManagers.get(project.id);
-  return manager ? manager.isInstanceInDebugMode(instanceType) : false;
+  const manager = AemInstanceManagerRegister.getInstanceManager(project);
+  return manager.isInstanceInDebugMode(instanceType);
 });
 
 ipcMain.handle('get-available-log-files', (_, project: Project, instanceType: 'author' | 'publisher') => {
-  let manager = instanceManagers.get(project.id);
-  if (!manager) {
-    manager = new AemInstanceManager(project);
-    instanceManagers.set(project.id, manager);
-  }
-  
+  const manager = AemInstanceManagerRegister.getInstanceManager(project);
   return manager.getAvailableLogFiles(instanceType);
 });
 
 ipcMain.handle('get-selected-log-files', (_, project: Project, instanceType: 'author' | 'publisher') => {
-  let manager = instanceManagers.get(project.id);
-  if (!manager) {
-    manager = new AemInstanceManager(project);
-    instanceManagers.set(project.id, manager);
-  }
+  const manager = AemInstanceManagerRegister.getInstanceManager(project);
   return manager.getSelectedLogFiles(instanceType);
 });
 
 ipcMain.handle('update-log-files', async (_, project: Project, instanceType: 'author' | 'publisher', logFiles: string[]) => {
   try {
-    let manager = instanceManagers.get(project.id);
-    if (!manager) {
-      manager = new AemInstanceManager(project);
-      instanceManagers.set(project.id, manager);
-    }
-
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
     await manager.updateLogFiles(instanceType, logFiles);
     return true;
   } catch (error) {
@@ -368,11 +343,7 @@ ipcMain.handle('update-log-files', async (_, project: Project, instanceType: 'au
 
 ipcMain.handle('kill-all-aem-instances', async (_, project: Project) => {
   try {
-    const manager = instanceManagers.get(project.id);
-    if (!manager) {
-      return false;
-    }
-
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
     await manager.killAllInstances();
     return true;
   } catch (error) {
@@ -384,11 +355,7 @@ ipcMain.handle('kill-all-aem-instances', async (_, project: Project) => {
 // Screenshot and Health Check functionality
 ipcMain.handle('take-aem-screenshot', async (_, project: Project, instanceType: 'author' | 'publisher') => {
   try {
-    const manager = instanceManagers.get(project.id);
-    if (!manager) {
-      throw new Error('Instance manager not found');
-    }
-
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
     const screenshotPath = await manager.takeScreenshot(instanceType);
     return screenshotPath;
   } catch (error) {
@@ -399,11 +366,7 @@ ipcMain.handle('take-aem-screenshot', async (_, project: Project, instanceType: 
 
 ipcMain.handle('get-latest-screenshot', async (_, project: Project, instanceType: 'author' | 'publisher') => {
   try {
-    const manager = instanceManagers.get(project.id);
-    if (!manager) {
-      return null;
-    }
-
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
     return manager.getLatestScreenshot(instanceType);
   } catch (error) {
     console.error('Error getting latest screenshot:', error);
@@ -413,11 +376,7 @@ ipcMain.handle('get-latest-screenshot', async (_, project: Project, instanceType
 
 ipcMain.handle('get-health-status', async (_, project: Project, instanceType: 'author' | 'publisher') => {
   try {
-    const manager = instanceManagers.get(project.id);
-    if (!manager) {
-      return null;
-    }
-
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
     return manager.getHealthStatus(instanceType);
   } catch (error) {
     console.error('Error getting health status:', error);
@@ -481,19 +440,17 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
     ProjectSettings.saveSettings(project, settings);
     
     // Check if health checking was enabled for running instances and start it
-    const manager = instanceManagers.get(project.id);
-    if (manager) {
-      // Check author instance
-      if (settings.general?.healthCheck && manager.isInstanceRunning('author')) {
-        console.log('[main] Starting health checking for author instance after settings change');
-        manager.startHealthChecking('author');
-      }
-      
-      // Check publisher instance  
-      if (settings.general?.healthCheck && manager.isInstanceRunning('publisher')) {
-        console.log('[main] Starting health checking for publisher instance after settings change');
-        manager.startHealthChecking('publisher');
-      }
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
+    // Check author instance
+    if (settings.general?.healthCheck && manager.isInstanceRunning('author')) {
+      console.log('[main] Starting health checking for author instance after settings change');
+      manager.startHealthChecking('author');
+    }
+    
+    // Check publisher instance  
+    if (settings.general?.healthCheck && manager.isInstanceRunning('publisher')) {
+      console.log('[main] Starting health checking for publisher instance after settings change');
+      manager.startHealthChecking('publisher');
     }
     
     // Check dispatcher health checking
@@ -542,11 +499,7 @@ ipcMain.handle('setup-replication', async (_, project: Project, instance: 'autho
 // Oak-run.jar functionality
 ipcMain.handle('is-oak-jar-available', (_, project: Project, instanceType: 'author' | 'publisher') => {
   try {
-    let manager = instanceManagers.get(project.id);
-    if (!manager) {
-      manager = new AemInstanceManager(project);
-      instanceManagers.set(project.id, manager);
-    }
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
     return manager.isOakJarAvailable(instanceType);
   } catch (error) {
     console.error('Error checking oak-run.jar availability:', error);
@@ -556,11 +509,7 @@ ipcMain.handle('is-oak-jar-available', (_, project: Project, instanceType: 'auth
 
 ipcMain.handle('load-oak-jar', async (_, project: Project) => {
   try {
-    let manager = instanceManagers.get(project.id);
-    if (!manager) {
-      manager = new AemInstanceManager(project);
-      instanceManagers.set(project.id, manager);
-    }
+    const manager = AemInstanceManagerRegister.getInstanceManager(project);
     await manager.loadOakJar();
     return true;
   } catch (error) {
