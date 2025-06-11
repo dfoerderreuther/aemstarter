@@ -4,7 +4,6 @@ import fs from 'fs';
 import started from 'electron-squirrel-startup';
 import { ProjectManager } from './main/services/ProjectManager';
 import { Installer } from './main/installer/Installer';
-import { AemInstanceManager } from './main/services/AemInstanceManager';
 import { DispatcherManager } from './main/services/DispatcherManager';
 import { ProjectSettings } from './main/services/ProjectSettings';
 import { PackageInstaller } from './main/services/PackageInstaller';
@@ -14,6 +13,8 @@ import { BackupManager } from './main/services/BackupManager';
 import { SystemCheck } from './main/services/SystemCheck';
 import { DevProjectUtils } from './main/services/DevProjectUtils';
 import { AemInstanceManagerRegister } from './main/AemInstanceManagerRegister';
+import { DispatcherManagerRegister } from './main/DispatcherManagerRegister';
+import { ProjectManagerRegister } from './main/ProjectManagerRegister';
 
 // Set the app name immediately (this affects dock/taskbar display)
 app.setName('AEM Starter');
@@ -68,12 +69,6 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 //updateElectronApp({
 //  repo: 'YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME'
 //});
-
-// Initialize project manager
-const projectManager = new ProjectManager();
-
-// Store Dispatcher managers
-const dispatcherManagers = new Map<string, DispatcherManager>();
 
 // Store reference to main window for menu actions
 let mainWindow: BrowserWindow | null = null;
@@ -137,43 +132,43 @@ const createWindow = () => {
 
 // Project management IPC handlers
 ipcMain.handle('create-project', async (_, { name, folderPath, aemSdkPath, licensePath }) => {
-  return projectManager.createProject(name, folderPath, aemSdkPath, licensePath);
+  return ProjectManagerRegister.getManager().createProject(name, folderPath, aemSdkPath, licensePath);
 });
 
 ipcMain.handle('import-project', async (_, { name, folderPath }) => {
-  return projectManager.importProject(name, folderPath);
+  return ProjectManagerRegister.getManager().importProject(name, folderPath);
 });
 
 ipcMain.handle('load-project', async (_, id) => {
-  return projectManager.getProject(id);
+  return ProjectManagerRegister.getManager().getProject(id);
 });
 
 ipcMain.handle('get-all-projects', async () => {
-  return projectManager.getAllProjects();
+  return ProjectManagerRegister.getManager().getAllProjects();
 });
 
 ipcMain.handle('update-project', async (_, { id, updates }) => {
-  return projectManager.updateProject(id, updates);
+  return ProjectManagerRegister.getManager().updateProject(id, updates);
 });
 
 ipcMain.handle('delete-project', async (_, id) => {
-  return projectManager.deleteProject(id);
+  return ProjectManagerRegister.getManager().deleteProject(id);
 });
 
 ipcMain.handle('set-last-project-id', async (_, id) => {
-  return projectManager.setLastProjectId(id);
+  return ProjectManagerRegister.getManager().setLastProjectId(id);
 });
 
 ipcMain.handle('get-last-project-id', async () => {
-  return projectManager.getLastProjectId();
+  return ProjectManagerRegister.getManager().getLastProjectId();
 });
 
 ipcMain.handle('get-global-settings', async () => {
-  return projectManager.getGlobalSettings();
+  return ProjectManagerRegister.getManager().getGlobalSettings();
 });
 
 ipcMain.handle('set-global-settings', async (_, settings) => {
-  projectManager.setGlobalSettings(settings);
+  ProjectManagerRegister.getManager().setGlobalSettings(settings);
   return true;
 });
 
@@ -454,9 +449,9 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
     }
     
     // Check dispatcher health checking
-    const dispatcherManager = dispatcherManagers.get(project.id);
-    if (dispatcherManager) {
-      if (settings.general?.healthCheck && dispatcherManager.isDispatcherRunning()) {
+    const dispatcherManager = DispatcherManagerRegister.getManager(project);
+    if (dispatcherManager.isDispatcherRunning()) {
+      if (settings.general?.healthCheck) {
         console.log('[main] Starting health checking for dispatcher after settings change');
         dispatcherManager.startHealthChecking();
       } else if (!settings.general?.healthCheck) {
@@ -575,13 +570,8 @@ ipcMain.handle('delete-backup-all', async (_, project: Project, tarName: string)
 // Dispatcher Management
 ipcMain.handle('start-dispatcher', async (_, project: Project) => {
   try {
-    let manager = dispatcherManagers.get(project.id);
-    if (!manager) {
-      manager = new DispatcherManager(project, mainWindow || undefined);
-      dispatcherManagers.set(project.id, manager);
-    } else {
-      manager.setMainWindow(mainWindow!);
-    }
+    const manager = DispatcherManagerRegister.getManager(project);
+    manager.setMainWindow(mainWindow!);
     await manager.startDispatcher();
     return true;
   } catch (error) {
@@ -592,10 +582,7 @@ ipcMain.handle('start-dispatcher', async (_, project: Project) => {
 
 ipcMain.handle('stop-dispatcher', async (_, project: Project) => {
   try {
-    const manager = dispatcherManagers.get(project.id);
-    if (!manager) {
-      throw new Error('Dispatcher manager not found');
-    }
+    const manager = DispatcherManagerRegister.getManager(project);
     await manager.stopDispatcher();
     return true;
   } catch (error) {
@@ -606,10 +593,7 @@ ipcMain.handle('stop-dispatcher', async (_, project: Project) => {
 
 ipcMain.handle('kill-dispatcher', async (_, project: Project) => {
   try {
-    const manager = dispatcherManagers.get(project.id);
-    if (!manager) {
-      throw new Error('Dispatcher manager not found');
-    }
+    const manager = DispatcherManagerRegister.getManager(project);
     await manager.killDispatcher();
     return true;
   } catch (error) {
@@ -620,14 +604,9 @@ ipcMain.handle('kill-dispatcher', async (_, project: Project) => {
 
 ipcMain.handle('get-dispatcher-status', async (_, project: Project) => {
   try {
-    let manager = dispatcherManagers.get(project.id);
-    if (!manager) {
-      manager = new DispatcherManager(project, mainWindow || undefined);
-      dispatcherManagers.set(project.id, manager);
-    } else {
-      // Always update the main window reference for existing managers
-      manager.setMainWindow(mainWindow!);
-    }
+    const manager = DispatcherManagerRegister.getManager(project);
+    // Always update the main window reference for existing managers
+    manager.setMainWindow(mainWindow!);
     return manager.getDispatcherStatus();
   } catch (error) {
     console.error('Error getting dispatcher status:', error);
@@ -637,10 +616,7 @@ ipcMain.handle('get-dispatcher-status', async (_, project: Project) => {
 
 ipcMain.handle('flush-dispatcher', async (_, project: Project) => {
   try {
-    const manager = dispatcherManagers.get(project.id);
-    if (!manager) {
-      throw new Error('Dispatcher manager not found');
-    }
+    const manager = DispatcherManagerRegister.getManager(project);
     await manager.flushDispatcher();
     return true;
   } catch (error) {
@@ -651,10 +627,7 @@ ipcMain.handle('flush-dispatcher', async (_, project: Project) => {
 
 ipcMain.handle('clear-dispatcher-cache', async (_, project: Project) => {
   try {
-    const manager = dispatcherManagers.get(project.id);
-    if (!manager) {
-      throw new Error('Dispatcher manager not found');
-    }
+    const manager = DispatcherManagerRegister.getManager(project);
     manager.clearCache();
     return true;
   } catch (error) {
@@ -666,10 +639,7 @@ ipcMain.handle('clear-dispatcher-cache', async (_, project: Project) => {
 // Dispatcher Health Checking
 ipcMain.handle('take-dispatcher-screenshot', async (_, project: Project) => {
   try {
-    const manager = dispatcherManagers.get(project.id);
-    if (!manager) {
-      throw new Error('Dispatcher manager not found');
-    }
+    const manager = DispatcherManagerRegister.getManager(project);
     return await manager.takeScreenshot();
   } catch (error) {
     console.error('Error taking dispatcher screenshot:', error);
@@ -679,10 +649,7 @@ ipcMain.handle('take-dispatcher-screenshot', async (_, project: Project) => {
 
 ipcMain.handle('get-dispatcher-health-status', async (_, project: Project) => {
   try {
-    const manager = dispatcherManagers.get(project.id);
-    if (!manager) {
-      throw new Error('Dispatcher manager not found');
-    }
+    const manager = DispatcherManagerRegister.getManager(project);
     return manager.getHealthStatus();
   } catch (error) {
     console.error('Error getting dispatcher health status:', error);
@@ -692,10 +659,7 @@ ipcMain.handle('get-dispatcher-health-status', async (_, project: Project) => {
 
 ipcMain.handle('check-dispatcher-health', async (_, project: Project) => {
   try {
-    const manager = dispatcherManagers.get(project.id);
-    if (!manager) {
-      throw new Error('Dispatcher manager not found');
-    }
+    const manager = DispatcherManagerRegister.getManager(project);
     return await manager.checkHealth();
   } catch (error) {
     console.error('Error checking dispatcher health:', error);
@@ -730,7 +694,7 @@ ipcMain.handle('open-dev-project', async (_, project: Project, type: 'files' | '
 const createMenu = () => {
   // Helper function to create recent projects submenu
   const createRecentProjectsSubmenu = (): Electron.MenuItemConstructorOptions[] => {
-    const projects = projectManager.getAllProjects();
+    const projects = ProjectManagerRegister.getManager().getAllProjects();
     
     if (projects.length === 0) {
       return [
