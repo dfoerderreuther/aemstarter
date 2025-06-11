@@ -216,7 +216,7 @@ export class AemInstanceManager {
     }
   }
 
-  private async startTailing(instanceType: string, instance: AemInstance, logFiles: string[] = ['error.log']) {
+  private async startTailing(instanceType: string, instance: AemInstance, logFiles: string[] = ['error.log', 'stdout.log']) {
     console.log(`[AemInstanceManager] Starting tailing for ${instanceType} with log files: ${logFiles}`);
 
     // Stop any existing tail processes
@@ -363,7 +363,7 @@ export class AemInstanceManager {
 
   getSelectedLogFiles(instanceType: 'author' | 'publisher'): string[] {
     const instance = this.instances.get(instanceType);
-    return instance?.selectedLogFiles || ['error.log'];
+    return instance?.selectedLogFiles || ['error.log', 'stdout.log'];
   }
 
   async startInstance(
