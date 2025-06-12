@@ -5,7 +5,7 @@ import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
-import { AutomationModal } from './AutomationModal';
+import { AutomationModal } from './automation/AutomationModal';
 
 interface ProjectSettings {
   version: string;

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge } from '@mantine/core';
-import { IconPackage, IconRefresh, IconPlayerPlay, IconAlertCircle } from '@tabler/icons-react';
-import { Project } from '../../types/Project';
-import { InstallService } from '../services/installService';
-import { AutomationTaskTeaser } from './automation/AutomationTaskTeaser';
+import { IconRefresh, IconPlayerPlay, IconAlertCircle } from '@tabler/icons-react';
+import { Project } from '../../../types/Project';
+import { AutomationTaskTeaser } from './AutomationTaskTeaser';
 
 interface AutomationModalProps {
   opened: boolean;
@@ -22,21 +21,9 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
   isPublisherRunning,
   isDispatcherRunning 
 }) => {
-  const [isReinstalling, setIsReinstalling] = useState(false);
   const [isSettingUpReplication, setIsSettingUpReplication] = useState(false);
 
-  const handleReinstall = async () => {
-    try {
-      setIsReinstalling(true);
-      await InstallService.installAEM(project);
-      // Add a small delay to ensure file system operations are complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } catch (error) {
-      console.error('Installation failed:', error);
-    } finally {
-      setIsReinstalling(false);
-    }
-  };
+
 
   const handleSetupReplication = async () => {
     try {
@@ -105,53 +92,22 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
           </AutomationTaskTeaser>
           
           <Divider />
-          
-          {/* Reinstall Task */}
-          <Paper style={taskItemStyles} radius={0}>
-            <Group align="flex-start" gap="md">
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
-                backgroundColor: 'var(--mantine-color-orange-1)', 
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <IconPackage size={24} color="var(--mantine-color-orange-6)" />
-              </div>
-              
-              <div style={{ flex: 1 }}>
-                
-                <Group justify="space-between" align="flex-start">
-                  <div>
-                    <Text fw={500} size="sm" mb={4}>Reinstall AEM</Text>
-                    <Text size="xs" c="dimmed" mb={8}>
-                      Completely reinstall AEM instances. This will delete existing folders, 
-                      create new ones, copy license files, and unzip the SDK package.
-                    </Text>
-                    <Group gap="xs">
-                      <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
-                      <Badge variant="outline" color="gray" size="xs">Requires Stop</Badge>
-                    </Group>
-                  </div>
-                  
-                  <Button
-                    color="orange"
-                    size="xs"
-                    loading={isReinstalling}
-                    disabled={isAuthorRunning || isPublisherRunning || isDispatcherRunning}
-                    onClick={handleReinstall}
-                    leftSection={<IconPackage size={14} />}
-                  >
-                    Reinstall
-                  </Button>
-                </Group>
-              </div>
-            </Group>
-          </Paper>
+
+          <AutomationTaskTeaser task="reinstall" project={project}>
+            <div>
+              <Text fw={500} size="sm" mb={4}>Reinstall AEM</Text>
+              <Text size="xs" c="dimmed" mb={8}>
+                Completely reinstall AEM instances. This will delete existing folders, 
+                create new ones, copy license files, and unzip the SDK package.
+              </Text>
+              <Group gap="xs">
+                <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
+              </Group>
+            </div>
+          </AutomationTaskTeaser>
 
           <Divider />
+          
 
           {/* Setup Replication Task */}
           <Paper style={taskItemStyles} radius={0}>

@@ -1,6 +1,7 @@
 import { Project } from '../../../types/Project';
 import { AutomatedLastBackupAndDebug } from './AutomatedLastBackupAndDebug';
 import { AutomatedLastBackupAndRun } from './AutomatedLastBackupAndRun';
+import { AutomatedReinstall } from './AutomatedReinstall';
 
 export interface AutoTask {
     project: Project;
@@ -13,9 +14,10 @@ export class Automation {
 
     private project: Project;
 
-    private static taskRegistry: Map<string, AutoTaskConstructor> = new Map([
+    private static taskRegistry: Map<string, AutoTaskConstructor> = new Map<string, AutoTaskConstructor>([
         ['last-backup-and-run', AutomatedLastBackupAndRun],
-        ['last-backup-and-debug', AutomatedLastBackupAndDebug]
+        ['last-backup-and-debug', AutomatedLastBackupAndDebug],
+        ['reinstall', AutomatedReinstall]   
     ]);
 
     private constructor(project: Project) {
@@ -38,10 +40,5 @@ export class Automation {
             console.log(`[Automation] Unknown task: ${type}`);
         } 
     }
-
-    
-
-
-
 
 }
