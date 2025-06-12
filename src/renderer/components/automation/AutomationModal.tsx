@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge } from '@mantine/core';
-import { IconRefresh, IconPlayerPlay, IconAlertCircle } from '@tabler/icons-react';
+import { IconRefresh, IconPlayerPlay, IconAlertCircle, IconBug, IconPackage } from '@tabler/icons-react';
 import { Project } from '../../../types/Project';
 import { AutomationTaskTeaser } from './AutomationTaskTeaser';
 
@@ -66,7 +66,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
       <ScrollArea style={{ height: '400px' }}>
         <Stack gap={0}>
 
-          <AutomationTaskTeaser task="last-backup-and-run" project={project}>
+          <AutomationTaskTeaser task="last-backup-and-run" project={project} icon={IconPlayerPlay}>
             <div>
               <Text fw={500} size="sm" mb={4}>Restore last backup and start</Text>
               <Text size="xs" c="dimmed" mb={8}>
@@ -79,7 +79,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
           </AutomationTaskTeaser>
           <Divider />
 
-          <AutomationTaskTeaser task="last-backup-and-debug" project={project}>
+          <AutomationTaskTeaser task="last-backup-and-debug" project={project} icon={IconBug}>
             <div>
               <Text fw={500} size="sm" mb={4}>Restore last backup and start in debug mode</Text>
               <Text size="xs" c="dimmed" mb={8}>
@@ -93,7 +93,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
           
           <Divider />
 
-          <AutomationTaskTeaser task="reinstall" project={project}>
+          <AutomationTaskTeaser task="reinstall" project={project} icon={IconPackage}>
             <div>
               <Text fw={500} size="sm" mb={4}>Reinstall AEM</Text>
               <Text size="xs" c="dimmed" mb={8}>

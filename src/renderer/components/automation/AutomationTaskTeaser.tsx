@@ -7,9 +7,15 @@ interface AutomationTaskTeaserProps {
     task: string;
     project: Project;
     children: React.ReactNode;
+    icon?: React.ComponentType<{ size: number; color?: string }>;
 }
 
-export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({ task, project, children }) => {
+export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({ 
+    task, 
+    project, 
+    children, 
+    icon: Icon = IconPackage 
+}) => {
     const [isRunning, setIsRunning] = useState(false);
 
     const handleTaskRun = async () => {
@@ -55,7 +61,7 @@ export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({ task
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <IconPackage size={24} color="var(--mantine-color-orange-6)" />
+                <Icon size={24} color="var(--mantine-color-orange-6)" />
               </div>
               
               <div style={{ flex: 1 }}>
@@ -68,7 +74,7 @@ export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({ task
                     loading={isRunning}
                     disabled={isRunning}
                     onClick={handleTaskRun}
-                    leftSection={<IconPackage size={14} />}
+                    leftSection={<Icon size={14} />}
                   >
                     Activate
                   </Button>
