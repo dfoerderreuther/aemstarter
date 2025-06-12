@@ -47,15 +47,18 @@ export class AutomatedLastBackupAndRun implements AutoTask {
     }
 
     private async stopWhenRunning() {
+        const stopPromises: Promise<void>[] = [];
+        
         if (this.aemInstanceManager.isInstanceRunning('author')) {
-            await this.aemInstanceManager.stopInstance('author');
+            stopPromises.push(this.aemInstanceManager.stopInstance('author'));
         }
         if (this.aemInstanceManager.isInstanceRunning('publisher')) {
-            await this.aemInstanceManager.stopInstance('publisher');
+            stopPromises.push(this.aemInstanceManager.stopInstance('publisher'));
         }
         if (this.dispatcherManager.isDispatcherRunning()) {
-            await this.dispatcherManager.stopDispatcher();
+            stopPromises.push(this.dispatcherManager.stopDispatcher());
         }
+        await Promise.all(stopPromises);
     }
 
     private async findLastBackup(): Promise<BackupInfo> {
@@ -71,8 +74,10 @@ export class AutomatedLastBackupAndRun implements AutoTask {
     }
 
     protected async start() {
-        await this.aemInstanceManager.startInstance('author', 'start')
-        await this.aemInstanceManager.startInstance('publisher', 'start')
-        await this.dispatcherManager.startDispatcher()
+        const startPromises: Promise<void>[] = [];
+        startPromises.push(this.aemInstanceManager.startInstance('author', 'start'))
+        startPromises.push(this.aemInstanceManager.startInstance('publisher', 'start'))
+        startPromises.push(this.dispatcherManager.startDispatcher())
+        await Promise.all(startPromises);
     }
 }

@@ -3,9 +3,12 @@ import { AutomatedLastBackupAndRun } from "./AutomatedLastBackupAndRun";
 
 export class AutomatedLastBackupAndDebug extends AutomatedLastBackupAndRun {
 
+
     protected async start() {
-        await this.aemInstanceManager.startInstance('author', 'debug')
-        await this.aemInstanceManager.startInstance('publisher', 'debug')
-        await this.dispatcherManager.startDispatcher()
+        const startPromises: Promise<void>[] = [];
+        startPromises.push(this.aemInstanceManager.startInstance('author', 'debug'))
+        startPromises.push(this.aemInstanceManager.startInstance('publisher', 'debug'))
+        startPromises.push(this.dispatcherManager.startDispatcher())
+        await Promise.all(startPromises);
     }
 }

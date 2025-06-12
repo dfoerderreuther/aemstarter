@@ -23,8 +23,9 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
 }) => {
   const [isSettingUpReplication, setIsSettingUpReplication] = useState(false);
   const [runningTask, setRunningTask] = useState<{type: string; title: string} | null>(null);
-  const [progressMessages, setProgressMessages] = useState<string[]>([]);
+  const [progressMessages, setProgressMessages] = useState<{message: string; timestamp: number}[]>([]);
   const [isTaskCompleted, setIsTaskCompleted] = useState(false);
+  const [taskStartTime, setTaskStartTime] = useState<number | null>(null);
 
   useEffect(() => {
     if (!opened) {
@@ -32,6 +33,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
       setRunningTask(null);
       setProgressMessages([]);
       setIsTaskCompleted(false);
+      setTaskStartTime(null);
       return;
     }
 
@@ -39,7 +41,8 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
     const cleanup = window.electronAPI.onAutomationProgress((data) => {
       if (data.projectId === project.id && runningTask && data.taskType === runningTask.type) {
         console.log('[AutomationModal] Received message:', data.message);
-        setProgressMessages(prev => [...prev, data.message]);
+        const timestamp = Date.now();
+        setProgressMessages(prev => [...prev, { message: data.message, timestamp }]);
         
         // Check if task is completed
         const completionKeywords = [
@@ -68,12 +71,14 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
     setRunningTask({ type: taskType, title: taskTitle });
     setProgressMessages([]);
     setIsTaskCompleted(false);
+    setTaskStartTime(Date.now());
   };
 
   const handleTaskComplete = () => {
     setRunningTask(null);
     setProgressMessages([]);
     setIsTaskCompleted(false);
+    setTaskStartTime(null);
   };
 
   const handleSetupReplication = async () => {
@@ -137,16 +142,22 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
                   Initializing task...
                 </Text>
               ) : (
-                progressMessages.map((message, index) => (
-                  <Group key={index} gap="xs" align="flex-start">
-                    <Text size="xs" c="dimmed" style={{ minWidth: '40px', fontFamily: 'monospace' }}>
-                      {String(index + 1).padStart(2, '0')}.
-                    </Text>
-                    <Text size="sm" style={{ flex: 1 }}>
-                      {message}
-                    </Text>
-                  </Group>
-                ))
+                progressMessages.map((messageObj, index) => {
+                  const elapsedSeconds = taskStartTime 
+                    ? ((messageObj.timestamp - taskStartTime) / 1000).toFixed(1)
+                    : '0.0';
+                  
+                  return (
+                    <Group key={index} gap="xs" align="flex-start">
+                      <Text size="xs" c="dimmed" style={{ minWidth: '50px', fontFamily: 'monospace' }}>
+                        {elapsedSeconds}s
+                      </Text>
+                      <Text size="sm" style={{ flex: 1 }}>
+                        {messageObj.message}
+                      </Text>
+                    </Group>
+                  );
+                })
               )}
             </Stack>
           </ScrollArea>
