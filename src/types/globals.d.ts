@@ -138,6 +138,9 @@ declare global {
       runBackupAll: (project: Project, tarName: string, compress?: boolean) => Promise<boolean>;
       runRestoreAll: (project: Project, tarName: string) => Promise<boolean>;
       deleteBackupAll: (project: Project, tarName: string) => Promise<boolean>;
+      
+      // Automation Tasks
+      runAutomationTask: (project: Project, task: string) => Promise<boolean>;
     };
   }
 } 

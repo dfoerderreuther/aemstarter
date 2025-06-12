@@ -14,6 +14,7 @@ import { DevProjectUtils } from './main/services/DevProjectUtils';
 import { AemInstanceManagerRegister } from './main/AemInstanceManagerRegister';
 import { DispatcherManagerRegister } from './main/DispatcherManagerRegister';
 import { ProjectManagerRegister } from './main/ProjectManagerRegister';
+import { Automation } from './main/services/automation/Automation';
 
 // Set the app name immediately (this affects dock/taskbar display)
 app.setName('AEM Starter');
@@ -562,6 +563,17 @@ ipcMain.handle('delete-backup-all', async (_, project: Project, tarName: string)
     return true;
   } catch (error) {
     console.error('Error deleting backup all:', error);
+    throw error;
+  }
+});
+
+// Automation Tasks
+ipcMain.handle('run-automation-task', async (_, project: Project, task: string) => {
+  try {
+    await Automation.run(project, task);
+    return true;
+  } catch (error) {
+    console.error('Error running automation task:', error);
     throw error;
   }
 });

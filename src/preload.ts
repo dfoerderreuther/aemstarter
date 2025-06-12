@@ -136,6 +136,10 @@ contextBridge.exposeInMainWorld(
     deleteBackupAll: (project: Project, tarName: string) =>
       ipcRenderer.invoke('delete-backup-all', project, tarName),
 
+    // Automation Tasks
+    runAutomationTask: (project: Project, task: string) =>
+      ipcRenderer.invoke('run-automation-task', project, task),
+
 
 
     // Project Settings

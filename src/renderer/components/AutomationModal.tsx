@@ -3,6 +3,7 @@ import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge } 
 import { IconPackage, IconRefresh, IconPlayerPlay, IconAlertCircle } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { InstallService } from '../services/installService';
+import { AutomationTaskTeaser } from './automation/AutomationTaskTeaser';
 
 interface AutomationModalProps {
   opened: boolean;
@@ -77,6 +78,21 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
     >
       <ScrollArea style={{ height: '400px' }}>
         <Stack gap={0}>
+
+                  <AutomationTaskTeaser task="last-backup-and-run" project={project}>
+            <div>
+              <Text fw={500} size="sm" mb={4}>Restore last backup and start</Text>
+              <Text size="xs" c="dimmed" mb={8}>
+                This will shut down all instances, restore the last backup and start them again.
+              </Text>
+              <Group gap="xs">
+                <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
+                <Badge variant="outline" color="gray" size="xs">Requires Stop</Badge>
+              </Group>
+            </div>
+          </AutomationTaskTeaser>
+          
+          <Divider />
           
           {/* Reinstall Task */}
           <Paper style={taskItemStyles} radius={0}>
@@ -94,6 +110,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
               </div>
               
               <div style={{ flex: 1 }}>
+                
                 <Group justify="space-between" align="flex-start">
                   <div>
                     <Text fw={500} size="sm" mb={4}>Reinstall AEM</Text>
