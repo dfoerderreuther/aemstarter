@@ -7,7 +7,8 @@ import { ProjectSettings } from './main/services/ProjectSettings';
 import { PackageInstaller } from './main/services/PackageInstaller';
 import { ReplicationSettings } from './main/services/ReplicationSettings';
 import { Project } from './types/Project';
-import { BackupManager } from './main/services/BackupManager';
+//import { BackupManager } from './main/services/BackupManager';
+import { BackupService } from './main/services/BackupService';
 import { SystemCheck } from './main/services/SystemCheck';
 import { DevProjectUtils } from './main/services/DevProjectUtils';
 import { AemInstanceManagerRegister } from './main/AemInstanceManagerRegister';
@@ -513,7 +514,7 @@ ipcMain.handle('load-oak-jar', async (_, project: Project) => {
 
 ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: 'author' | 'publisher') => {
   try {
-    const backupManager = new BackupManager(project);
+    const backupManager = new BackupService(project);
     await backupManager.compact(instanceType);
     return true;
   } catch (error) {
@@ -524,8 +525,8 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
 
 ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string, compress: boolean = true) => {
   try {
-    const backupManager = new BackupManager(project);
-    await backupManager.backupAll(tarName, compress);
+    const backupManager = new BackupService(project);
+    await backupManager.backup(tarName, compress);
     return true;
   } catch (error) {
     console.error('Error running backup all:', error);  
@@ -535,8 +536,8 @@ ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string, co
 
 ipcMain.handle('list-backups-all', async (_, project: Project) => {
   try {
-    const backupManager = new BackupManager(project);
-    return await backupManager.listBackupsAll();
+    const backupManager = new BackupService(project);
+    return await backupManager.listBackups()
   } catch (error) {
     console.error('Error listing backups:', error);
     throw error;
@@ -545,8 +546,8 @@ ipcMain.handle('list-backups-all', async (_, project: Project) => {
 
 ipcMain.handle('run-restore-all', async (_, project: Project, tarName: string) => {
   try {
-    const backupManager = new BackupManager(project);
-    await backupManager.restoreAll(tarName);
+    const backupManager = new BackupService(project);
+    await backupManager.restore(tarName);
     return true;
   } catch (error) {
     console.error('Error running restore all:', error); 
@@ -556,8 +557,8 @@ ipcMain.handle('run-restore-all', async (_, project: Project, tarName: string) =
 
 ipcMain.handle('delete-backup-all', async (_, project: Project, tarName: string) => {
   try {
-    const backupManager = new BackupManager(project);
-    await backupManager.deleteBackupAll(tarName);
+    const backupManager = new BackupService(project);
+    await backupManager.deleteBackup(tarName);
     return true;
   } catch (error) {
     console.error('Error deleting backup all:', error);
