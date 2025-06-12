@@ -38,20 +38,40 @@ export class AemHealthChecker {
 
     const startTime = Date.now();
     
-    // Use different URLs based on instance type
+    // Use different URLs based on instance type and configuration
     let url: string;
     let headers: Record<string, string> = {};
     
+    // Get the health check path from settings
+    const instanceSettings = settings[instanceType];
+    const healthCheckPath = instanceSettings?.healthCheckPath || '';
+    
     if (instanceType === 'dispatcher') {
-      // For dispatcher, just check the root URL or a simple health endpoint
-      url = `http://localhost:${port}/`;
+      // For dispatcher, use healthCheckPath if configured, otherwise root URL
+      url = `http://localhost:${port}${healthCheckPath || '/'}`;
     } else {
-      // For AEM instances, check the bundles endpoint
-      url = `http://localhost:${port}/system/console/bundles.json`;
-      headers = {
-        'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64')
-      };
+      // For AEM instances, use healthCheckPath if configured, otherwise check content root
+      if (healthCheckPath) {
+        url = `http://localhost:${port}${healthCheckPath}`;
+        // Only add auth if not using a custom health check path (custom paths might be public)
+        if (instanceType === 'author' || (healthCheckPath.startsWith('/system/') || healthCheckPath.startsWith('/bin/') || healthCheckPath.includes('admin'))) {
+          headers = {
+            'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64')
+          };
+        }
+      } else {
+        // Default to checking a content path that would return 404 if no content exists
+        // Use the root path to check actual content availability
+        url = `http://localhost:${port}/`;
+        if (instanceType === 'author') {
+          headers = {
+            'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64')
+          };
+        }
+      }
     }
+    
+    console.log(`[AemHealthChecker] Checking health for ${instanceType} at ${url}`);
     
     try {
       const controller = new AbortController();
@@ -72,14 +92,14 @@ export class AemHealthChecker {
         timestamp: Date.now()
       };
 
-      // If healthy, take a screenshot
-      //if (response.ok) {
-        try {
-          status.screenshotPath = await this.takeScreenshot(instanceType, port);
-        } catch (screenshotError) {
-          console.warn(`Failed to take screenshot for ${instanceType}:`, screenshotError);
-        }
-      //}
+      console.log(`[AemHealthChecker] Health check result for ${instanceType}: status=${response.status}, ok=${response.ok}, url=${url}`);
+
+      // Take a screenshot regardless of health status (for debugging)
+      try {
+        status.screenshotPath = await this.takeScreenshot(instanceType, port);
+      } catch (screenshotError) {
+        console.warn(`Failed to take screenshot for ${instanceType}:`, screenshotError);
+      }
 
       this.lastHealthStatus.set(instanceType, status);
       this.sendHealthUpdate(instanceType, status);
@@ -96,6 +116,8 @@ export class AemHealthChecker {
         error: error instanceof Error ? error.message : String(error),
         timestamp: Date.now()
       };
+
+      console.log(`[AemHealthChecker] Health check error for ${instanceType}:`, error);
 
       this.lastHealthStatus.set(instanceType, status);
       this.sendHealthUpdate(instanceType, status);

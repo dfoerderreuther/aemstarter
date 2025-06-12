@@ -25,25 +25,25 @@ export class AutomatedLastBackupAndRun implements AutoTask {
     public async run(progressCallback?: (message: string) => void) : Promise<void> {
         const progress = progressCallback || (() => {});
         
-        progress('Finding last backup...');
+        progress('Searching for the most recent backup...');
         const lastBackup = await this.findLastBackup();
         if (lastBackup) {
-            progress(`Last backup found: ${lastBackup.name}`);
+            progress(`Found most recent backup: "${lastBackup.name}"`);
         } else {
-            progress('No backup found');
+            progress('No backups available to restore');
             return;
         }
         
-        progress('Stopping running instances...');
+        progress('Stopping any currently running AEM and Dispatcher instances...');
         await this.stopWhenRunning();
         
-        progress(`Restoring backup: ${lastBackup.name}...`);
+        progress(`Restoring backup "${lastBackup.name}" - this may take several minutes...`);
         await this.restore(lastBackup);
         
-        progress('Starting instances...');
+        progress('Starting AEM Author, Publisher, and Dispatcher instances...');
         await this.start();
         
-        progress('Automation completed successfully');
+        progress('Automated backup restoration and startup completed successfully!');
     }
 
     private async stopWhenRunning() {
