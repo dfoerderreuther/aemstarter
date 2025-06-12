@@ -10,9 +10,9 @@ import { DispatcherManager } from "../DispatcherManager";
 export class AutomatedLastBackupAndRun implements AutoTask {
 
     public project: Project;
-    private aemInstanceManager: AemInstanceManager;
-    private dispatcherManager: DispatcherManager;
-    private backupService: BackupService;
+    protected aemInstanceManager: AemInstanceManager;
+    protected dispatcherManager: DispatcherManager;
+    protected backupService: BackupService;
 
 
     public constructor(project: Project) {
@@ -20,7 +20,6 @@ export class AutomatedLastBackupAndRun implements AutoTask {
         this.aemInstanceManager = AemInstanceManagerRegister.getInstanceManager(this.project);
         this.dispatcherManager = DispatcherManagerRegister.getManager(this.project);
         this.backupService = new BackupService(project)
-
     }
 
     public async run() : Promise<void> {
@@ -66,7 +65,7 @@ export class AutomatedLastBackupAndRun implements AutoTask {
         await this.backupService.restore(backup.name);
     }
 
-    private async start() {
+    protected async start() {
         await this.aemInstanceManager.startInstance('author', 'start')
         await this.aemInstanceManager.startInstance('publisher', 'start')
         await this.dispatcherManager.startDispatcher()

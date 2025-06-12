@@ -1,4 +1,5 @@
 import { Project } from '../../../types/Project';
+import { AutomatedLastBackupAndDebug } from './AutomatedLastBackupAndDebug';
 import { AutomatedLastBackupAndRun } from './AutomatedLastBackupAndRun';
 
 export interface AutoTask {
@@ -13,7 +14,8 @@ export class Automation {
     private project: Project;
 
     private static taskRegistry: Map<string, AutoTaskConstructor> = new Map([
-        ['last-backup-and-run', AutomatedLastBackupAndRun]
+        ['last-backup-and-run', AutomatedLastBackupAndRun],
+        ['last-backup-and-debug', AutomatedLastBackupAndDebug]
     ]);
 
     private constructor(project: Project) {

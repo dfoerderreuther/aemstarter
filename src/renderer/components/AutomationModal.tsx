@@ -79,15 +79,27 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
       <ScrollArea style={{ height: '400px' }}>
         <Stack gap={0}>
 
-                  <AutomationTaskTeaser task="last-backup-and-run" project={project}>
+          <AutomationTaskTeaser task="last-backup-and-run" project={project}>
             <div>
               <Text fw={500} size="sm" mb={4}>Restore last backup and start</Text>
               <Text size="xs" c="dimmed" mb={8}>
-                This will shut down all instances, restore the last backup and start them again.
+                This will shut down all instances, restore the last backup and start again.
               </Text>
               <Group gap="xs">
                 <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
-                <Badge variant="outline" color="gray" size="xs">Requires Stop</Badge>
+              </Group>
+            </div>
+          </AutomationTaskTeaser>
+          <Divider />
+
+          <AutomationTaskTeaser task="last-backup-and-debug" project={project}>
+            <div>
+              <Text fw={500} size="sm" mb={4}>Restore last backup and start in debug mode</Text>
+              <Text size="xs" c="dimmed" mb={8}>
+                This will shut down all instances, restore the last backup and start again in debug mode.
+              </Text>
+              <Group gap="xs">
+                <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
               </Group>
             </div>
           </AutomationTaskTeaser>
