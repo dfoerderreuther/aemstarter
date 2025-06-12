@@ -22,14 +22,19 @@ export class AutomatedReinstall implements AutoTask {
         this.backupService = new BackupService(project)
     }
 
-    public async run() : Promise<void> {
-        console.log('[AutomatedReinstall] Running');
+    public async run(progressCallback?: (message: string) => void) : Promise<void> {
+        const progress = progressCallback || (() => {});
+        
+        progress('Starting reinstall process...');
         await this.stopWhenRunning();
-        console.log('[AutomatedReinstall] Reinstall');
+        
+        progress('Deleting existing AEM installation...');
         await this.reinstall();
-        console.log('[AutomatedReinstall] Start');
+        
+        progress('Starting AEM instances...');
         await this.start();
-        console.log('[AutomatedReinstall] Done');
+        
+        progress('Reinstall completed successfully');
     }
 
     private async stopWhenRunning() {

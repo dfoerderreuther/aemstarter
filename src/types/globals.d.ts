@@ -141,6 +141,9 @@ declare global {
       
       // Automation Tasks
       runAutomationTask: (project: Project, task: string) => Promise<boolean>;
+      
+      // Automation progress streaming
+      onAutomationProgress: (callback: (data: { projectId: string; taskType: string; message: string; timestamp: string }) => void) => () => void;
     };
   }
 } 

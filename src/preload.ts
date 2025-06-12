@@ -140,6 +140,17 @@ contextBridge.exposeInMainWorld(
     runAutomationTask: (project: Project, task: string) =>
       ipcRenderer.invoke('run-automation-task', project, task),
 
+    // Automation progress streaming
+    onAutomationProgress: (callback: (data: { projectId: string; taskType: string; message: string; timestamp: string }) => void) => {
+      const handler = (_: any, data: { projectId: string; taskType: string; message: string; timestamp: string }) => callback(data);
+      ipcRenderer.on('automation-progress', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('automation-progress', handler);
+      };
+    },
+
 
 
     // Project Settings

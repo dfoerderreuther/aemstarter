@@ -570,7 +570,7 @@ ipcMain.handle('delete-backup-all', async (_, project: Project, tarName: string)
 // Automation Tasks
 ipcMain.handle('run-automation-task', async (_, project: Project, task: string) => {
   try {
-    await Automation.run(project, task);
+    await Automation.run(project, task, mainWindow || undefined);
     return true;
   } catch (error) {
     console.error('Error running automation task:', error);

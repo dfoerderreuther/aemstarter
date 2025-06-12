@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge } from '@mantine/core';
+import React, { useState, useEffect } from 'react';
+import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge, Loader } from '@mantine/core';
 import { IconRefresh, IconPlayerPlay, IconAlertCircle, IconBug, IconPackage } from '@tabler/icons-react';
 import { Project } from '../../../types/Project';
 import { AutomationTaskTeaser } from './AutomationTaskTeaser';
@@ -22,8 +22,59 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
   isDispatcherRunning 
 }) => {
   const [isSettingUpReplication, setIsSettingUpReplication] = useState(false);
+  const [runningTask, setRunningTask] = useState<{type: string; title: string} | null>(null);
+  const [progressMessages, setProgressMessages] = useState<string[]>([]);
+  const [isTaskCompleted, setIsTaskCompleted] = useState(false);
 
+  useEffect(() => {
+    if (!opened) {
+      // Reset state when modal closes
+      setRunningTask(null);
+      setProgressMessages([]);
+      setIsTaskCompleted(false);
+      return;
+    }
 
+    // Listen for automation progress updates
+    const cleanup = window.electronAPI.onAutomationProgress((data) => {
+      if (data.projectId === project.id && runningTask && data.taskType === runningTask.type) {
+        console.log('[AutomationModal] Received message:', data.message);
+        setProgressMessages(prev => [...prev, data.message]);
+        
+        // Check if task is completed
+        const completionKeywords = [
+          'completed successfully',
+          'Task completed',
+          'Automation completed',
+          'Reinstall completed',
+          'done'
+        ];
+        
+        const isCompletionMessage = completionKeywords.some(keyword => 
+          data.message.toLowerCase().includes(keyword.toLowerCase())
+        );
+        
+        if (isCompletionMessage) {
+          console.log('[AutomationModal] Task completed');
+          setIsTaskCompleted(true);
+        }
+      }
+    });
+
+    return cleanup;
+  }, [opened, project.id, runningTask]);
+
+  const handleTaskStart = (taskType: string, taskTitle: string) => {
+    setRunningTask({ type: taskType, title: taskTitle });
+    setProgressMessages([]);
+    setIsTaskCompleted(false);
+  };
+
+  const handleTaskComplete = () => {
+    setRunningTask(null);
+    setProgressMessages([]);
+    setIsTaskCompleted(false);
+  };
 
   const handleSetupReplication = async () => {
     try {
@@ -52,6 +103,79 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
 
   const allInstancesRunning = isAuthorRunning && isPublisherRunning && isDispatcherRunning;
 
+  // Show progress view when task is running
+  if (runningTask) {
+    return (
+      <Modal
+        opened={opened}
+        onClose={() => {}} // Prevent closing while running
+        title={
+          <Group gap="sm">
+            {!isTaskCompleted && <Loader size="sm" color="orange" />}
+            <Text fw={500}>{runningTask.title}</Text>
+            {isTaskCompleted && <Badge color="green" size="sm">Completed</Badge>}
+          </Group>
+        }
+        size="md"
+        closeOnClickOutside={false}
+        closeOnEscape={false}
+        withCloseButton={isTaskCompleted}
+        styles={{
+          body: { padding: '16px' },
+          header: { padding: '16px 24px', borderBottom: '1px solid var(--mantine-color-gray-3)' }
+        }}
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            {isTaskCompleted ? 'Task completed successfully!' : 'Running automation task...'}
+          </Text>
+          
+          <ScrollArea style={{ height: '300px' }}>
+            <Stack gap="xs">
+              {progressMessages.length === 0 ? (
+                <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
+                  Initializing task...
+                </Text>
+              ) : (
+                progressMessages.map((message, index) => (
+                  <Group key={index} gap="xs" align="flex-start">
+                    <Text size="xs" c="dimmed" style={{ minWidth: '40px', fontFamily: 'monospace' }}>
+                      {String(index + 1).padStart(2, '0')}.
+                    </Text>
+                    <Text size="sm" style={{ flex: 1 }}>
+                      {message}
+                    </Text>
+                  </Group>
+                ))
+              )}
+            </Stack>
+          </ScrollArea>
+          
+          {!isTaskCompleted ? (
+            <Text size="xs" c="dimmed" style={{ textAlign: 'center' }}>
+              Please wait while the automation task is running...
+            </Text>
+          ) : (
+            <Group justify="center">
+              <Button 
+                size="sm" 
+                color="green" 
+                onClick={() => {
+                  handleTaskComplete();
+                  onClose();
+                }}
+                variant="light"
+              >
+                Close
+              </Button>
+            </Group>
+          )}
+        </Stack>
+      </Modal>
+    );
+  }
+
+  // Show normal task list when no task is running
   return (
     <Modal
       opened={opened}
@@ -66,7 +190,13 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
       <ScrollArea style={{ height: '400px' }}>
         <Stack gap={0}>
 
-          <AutomationTaskTeaser task="last-backup-and-run" project={project} icon={IconPlayerPlay}>
+          <AutomationTaskTeaser 
+            task="last-backup-and-run" 
+            project={project} 
+            icon={IconPlayerPlay}
+            taskTitle="Restore last backup and start"
+            onTaskStart={handleTaskStart}
+          >
             <div>
               <Text fw={500} size="sm" mb={4}>Restore last backup and start</Text>
               <Text size="xs" c="dimmed" mb={8}>
@@ -79,7 +209,13 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
           </AutomationTaskTeaser>
           <Divider />
 
-          <AutomationTaskTeaser task="last-backup-and-debug" project={project} icon={IconBug}>
+          <AutomationTaskTeaser 
+            task="last-backup-and-debug" 
+            project={project} 
+            icon={IconBug}
+            taskTitle="Restore last backup and start in debug mode"
+            onTaskStart={handleTaskStart}
+          >
             <div>
               <Text fw={500} size="sm" mb={4}>Restore last backup and start in debug mode</Text>
               <Text size="xs" c="dimmed" mb={8}>
@@ -93,7 +229,13 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
           
           <Divider />
 
-          <AutomationTaskTeaser task="reinstall" project={project} icon={IconPackage}>
+          <AutomationTaskTeaser 
+            task="reinstall" 
+            project={project} 
+            icon={IconPackage}
+            taskTitle="Reinstall AEM"
+            onTaskStart={handleTaskStart}
+          >
             <div>
               <Text fw={500} size="sm" mb={4}>Reinstall AEM</Text>
               <Text size="xs" c="dimmed" mb={8}>

@@ -22,23 +22,28 @@ export class AutomatedLastBackupAndRun implements AutoTask {
         this.backupService = new BackupService(project)
     }
 
-    public async run() : Promise<void> {
-        // Implementation will go here
+    public async run(progressCallback?: (message: string) => void) : Promise<void> {
+        const progress = progressCallback || (() => {});
+        
+        progress('Finding last backup...');
         const lastBackup = await this.findLastBackup();
         if (lastBackup) {
-            console.log(`Last backup found: ${lastBackup.name}`);
+            progress(`Last backup found: ${lastBackup.name}`);
         } else {
-            console.log('No backup found');
+            progress('No backup found');
             return;
         }
-        console.log('[AutomatedLastBackupAndRun] stop')
+        
+        progress('Stopping running instances...');
         await this.stopWhenRunning();
-        console.log('[AutomatedLastBackupAndRun] restore')
+        
+        progress(`Restoring backup: ${lastBackup.name}...`);
         await this.restore(lastBackup);
-        console.log('[AutomatedLastBackupAndRun] start')
-        await this.start()
-        console.log('[AutomatedLastBackupAndRun] done')
-
+        
+        progress('Starting instances...');
+        await this.start();
+        
+        progress('Automation completed successfully');
     }
 
     private async stopWhenRunning() {

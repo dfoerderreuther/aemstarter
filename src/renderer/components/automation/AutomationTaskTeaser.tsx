@@ -1,4 +1,4 @@
-import { Group, Paper, Button, LoadingOverlay } from "@mantine/core";
+import { Group, Paper, Button, Stack, Text } from "@mantine/core";
 import { IconPackage } from "@tabler/icons-react";
 import { useState } from "react";
 import { Project } from '../../../types/Project';
@@ -8,19 +8,26 @@ interface AutomationTaskTeaserProps {
     project: Project;
     children: React.ReactNode;
     icon?: React.ComponentType<{ size: number; color?: string }>;
+    taskTitle?: string;
+    onTaskStart?: (taskType: string, taskTitle: string) => void;
 }
 
 export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({ 
     task, 
     project, 
     children, 
-    icon: Icon = IconPackage 
+    icon: Icon = IconPackage,
+    taskTitle = "Automation Task",
+    onTaskStart
 }) => {
     const [isRunning, setIsRunning] = useState(false);
 
     const handleTaskRun = async () => {
         try {
             setIsRunning(true);
+            if (onTaskStart) {
+                onTaskStart(task, taskTitle);
+            }
             console.log(`[AutomationTaskTeaser] Running task: ${task}`);
             await window.electronAPI.runAutomationTask(project, task);
         } catch (error) {
@@ -35,53 +42,44 @@ export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({
         cursor: 'pointer',
         transition: 'background-color 0.2s ease',
         '&:hover': {
-        backgroundColor: 'var(--mantine-color-gray-0)',
+            backgroundColor: 'var(--mantine-color-gray-0)',
         }
     };
+
     return (
-        <>
-          <LoadingOverlay 
-            visible={isRunning} 
-            zIndex={1000} 
-            overlayProps={{ 
-              radius: "sm", 
-              blur: 2,
-              style: { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }
-            }}
-            loaderProps={{ color: 'orange', type: 'dots' }}
-          />
-          <Paper style={taskItemStyles} radius={0}>
-            <Group align="flex-start" gap="md">
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
-                backgroundColor: 'var(--mantine-color-orange-1)', 
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Icon size={24} color="var(--mantine-color-orange-6)" />
-              </div>
-              
-              <div style={{ flex: 1 }}>
-                <Group justify="space-between" align="flex-start">
+        <Paper style={taskItemStyles} radius={0}>
+          <Group align="flex-start" gap="md">
+            <div style={{ 
+              width: '48px', 
+              height: '48px', 
+              backgroundColor: 'var(--mantine-color-orange-1)', 
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Icon size={24} color="var(--mantine-color-orange-6)" />
+            </div>
+            
+            <div style={{ flex: 1 }}>
+              <Group justify="space-between" align="flex-start">
+                <Stack gap="xs" style={{ flex: 1 }}>
                   {children}
-                  
-                  <Button
-                    color="orange"
-                    size="xs"
-                    loading={isRunning}
-                    disabled={isRunning}
-                    onClick={handleTaskRun}
-                    leftSection={<Icon size={14} />}
-                  >
-                    Activate
-                  </Button>
-                </Group>
-              </div>
-            </Group>
-          </Paper>
-        </>
+                </Stack>
+                
+                <Button
+                  color="orange"
+                  size="xs"
+                  loading={isRunning}
+                  disabled={isRunning}
+                  onClick={handleTaskRun}
+                  leftSection={<Icon size={14} />}
+                >
+                  Activate
+                </Button>
+              </Group>
+            </div>
+          </Group>
+        </Paper>
     )
 }
