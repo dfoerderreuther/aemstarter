@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconSkull, IconSettings, IconBug, IconBrowser, IconColumns3, IconColumns1, IconDeviceFloppy, IconFolder, IconTerminal2, IconCode, IconRobot } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconSkull, IconSettings, IconBug, IconBrowser, IconDeviceFloppy, IconFolder, IconTerminal2, IconCode, IconRobot } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
@@ -588,38 +588,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                 </Button>
               </Tooltip>
             </Group>
-          </Stack>
-        </Paper>
-
-        <Divider orientation="vertical" />
-
-        <Paper style={sectionStyles}>
-          <Stack gap="xs">
-            <Text size="sm" fw={500} c="dimmed">View</Text>
-            <Button.Group>
-              <Tooltip label="Columns">
-                <Button
-                  color={viewMode === 'columns' ? 'blue' : 'gray'}
-                  variant={viewMode === 'columns' ? 'filled' : 'light'}
-                  size="xs"
-                  styles={secondButtonStyles}
-                  onClick={() => setViewMode('columns')}
-                >
-                  <IconColumns3 size={16} />
-                </Button>
-              </Tooltip>
-              <Tooltip label="Tabs">
-                <Button
-                  color={viewMode === 'tabs' ? 'blue' : 'gray'}
-                  variant={viewMode === 'tabs' ? 'filled' : 'light'}
-                  size="xs"
-                  styles={secondButtonStyles}
-                  onClick={() => setViewMode('tabs')}
-                >
-                  <IconColumns1 size={16} />
-                </Button>
-              </Tooltip>
-            </Button.Group>
           </Stack>
         </Paper>
 

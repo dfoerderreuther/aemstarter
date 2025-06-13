@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Tabs, Stack, SegmentedControl, Grid } from '@mantine/core';
+import { Tabs, Stack, SegmentedControl, Grid, Button, Tooltip } from '@mantine/core';
+import { IconColumns3, IconColumns1 } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './FilesView';
@@ -27,6 +28,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
     setIsColumnsCollapsed(!isColumnsCollapsed);
   };
 
+
+
   return (
     <Stack 
       gap={0} 
@@ -51,7 +54,9 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         >
           <Tabs.List>
             {viewMode === 'columns' ? (
+              <>
               <Tabs.Tab value="instances">Instances</Tabs.Tab>
+              </>
             ) : (
               <>
                 <Tabs.Tab value="author">Author</Tabs.Tab>
@@ -61,6 +66,54 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
             )
             }
             <Tabs.Tab value="files">Files</Tabs.Tab>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+              <Button.Group>
+                <Tooltip label="Columns">
+                  <Button
+                    color={viewMode === 'columns' ? 'blue' : 'gray'}
+                    variant="subtle"
+                    size="xs"
+                    styles={{
+                      root: { 
+                        height: 30,
+                        width: 30,
+                        padding: 0,
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        '&:hover': {
+                          backgroundColor: 'transparent'
+                        }
+                      }
+                    }}
+                    onClick={() => setViewMode('columns')}
+                  >
+                    <IconColumns3 size={16} />
+                  </Button>
+                </Tooltip>
+                <Tooltip label="Tabs">
+                  <Button
+                    color={viewMode === 'tabs' ? 'blue' : 'gray'}
+                    variant="subtle"
+                    size="xs"
+                    styles={{
+                      root: { 
+                        height: 30,
+                        width: 30,
+                        padding: 0,
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        '&:hover': {
+                          backgroundColor: 'transparent'
+                        }
+                      }
+                    }}
+                    onClick={() => setViewMode('tabs')}
+                  >
+                    <IconColumns1 size={16} />
+                  </Button>
+                </Tooltip>
+              </Button.Group>
+            </div>
           </Tabs.List>
 
           <Tabs.Panel value="instances" style={{ height: '100%', padding: 0 }}>
