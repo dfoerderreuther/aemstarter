@@ -128,7 +128,6 @@ export class AemHealthChecker {
   }
 
   async takeScreenshot(instanceType: 'author' | 'publisher' | 'dispatcher', port: number): Promise<string> {
-    console.log(`[AemHealthChecker] Taking screenshot for ${instanceType} at ${port}`);
     const screenshotsDir = path.join(this.project.folderPath, 'screenshots');
     if (!fs.existsSync(screenshotsDir)) {
       fs.mkdirSync(screenshotsDir, { recursive: true });
