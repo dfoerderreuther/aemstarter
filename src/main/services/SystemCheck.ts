@@ -17,6 +17,8 @@ export class SystemCheck {
         const port80Available = await this.checkPort80Available();
         const port4502Available = await this.checkPort4502Available();
         const port4503Available = await this.checkPort4503Available();
+        const portAuthorDebugAvailable = await this.checkPortAuthorDebugAvailable();
+        const portPublisherDebugAvailable = await this.checkPortPublisherDebugAvailable();
 
         return {
             javaAvailable,
@@ -26,7 +28,9 @@ export class SystemCheck {
             dockerVersion,
             port80Available,
             port4502Available,
-            port4503Available
+            port4503Available,
+            portAuthorDebugAvailable,
+            portPublisherDebugAvailable
         };
     }
 
@@ -118,5 +122,13 @@ export class SystemCheck {
 
     private async checkPort4503Available(): Promise<boolean> {
         return this.checkPortAvailable(4503);
+    }
+
+    private async checkPortAuthorDebugAvailable(): Promise<boolean> {
+        return this.checkPortAvailable(5005);
+    }
+
+    private async checkPortPublisherDebugAvailable(): Promise<boolean> {
+        return this.checkPortAvailable(5006);
     }
 }

@@ -7,4 +7,6 @@ export interface SystemCheckResults {
     port80Available: boolean;
     port4502Available: boolean;
     port4503Available: boolean;
+    portAuthorDebugAvailable: boolean;
+    portPublisherDebugAvailable: boolean;
 } 

@@ -10,18 +10,20 @@ import {
   Alert,
   Divider,
   Indicator,
-  Modal
+  Modal,
+  Grid
 } from '@mantine/core';
 import { IconRefresh, IconCheck, IconX, IconAlertCircle, IconSettings } from '@tabler/icons-react';
 import { SystemCheckResults } from '../../types/SystemCheckResults';
 
 interface SystemCheckItemProps {
   label: string;
+  secondaryLabel?: string;
   status: boolean | string;
   isVersion?: boolean;
 }
 
-const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, status, isVersion = false }) => {
+const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, secondaryLabel, status, isVersion = false }) => {
   const isHealthy = isVersion ? status !== 'Not available' : status;
   const statusValue = isVersion ? (typeof status === 'string' ? status : 'Unknown') : (status ? 'Available' : 'Not Available');
   
@@ -33,7 +35,12 @@ const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, status, isVers
         ) : (
           <IconX size={16} color="var(--mantine-color-red-6)" />
         )}
-        <Text fw={500}>{label}</Text>
+        <div>
+          <Text fw={500}>{label}</Text>
+          {secondaryLabel && (
+            <Text size="xs" c="dimmed">{secondaryLabel}</Text>
+          )}
+        </div>
       </Group>
       <Badge 
         color={isHealthy ? 'green' : 'red'} 
@@ -128,7 +135,7 @@ export const SystemCheckView: React.FC = () => {
             <Text size="lg" fw={600}>System Check</Text>
           </Group>
         }
-        size="md"
+        size="xl"
       >
         <Stack gap="md">
           <Group justify="flex-end">
@@ -162,29 +169,33 @@ export const SystemCheckView: React.FC = () => {
           )}
 
           {results && !isLoading && (
-            <Stack gap="md">
-              <div>
-                <Text size="sm" fw={600} c="dimmed" mb="xs">Development Environment</Text>
-                <Stack gap="xs">
-                  <SystemCheckItem label="Java" status={results.javaAvailable} />
-                  <SystemCheckItem label="Java Version" status={results.javaVersion} isVersion />
-                  <SystemCheckItem label="Docker" status={results.dockerAvailable} />
-                  <SystemCheckItem label="Docker Daemon" status={results.dockerDaemonRunning} />
-                  <SystemCheckItem label="Docker Version" status={results.dockerVersion} isVersion />
-                </Stack>
-              </div>
-
-              <Divider />
-
-              <div>
-                <Text size="sm" fw={600} c="dimmed" mb="xs">Port Availability</Text>
-                <Stack gap="xs">
-                  <SystemCheckItem label="Port 80 (HTTP)" status={results.port80Available} />
-                  <SystemCheckItem label="Port 4502 (AEM Author)" status={results.port4502Available} />
-                  <SystemCheckItem label="Port 4503 (AEM Publisher)" status={results.port4503Available} />
-                </Stack>
-              </div>
-            </Stack>
+            <Grid>
+              <Grid.Col span={6}>
+                <div>
+                  <Text size="sm" fw={600} c="dimmed" mb="xs">Development Environment</Text>
+                  <Stack gap="xs">
+                    <SystemCheckItem label="Java" status={results.javaAvailable} />
+                    <SystemCheckItem label="Java Version" status={results.javaVersion} isVersion />
+                    <SystemCheckItem label="Docker" status={results.dockerAvailable} />
+                    <SystemCheckItem label="Docker Daemon" status={results.dockerDaemonRunning} />
+                    <SystemCheckItem label="Docker Version" status={results.dockerVersion} isVersion />
+                  </Stack>
+                </div>
+              </Grid.Col>
+              
+              <Grid.Col span={6}>
+                <div>
+                  <Text size="sm" fw={600} c="dimmed" mb="xs">Port Availability</Text>
+                  <Stack gap="xs">
+                    <SystemCheckItem label="Port 80" secondaryLabel="Dispatcher" status={results.port80Available} />
+                    <SystemCheckItem label="Port 4502" secondaryLabel="AEM Author" status={results.port4502Available} />
+                    <SystemCheckItem label="Port 4503" secondaryLabel="AEM Publisher" status={results.port4503Available} />
+                    <SystemCheckItem label="Port 5005" secondaryLabel="AEM Author Debug" status={results.portAuthorDebugAvailable} />
+                    <SystemCheckItem label="Port 5006" secondaryLabel="AEM Publisher Debug" status={results.portPublisherDebugAvailable} />
+                  </Stack>
+                </div>
+              </Grid.Col>
+            </Grid>
           )}
         </Stack>
       </Modal>
