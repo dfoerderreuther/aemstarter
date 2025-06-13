@@ -25,10 +25,9 @@ export class AutomatedLastBackupAndRun implements AutoTask {
     public async run(progressCallback?: (message: string) => void) : Promise<void> {
         const progress = progressCallback || (() => {});
         
-        progress('Searching for the most recent backup...');
-        const lastBackup = await this.findLastBackup();
+        const lastBackup = await this.findBackup();
         if (lastBackup) {
-            progress(`Found most recent backup: "${lastBackup.name}"`);
+            progress(`Found backup: "${lastBackup.name}"`);
         } else {
             progress('No backups available to restore');
             return;
@@ -61,12 +60,12 @@ export class AutomatedLastBackupAndRun implements AutoTask {
         await Promise.all(stopPromises);
     }
 
-    private async findLastBackup(): Promise<BackupInfo> {
+    protected async findBackup(): Promise<BackupInfo> {
         const backups = await this.backupService.listBackups();
         if (backups.length === 0) {
             return Promise.reject(new Error('No backup found'));
         }
-        return backups[backups.length - 1];
+        return backups[0];
     }
 
     private async restore(backup: BackupInfo) {

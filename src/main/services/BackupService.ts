@@ -62,7 +62,7 @@ export class BackupService {
         
         const backupPath = path.join(this.project.folderPath, 'backup');
         
-        const backupInfoPromises = allBackupFiles.map(async (file) => {
+        const backupInfo = allBackupFiles.map((file) => {
             const filePath = path.join(backupPath, file);
             
             let fileSize = 0;
@@ -82,9 +82,9 @@ export class BackupService {
                 fileSize: fileSize, 
                 compressed: file.endsWith('.tar.gz')
             };
-        });
+        }).sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
         
-        return Promise.all(backupInfoPromises);
+        return backupInfo;
     }
 
     async restore(tarName: string): Promise<void> {

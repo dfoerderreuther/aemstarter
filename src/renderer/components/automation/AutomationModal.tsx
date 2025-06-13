@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge, Loader } from '@mantine/core';
-import { IconRefresh, IconPlayerPlay, IconAlertCircle, IconBug, IconPackage } from '@tabler/icons-react';
+import { IconRefresh, IconPlayerPlay, IconAlertCircle, IconBug, IconPackage, IconHistory } from '@tabler/icons-react';
 import { Project } from '../../../types/Project';
 import { AutomationTaskTeaser } from './AutomationTaskTeaser';
 
@@ -238,6 +238,25 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
             </div>
           </AutomationTaskTeaser>
           
+          <Divider />
+
+          <AutomationTaskTeaser 
+            task="first-backup-and-run" 
+            project={project} 
+            icon={IconHistory}
+            taskTitle="Restore last backup and start"
+            onTaskStart={handleTaskStart}
+          >
+            <div>
+              <Text fw={500} size="sm" mb={4}>Restore first backup and start</Text>
+              <Text size="xs" c="dimmed" mb={8}>
+                This will shut down all instances, restore the first backup and start again.
+              </Text>
+              <Group gap="xs">
+                <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
+              </Group>
+            </div>
+          </AutomationTaskTeaser>
           <Divider />
 
           <AutomationTaskTeaser 

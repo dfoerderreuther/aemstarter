@@ -1,4 +1,5 @@
 import { Project } from '../../../types/Project';
+import { AutomatedFirstBackupAndRun } from './AutomatedFirstBackupAndRun';
 import { AutomatedLastBackupAndDebug } from './AutomatedLastBackupAndDebug';
 import { AutomatedLastBackupAndRun } from './AutomatedLastBackupAndRun';
 import { AutomatedReinstall } from './AutomatedReinstall';
@@ -18,6 +19,7 @@ export class Automation {
     private static taskRegistry: Map<string, AutoTaskConstructor> = new Map<string, AutoTaskConstructor>([
         ['last-backup-and-run', AutomatedLastBackupAndRun],
         ['last-backup-and-debug', AutomatedLastBackupAndDebug],
+        ['first-backup-and-run', AutomatedFirstBackupAndRun],
         ['reinstall', AutomatedReinstall]   
     ]);
 
