@@ -40,9 +40,11 @@ interface ProjectSettings {
 
 interface MainActionsViewProps {
   project: Project;
+  projectSettings: ProjectSettings | null;
+  setProjectSettings: React.Dispatch<React.SetStateAction<ProjectSettings | null>>;
 }
 
-export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => {
+export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, projectSettings, setProjectSettings }) => {
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
@@ -54,7 +56,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
   const [isDispatcherRunning, setIsDispatcherRunning] = useState(false);
   const [authorPid, setAuthorPid] = useState<number | null>(null);
   const [publisherPid, setPublisherPid] = useState<number | null>(null);
-  const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null);
 
   // Check instance status on mount and periodically
   useEffect(() => {
@@ -81,17 +82,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
       }
     };
 
-    const loadProjectSettings = async () => {
-      try {
-        const settings = await window.electronAPI.getProjectSettings(project);
-        setProjectSettings(settings);
-      } catch (error) {
-        console.error('Error loading project settings:', error);
-      }
-    };
-
     checkStatus();
-    loadProjectSettings();
     const interval = setInterval(checkStatus, 5000);
     
     // Set up PID status event listener
@@ -730,18 +721,15 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
       
       <SettingsModal
         opened={showSettings}
-        onClose={() => {
+        onClose={async () => {
           setShowSettings(false);
           // Reload project settings after closing settings modal
-          const loadProjectSettings = async () => {
-            try {
-              const settings = await window.electronAPI.getProjectSettings(project);
-              setProjectSettings(settings);
-            } catch (error) {
-              console.error('Error loading project settings:', error);
-            }
-          };
-          loadProjectSettings();
+          try {
+            const settings = await window.electronAPI.getProjectSettings(project);
+            setProjectSettings(settings);
+          } catch (error) {
+            console.error('Error loading project settings:', error);
+          }
         }}
         project={project}
       />

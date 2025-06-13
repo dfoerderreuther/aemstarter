@@ -243,7 +243,7 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
       <Group p="xs" justify="space-between">
         <Group gap="xs">
           <IconFolder size={16} />
-          <Text size="sm" fw={500}>Project Files</Text>
+          <Text size="sm" fw={500}>Files</Text>
           <ActionIcon 
             variant="subtle" 
             onClick={loadRootEntries}
@@ -259,6 +259,15 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
             >
               {showHidden ? <IconEye size={16} /> : <IconEyeOff size={16} />}
             </ActionIcon>
+
+          <ActionIcon 
+            variant="subtle"
+            onClick={() => window.electronAPI.openInFinder(rootPath)}
+            title="Open in Finder"
+          >
+            <IconFolder size={16} />
+          </ActionIcon>
+            
         </Group>
       </Group>
       {rootEntries.map((entry) => (

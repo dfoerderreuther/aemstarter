@@ -6,4 +6,36 @@ export interface Project {
   licensePath: string;
   createdAt: Date;
   lastModified: Date;
+}
+
+export interface ProjectSettings {
+  version: string;
+  general: {
+    name: string;
+    healthCheck: boolean;
+  };
+  author: {
+    port: number;
+    runmode: string;
+    jvmOpts: string;
+    debugJvmOpts: string;
+    healthCheckPath: string;
+  };
+  publisher: {
+    port: number;
+    runmode: string;
+    jvmOpts: string;
+    debugJvmOpts: string;
+    healthCheckPath: string;
+  };
+  dispatcher: {
+    port: number;
+    config: string;
+    healthCheckPath: string;
+  };
+  dev: {
+    path: string;
+    editor: string;
+    customEditorPath: string;
+  };
 } 

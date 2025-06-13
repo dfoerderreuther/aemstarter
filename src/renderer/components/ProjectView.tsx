@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Tabs, Stack, Button, Tooltip } from '@mantine/core';
+import { Tabs, Stack, Button, Tooltip, Divider } from '@mantine/core';
 import { IconColumns3, IconColumns1 } from '@tabler/icons-react';
-import { Project } from '../../types/Project';
+import { Project, ProjectSettings } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './files/FilesView';
 import { DispatcherView } from './DispatcherView';
@@ -15,6 +15,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
   const [activeTab, setActiveTab] = useState<string | null>('author');
   const [viewMode, setViewMode] = useState<'tabs' | 'columns'>('columns');
   const [isColumnsCollapsed, setIsColumnsCollapsed] = useState(false);
+  const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null);
 
   useEffect(() => {
     if (viewMode === 'columns') {
@@ -23,6 +24,19 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
       setActiveTab('author');
     }
   }, [viewMode]);
+
+  useEffect(() => {
+    const loadProjectSettings = async () => {
+      try {
+        const settings = await window.electronAPI.getProjectSettings(project);
+        setProjectSettings(settings);
+      } catch (error) {
+        console.error('Error loading project settings:', error);
+      }
+    };
+
+    loadProjectSettings();
+  }, [project]);
 
   const handleColumnsToggleCollapse = () => {
     setIsColumnsCollapsed(!isColumnsCollapsed);
@@ -39,7 +53,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         backgroundColor: '#1A1B1E'
       }}
     >
-      <MainActionsView project={project} />
+      <MainActionsView project={project} projectSettings={projectSettings} setProjectSettings={setProjectSettings} />
 
       <Tabs 
         defaultValue="author" 
@@ -66,6 +80,14 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           )
           }
           <Tabs.Tab value="files">Files</Tabs.Tab>
+          <Tabs.Tab value="terminal">Terminal</Tabs.Tab>
+          {projectSettings?.dev?.path && (
+            <>
+              <Tabs.Tab value="devfiles">Dev Files</Tabs.Tab>
+              <Tabs.Tab value="devterminal">Dev Terminal</Tabs.Tab>
+            </>
+          )}
+          
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
             <Button.Group>
               <Tooltip label="Columns">
@@ -206,6 +228,10 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
 
         <Tabs.Panel value="files" p="md">
           <FilesView rootPath={project.folderPath} />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="devfiles" p="md">
+          <FilesView rootPath={projectSettings?.dev?.path || ''} />
         </Tabs.Panel>
       </Tabs>
 
