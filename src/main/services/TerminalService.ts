@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from 'child_process';
+import * as pty from 'node-pty';
 import { BrowserWindow } from 'electron';
 import os from 'os';
 
@@ -9,7 +9,7 @@ export interface TerminalOptions {
 
 export interface TerminalSession {
   id: string;
-  process: ChildProcess;
+  ptyProcess: pty.IPty;
   cwd: string;
   shell: string;
 }
@@ -33,69 +33,114 @@ export class TerminalService {
       const shell = options.shell || this.getDefaultShell();
       const cwd = options.cwd || process.env.HOME || process.cwd();
       
-      // Create shell process with proper terminal environment
-      const args = this.getShellArgs(shell);
-      const ptyProcess = spawn(shell, args, {
+      console.log(`Creating PTY terminal: shell=${shell}, cwd=${cwd}`);
+      
+      // Create PTY process with proper terminal emulation
+      const ptyProcess = pty.spawn(shell, [], {
+        name: 'xterm-color',
+        cols: 80,
+        rows: 24,
         cwd: cwd,
         env: {
           ...process.env,
           TERM: 'xterm-256color',
           COLORTERM: 'truecolor',
-          // Ensure proper terminal behavior
-          PS1: '\\u@\\h:\\w$ ',
-        },
-        stdio: ['pipe', 'pipe', 'pipe']
+        }
       });
 
       const session: TerminalSession = {
         id: terminalId,
-        process: ptyProcess,
+        ptyProcess,
         cwd,
         shell
       };
 
       this.terminals.set(terminalId, session);
 
-      // Handle process events
-      this.setupProcessHandlers(session);
-
-      // Send initial prompt for interactive shells
-      if (ptyProcess.stdin) {
-        // For bash/zsh, send a command to ensure we're in interactive mode
-        setTimeout(() => {
-          if (ptyProcess.stdin && !ptyProcess.killed) {
-            ptyProcess.stdin.write('echo "Terminal ready"\n');
+      // Handle PTY data output with error handling
+      ptyProcess.onData((data) => {
+        try {
+          if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+            this.mainWindow.webContents.send('terminal-data', terminalId, data);
           }
-        }, 100);
-      }
+        } catch (error) {
+          console.error(`Error sending terminal data for ${terminalId}:`, error);
+        }
+      });
 
+      // Handle PTY exit with error handling
+      ptyProcess.onExit(({ exitCode, signal }) => {
+        try {
+          console.log(`Terminal ${terminalId} exited with code ${exitCode}, signal ${signal}`);
+          this.terminals.delete(terminalId);
+          
+          if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+            this.mainWindow.webContents.send('terminal-exit', terminalId, exitCode, signal);
+          }
+        } catch (error) {
+          console.error(`Error handling terminal exit for ${terminalId}:`, error);
+        }
+      });
+
+      console.log(`PTY Terminal ${terminalId} created successfully`);
       return { terminalId, success: true };
     } catch (error) {
-      console.error('Error creating terminal:', error);
+      console.error('Error creating PTY terminal:', error);
+      
+      // Send error to renderer if possible
+      try {
+        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+          this.mainWindow.webContents.send('terminal-error', terminalId, `Failed to create terminal: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      } catch (sendError) {
+        console.error('Error sending terminal creation error:', sendError);
+      }
+      
       throw error;
     }
   }
 
   async writeToTerminal(terminalId: string, data: string): Promise<boolean> {
     const session = this.terminals.get(terminalId);
-    if (session && session.process.stdin && !session.process.killed) {
+    console.log(`writeToTerminal called: terminalId=${terminalId}, data=${JSON.stringify(data)}, charCode=${data.charCodeAt(0)}`);
+    
+    if (session && session.ptyProcess) {
       try {
-        session.process.stdin.write(data);
+        console.log(`Writing data to PTY terminal ${terminalId}: "${data}"`);
+        session.ptyProcess.write(data);
         return true;
       } catch (error) {
-        console.error('Error writing to terminal:', error);
+        console.error(`Error writing to PTY terminal ${terminalId}:`, error);
+        
+        // Clean up broken terminal
+        try {
+          this.terminals.delete(terminalId);
+          if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+            this.mainWindow.webContents.send('terminal-error', terminalId, `Terminal write error: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        } catch (cleanupError) {
+          console.error('Error during terminal cleanup:', cleanupError);
+        }
+        
         return false;
       }
+    } else {
+      console.log(`Cannot write to terminal ${terminalId}: session=${!!session}`);
     }
     return false;
   }
 
   async resizeTerminal(terminalId: string, cols: number, rows: number): Promise<boolean> {
     const session = this.terminals.get(terminalId);
-    if (session && session.process) {
-      // For basic child processes, we can't directly resize the pty
-      // But we can send the resize info if the process supports it
-      return true;
+    if (session && session.ptyProcess) {
+      try {
+        session.ptyProcess.resize(cols, rows);
+        console.log(`Resized terminal ${terminalId} to ${cols}x${rows}`);
+        return true;
+      } catch (error) {
+        console.error(`Error resizing PTY terminal ${terminalId}:`, error);
+        return false;
+      }
     }
     return false;
   }
@@ -104,11 +149,14 @@ export class TerminalService {
     const session = this.terminals.get(terminalId);
     if (session) {
       try {
-        session.process.kill('SIGTERM');
+        session.ptyProcess.kill();
         this.terminals.delete(terminalId);
+        console.log(`Killed terminal ${terminalId}`);
         return true;
       } catch (error) {
-        console.error('Error killing terminal:', error);
+        console.error(`Error killing PTY terminal ${terminalId}:`, error);
+        // Still remove from map even if kill failed
+        this.terminals.delete(terminalId);
         return false;
       }
     }
@@ -127,9 +175,7 @@ export class TerminalService {
     // Kill all active terminal sessions
     for (const [terminalId, session] of this.terminals) {
       try {
-        if (!session.process.killed) {
-          session.process.kill('SIGTERM');
-        }
+        session.ptyProcess.kill();
       } catch (error) {
         console.error(`Error cleaning up terminal ${terminalId}:`, error);
       }
@@ -149,69 +195,5 @@ export class TerminalService {
     } else {
       return process.env.SHELL || '/bin/bash';
     }
-  }
-
-  private getShellArgs(shell: string): string[] {
-    // Return appropriate args for interactive shell
-    if (shell.includes('bash')) {
-      return ['-i']; // Interactive mode
-    } else if (shell.includes('zsh')) {
-      return ['-i']; // Interactive mode
-    } else if (shell.includes('fish')) {
-      return ['-i']; // Interactive mode
-    } else if (shell.includes('cmd')) {
-      return []; // cmd.exe doesn't need special args
-    }
-    return [];
-  }
-
-  private setupProcessHandlers(session: TerminalSession): void {
-    const { id, process: ptyProcess } = session;
-
-    // Handle process exit
-    ptyProcess.on('exit', (code, signal) => {
-      console.log(`Terminal ${id} exited with code ${code}, signal ${signal}`);
-      this.terminals.delete(id);
-      
-      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-        this.mainWindow.webContents.send('terminal-exit', id, code, signal);
-      }
-    });
-
-    // Handle process errors
-    ptyProcess.on('error', (error) => {
-      console.error(`Terminal ${id} error:`, error);
-      
-      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-        this.mainWindow.webContents.send('terminal-error', id, error.message);
-      }
-    });
-
-    // Forward stdout to renderer with buffering for better performance
-    let outputBuffer = '';
-    const flushBuffer = () => {
-      if (outputBuffer && this.mainWindow && !this.mainWindow.isDestroyed()) {
-        this.mainWindow.webContents.send('terminal-data', id, outputBuffer);
-        outputBuffer = '';
-      }
-    };
-
-    ptyProcess.stdout?.on('data', (data) => {
-      outputBuffer += data.toString();
-      // Flush buffer periodically or when it gets large
-      if (outputBuffer.length > 1024) {
-        flushBuffer();
-      }
-    });
-
-    // Flush any remaining buffer periodically
-    setInterval(flushBuffer, 50);
-
-    // Forward stderr to renderer  
-    ptyProcess.stderr?.on('data', (data) => {
-      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-        this.mainWindow.webContents.send('terminal-data', id, data.toString());
-      }
-    });
   }
 } 

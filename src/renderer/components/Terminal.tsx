@@ -113,14 +113,19 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     // Create backend terminal session
     const initializeTerminal = async () => {
       try {
+        console.log('Initializing terminal with cwd:', cwd);
         const result = await window.electronAPI.createTerminal({ cwd });
+        console.log('Terminal creation result:', result);
+        
         if (result.success) {
           setTerminalId(result.terminalId);
           setIsConnected(true);
+          console.log(`Terminal connected with ID: ${result.terminalId}`);
           
           // Set up data handler
           const cleanupData = window.electronAPI.onTerminalData((id, data) => {
             if (id === result.terminalId && xtermRef.current) {
+              console.log(`Received data for terminal ${id}:`, data);
               xtermRef.current.write(data);
             }
           });
@@ -128,6 +133,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
           // Set up exit handler
           const cleanupExit = window.electronAPI.onTerminalExit((id, code, signal) => {
             if (id === result.terminalId && xtermRef.current) {
+              console.log(`Terminal ${id} exited with code ${code}, signal ${signal}`);
               xtermRef.current.writeln(`\r\n\x1b[31mProcess exited with code ${code}\x1b[0m`);
               setIsConnected(false);
             }
@@ -136,6 +142,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
           // Set up error handler
           const cleanupError = window.electronAPI.onTerminalError((id, error) => {
             if (id === result.terminalId && xtermRef.current) {
+              console.log(`Terminal ${id} error:`, error);
               xtermRef.current.writeln(`\r\n\x1b[31mTerminal error: ${error}\x1b[0m`);
             }
           });
@@ -144,6 +151,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
           
           // Handle user input
           xterm.onData((data) => {
+            console.log(`Sending data to terminal ${result.terminalId}:`, data.charCodeAt(0), data);
             if (result.terminalId) {
               window.electronAPI.writeTerminal(result.terminalId, data);
             }
@@ -151,6 +159,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
           
           // Handle terminal resize
           xterm.onResize(({ cols, rows }) => {
+            console.log(`Terminal resize: ${cols}x${rows}`);
             if (result.terminalId) {
               window.electronAPI.resizeTerminal(result.terminalId, cols, rows);
             }
@@ -160,6 +169,8 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
           if (onReady) {
             onReady(xterm);
           }
+        } else {
+          console.error('Failed to create terminal session');
         }
       } catch (error) {
         console.error('Failed to initialize terminal:', error);

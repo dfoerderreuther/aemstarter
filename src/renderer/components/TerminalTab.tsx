@@ -21,19 +21,6 @@ export const TerminalTab = ({
   const terminalRef = useRef<XTerm | null>(null);
   const terminalComponentRef = useRef<TerminalRef>(null);
 
-  const buttonStyle = {
-    justifyContent: 'flex-start' as const,
-    padding: '2px',
-    height: 'auto',
-    fontWeight: 400
-  };
-
-  const buttonStyles = {
-    root: {
-      '&:focus': { outline: 'none', boxShadow: 'none' },
-      '&:focus-visible': { outline: '1px solid rgba(255,255,255,0.3)' }
-    }
-  };
 
   // Toggle collapse state
   const onToggleCollapse = () => {
@@ -53,7 +40,6 @@ export const TerminalTab = ({
 
   useEffect(() => {
     if (visible) {
-      console.log('TerminalTab visible');
       setIsCollapsed(false);
     }
   }, [visible]);
