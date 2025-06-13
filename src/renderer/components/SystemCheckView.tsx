@@ -106,15 +106,7 @@ export const SystemCheckView: React.FC = () => {
       <Button
         variant="light"
         color={getStatusColor()}
-        leftSection={
-          <Indicator 
-            color={getStatusColor()} 
-            size={8} 
-            offset={2}
-          >
-            <IconSettings size={16} />
-          </Indicator>
-        }
+        leftSection={<IconSettings size={16} />}
         onClick={() => setModalOpened(true)}
         loading={isLoading && !results}
       >
