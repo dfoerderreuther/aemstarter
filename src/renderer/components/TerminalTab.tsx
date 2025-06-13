@@ -16,7 +16,7 @@ export const TerminalTab = ({
   viewMode = 'tabs'
 }: TerminalTabProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [terminalFontSize, setTerminalFontSize] = useState(9);
+  const [terminalFontSize, setTerminalFontSize] = useState(11);
   
   const terminalRef = useRef<XTerm | null>(null);
   const terminalComponentRef = useRef<TerminalRef>(null);
@@ -194,110 +194,9 @@ export const TerminalTab = ({
                 alignItems: viewMode === 'columns' ? 'flex-start' : 'stretch'
               }}>
                 {/* Directory Info Block */}
-                <Box style={{ 
-                  width: '150px',
-                  flex: 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start'
-                }}>
-                  <Text size="xs" fw={500} c="dimmed" mb="xs">CURRENT PATH</Text>
-                  <Text size="xs" style={{ wordBreak: 'break-all', color: '#868e96' }}>
-                    {rootPath}
-                  </Text>
-                </Box>
+                <Text size="xs" fw={500} c="dimmed" mb="xs">actions comming soon</Text>
 
-                {/* Quick Actions Block */}
-                <Box style={{ 
-                  width: '100px',
-                  flex: 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  borderLeft: viewMode === 'columns' ? '1px dashed rgba(255,255,255,0.2)' : 'none',
-                  borderTop: viewMode === 'columns' ? 'none' : '1px dashed rgba(255,255,255,0.2)',
-                  paddingLeft: viewMode === 'columns' ? '12px' : '0',
-                  paddingTop: viewMode === 'columns' ? '0' : '12px'
-                }}>
-                  <Stack gap="xs" style={{ width: '100%', alignItems: 'flex-start' }}>
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      leftSection={<IconFolder size={12} />}
-                      style={buttonStyle}
-                      styles={buttonStyles}
-                    >
-                      Browse
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      leftSection={<IconCode size={12} />}
-                      style={buttonStyle}
-                      styles={buttonStyles}
-                    >
-                      Editor
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      leftSection={<IconTerminal size={12} />}
-                      style={buttonStyle}
-                      styles={buttonStyles}
-                    >
-                      Shell
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      leftSection={<IconFile size={12} />}
-                      style={buttonStyle}
-                      styles={buttonStyles}
-                    >
-                      Files
-                    </Button>
-                  </Stack>
-                </Box>
-
-                {/* Tools Block */}
-                <Box style={{ 
-                  width: '100px',
-                  flex: 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  borderLeft: viewMode === 'columns' ? '1px dashed rgba(255,255,255,0.2)' : 'none',
-                  borderTop: viewMode === 'columns' ? 'none' : '1px dashed rgba(255,255,255,0.2)',
-                  paddingLeft: viewMode === 'columns' ? '12px' : '0',
-                  paddingTop: viewMode === 'columns' ? '0' : '12px'
-                }}>
-                  <Stack gap="xs" style={{ alignItems: 'flex-start' }}>
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      style={buttonStyle}
-                      styles={buttonStyles}
-                    >
-                      Git
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      style={buttonStyle}
-                      styles={buttonStyles}
-                    >
-                      Maven
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      style={buttonStyle}
-                      styles={buttonStyles}
-                    >
-                      Node
-                    </Button>
-                  </Stack>
-                </Box>
+                  
               </Box>
             )}
           </Box>
