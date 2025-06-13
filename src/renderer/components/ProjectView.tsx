@@ -34,12 +34,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
     <Stack 
       gap={0} 
       style={{ 
-        height: 'calc(100vh - 60px)', // Subtract header height
-        minHeight: 'calc(100vh - 60px)',
+        height: 'calc(100vh - 138px)', // Subtract header height
+        minHeight: 'calc(100vh - 138px)',
         backgroundColor: '#1A1B1E'
       }}
     >
-      <MainActionsView project={project} />
 
         <Tabs 
           defaultValue="author" 

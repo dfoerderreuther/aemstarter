@@ -7,6 +7,7 @@ import { Project } from '../types/Project';
 import { IconPlus } from '@tabler/icons-react';
 import AemLogo from './assets/AEM.svg';
 import { SystemCheckView } from './components/SystemCheckView';
+import { MainActionsView } from './components/MainActionsView';
 
 const theme = createTheme({
   primaryColor: 'blue',
@@ -188,7 +189,7 @@ const App: React.FC = () => {
   return (
     <MantineProvider theme={theme} defaultColorScheme="dark">
       <AppShell
-        header={{ height: 60 }}
+        header={{ height: 138 }}
         padding={0}
         style={{ minHeight: '100vh' }}
       >
@@ -212,6 +213,7 @@ const App: React.FC = () => {
               </Button>
             </Group>
           </Group>
+          {selectedProject && <MainActionsView project={selectedProject} />}
         </AppShell.Header>
 
         <NewProjectModal

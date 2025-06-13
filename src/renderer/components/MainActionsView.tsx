@@ -330,7 +330,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => 
 
   return (
     <>
-      <Group align="flex-start" gap="md">
+      <Group align="flex-start" gap="md" style={{ marginTop: '8px' }}>
         
         <Paper style={sectionStyles}>
           <Stack gap="xs">
