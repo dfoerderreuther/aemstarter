@@ -201,6 +201,12 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   };
   
   const loadRootEntries = async () => {
+    if (!rootPath || rootPath.trim() === '') {
+      setRootEntries([]);
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const entries = await window.electronAPI.readDirectory(rootPath, showHidden);
@@ -262,8 +268,9 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
 
           <ActionIcon 
             variant="subtle"
-            onClick={() => window.electronAPI.openInFinder(rootPath)}
+            onClick={() => rootPath && rootPath.trim() !== '' && window.electronAPI.openInFinder(rootPath)}
             title="Open in Finder"
+            disabled={!rootPath || rootPath.trim() === ''}
           >
             <IconFolder size={16} />
           </ActionIcon>

@@ -192,6 +192,16 @@ ipcMain.handle('open-url', async (_, url) => {
   }
 });
 
+ipcMain.handle('open-in-finder', async (_, folderPath) => {
+  try {
+    await shell.openPath(folderPath);
+    return true;
+  } catch (error) {
+    console.error('Error opening folder in finder:', error);
+    throw error;
+  }
+});
+
 // File system operations
 ipcMain.handle('read-directory', async (_, dirPath, showHidden = false) => {
   try {

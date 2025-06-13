@@ -43,6 +43,8 @@ contextBridge.exposeInMainWorld(
     // Browser
     openUrl: (url: string) =>
       ipcRenderer.invoke('open-url', url),
+    openInFinder: (folderPath: string) =>
+      ipcRenderer.invoke('open-in-finder', folderPath),
       
     // File system operations
     readDirectory: (dirPath: string, showHidden = false) =>
