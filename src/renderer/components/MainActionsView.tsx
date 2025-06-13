@@ -40,11 +40,9 @@ interface ProjectSettings {
 
 interface MainActionsViewProps {
   project: Project;
-  viewMode: 'tabs' | 'columns';
-  setViewMode: (mode: 'tabs' | 'columns') => void;
 }
 
-export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewMode, setViewMode }) => {
+export const MainActionsView: React.FC<MainActionsViewProps> = ({ project }) => {
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showBackup, setShowBackup] = useState(false);

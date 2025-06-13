@@ -181,7 +181,6 @@ export class AemInstanceManager {
   }
 
   getAvailableLogFiles(instanceType: string): string[] {
-    console.log(`[AemInstanceManager] Getting available log files for ${instanceType}`);
     const instanceDir = instanceType;
     const logPath = path.join(
       this.project.folderPath,
