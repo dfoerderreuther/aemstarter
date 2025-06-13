@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge, Loader } from '@mantine/core';
-import { IconRefresh, IconPlayerPlay, IconAlertCircle, IconBug, IconPackage, IconHistory } from '@tabler/icons-react';
+import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge, Loader, Title, ThemeIcon } from '@mantine/core';
+import { IconRefresh, IconPlayerPlay, IconAlertCircle, IconBug, IconPackage, IconHistory, IconRobot } from '@tabler/icons-react';
 import { Project } from '../../../types/Project';
 import { AutomationTaskTeaser } from './AutomationTaskTeaser';
 
@@ -98,11 +98,13 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
   };
 
   const taskItemStyles = {
-    padding: '16px',
+    padding: 'var(--mantine-spacing-lg)',
     cursor: 'pointer',
-    transition: 'background-color 0.2s ease',
+    transition: 'all 0.2s ease',
     '&:hover': {
-      backgroundColor: 'var(--mantine-color-gray-0)',
+      backgroundColor: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))',
+      transform: 'translateY(-1px)',
+      boxShadow: 'var(--mantine-shadow-sm)',
     }
   };
 
@@ -113,61 +115,73 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
     return (
       <Modal
         opened={opened}
-        onClose={() => {}} // Prevent closing while running
+        onClose={isTaskCompleted ? onClose : () => {}} // Allow closing only when completed
         title={
           <Group gap="sm">
+            <ThemeIcon variant="light" color="blue" size="md">
+              <IconRobot size={16} />
+            </ThemeIcon>
             {!isTaskCompleted && <Loader size="sm" color="orange" />}
             <Text fw={500}>{runningTask.title}</Text>
             {isTaskCompleted && <Badge color="green" size="sm">Completed</Badge>}
           </Group>
         }
         size="md"
-        closeOnClickOutside={false}
-        closeOnEscape={false}
+        closeOnClickOutside={isTaskCompleted}
+        closeOnEscape={isTaskCompleted}
         withCloseButton={isTaskCompleted}
+        centered
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 3,
+        }}
         styles={{
-          body: { padding: '16px' },
-          header: { padding: '16px 24px', borderBottom: '1px solid var(--mantine-color-gray-3)' }
+          body: { padding: 'var(--mantine-spacing-md)' },
+          header: { 
+            padding: 'var(--mantine-spacing-lg)', 
+            borderBottom: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))' 
+          }
         }}
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
-            {isTaskCompleted ? 'Task completed successfully!' : 'Running automation task...'}
-          </Text>
           
-          <ScrollArea style={{ height: '300px' }}>
+          
+          <ScrollArea style={{ height: '300px' }} type="hover">
             <Stack gap="xs">
               {progressMessages.length === 0 ? (
-                <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
-                  Initializing task...
-                </Text>
+                <Group gap="sm">
+                  <Loader size="xs" />
+                  <Text size="sm" c="dimmed" fs="italic">
+                    Initializing task...
+                  </Text>
+                </Group>
               ) : (
                 progressMessages.map((messageObj, index) => {
                   const elapsedSeconds = taskStartTime 
                     ? ((messageObj.timestamp - taskStartTime) / 1000).toFixed(1)
                     : '0.0';
                   
-                  return (
-                    <Group key={index} gap="xs" align="flex-start">
-                      <Text size="xs" c="dimmed" style={{ minWidth: '50px', fontFamily: 'monospace' }}>
-                        {elapsedSeconds}s
-                      </Text>
-                      <Text size="sm" style={{ flex: 1 }}>
-                        {messageObj.message}
-                      </Text>
-                    </Group>
-                  );
+                                      return (
+                      <Group key={index} gap="sm" align="flex-start" py={4} px="xs">
+                        <Badge variant="light" color="blue" size="xs" tt="none">
+                          {elapsedSeconds}s
+                        </Badge>
+                        <Text size="sm" style={{ flex: 1 }}>
+                          {messageObj.message}
+                        </Text>
+                      </Group>
+                    );
                 })
               )}
             </Stack>
           </ScrollArea>
           
           {!isTaskCompleted ? (
-            <Text size="xs" c="dimmed" style={{ textAlign: 'center' }}>
+            <Text size="xs" c="dimmed" ta="center" fs="italic">
               Please wait while the automation task is running...
             </Text>
           ) : (
-            <Group justify="center">
+            <Group justify="center" mt="md">
               <Button 
                 size="sm" 
                 color="green" 
@@ -175,9 +189,10 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
                   handleTaskComplete();
                   onClose();
                 }}
-                variant="light"
+                variant="filled"
+                leftSection={<IconPlayerPlay size={14} />}
               >
-                Close
+                Close & Continue
               </Button>
             </Group>
           )}
@@ -191,11 +206,29 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
     <Modal
       opened={opened}
       onClose={onClose}
-      title="Automation Tasks"
+      title={
+        <Group gap="sm">
+          <ThemeIcon variant="light" color="blue" size="lg">
+            <IconRobot size={20} />
+          </ThemeIcon>
+          <div>
+            <Title order={3} mb={2}>Automation Tasks</Title>
+            <Text size="sm" c="dimmed">Streamline your AEM workflow with automated tasks</Text>
+          </div>
+        </Group>
+      }
       size="lg"
+      centered
+      overlayProps={{
+        backgroundOpacity: 0.55,
+        blur: 3,
+      }}
       styles={{
         body: { padding: 0 },
-        header: { padding: '16px 24px', borderBottom: '1px solid var(--mantine-color-gray-3)' }
+        header: { 
+          padding: 'var(--mantine-spacing-lg)', 
+          borderBottom: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))' 
+        }
       }}
     >
       <ScrollArea style={{ height: '400px' }}>
@@ -282,19 +315,11 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
           
 
           {/* Setup Replication Task */}
-          <Paper style={taskItemStyles} radius={0}>
+          <Paper style={taskItemStyles} radius="md" withBorder>
             <Group align="flex-start" gap="md">
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
-                backgroundColor: 'var(--mantine-color-blue-1)', 
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <IconRefresh size={24} color="var(--mantine-color-blue-6)" />
-              </div>
+              <ThemeIcon size="xl" variant="light" color="blue" radius="md">
+                <IconRefresh size={24} />
+              </ThemeIcon>
               
               <div style={{ flex: 1 }}>
                 <Group justify="space-between" align="flex-start">
@@ -333,22 +358,17 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
           <Divider />
 
           {/* Placeholder for future tasks */}
-          <Paper style={{...taskItemStyles, opacity: 0.5}} radius={0}>
+          <Paper style={{...taskItemStyles, opacity: 0.6, cursor: 'default'}} radius="md" withBorder>
             <Group align="flex-start" gap="md">
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
-                backgroundColor: 'var(--mantine-color-gray-2)', 
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <IconPlayerPlay size={24} color="var(--mantine-color-gray-6)" />
-              </div>
+              <ThemeIcon size="xl" variant="light" color="gray" radius="md">
+                <IconPlayerPlay size={24} />
+              </ThemeIcon>
               
               <div style={{ flex: 1 }}>
-                <Text fw={500} size="sm" mb={4} c="dimmed">More Tasks Coming Soon...</Text>
+                <Group gap="sm" mb="xs">
+                  <Text fw={500} size="sm" c="dimmed">More Tasks Coming Soon...</Text>
+                  <Badge variant="outline" color="gray" size="xs">Soon</Badge>
+                </Group>
                 <Text size="xs" c="dimmed">
                   Additional automation tasks will be added in future updates.
                 </Text>
