@@ -60,8 +60,7 @@ export const TerminalTab = ({
 
   const handleTerminalReady = (terminal: XTerm) => {
     terminalRef.current = terminal;
-    terminal.writeln(`Terminal - ${rootPath}`);
-    terminal.writeln('----------------------------');
+    // Terminal is now connected to real shell, no need for custom messages
   };
 
   // Handle text size change from dropdown
@@ -73,10 +72,8 @@ export const TerminalTab = ({
 
   // Handle clear terminal
   const handleClearTerminal = () => {
-    if (terminalRef.current) {
-      terminalRef.current.clear();
-      terminalRef.current.writeln(`Terminal - ${rootPath}`);
-      terminalRef.current.writeln('----------------------------');
+    if (terminalComponentRef.current) {
+      terminalComponentRef.current.clear();
     }
   };
 
@@ -211,7 +208,13 @@ export const TerminalTab = ({
             backgroundColor: '#1A1A1A'
           }}>
             <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
-              <Terminal onReady={handleTerminalReady} visible={visible} fontSize={terminalFontSize} ref={terminalComponentRef} />
+              <Terminal 
+                onReady={handleTerminalReady} 
+                visible={visible} 
+                fontSize={terminalFontSize} 
+                cwd={rootPath}
+                ref={terminalComponentRef} 
+              />
             </div>
           </Box>
         </Box>

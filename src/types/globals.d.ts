@@ -98,6 +98,17 @@ declare global {
       // Dev project utilities
       openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') => Promise<boolean>;
       
+      // Terminal functionality
+      createTerminal: (options?: { cwd?: string; shell?: string }) => Promise<{ terminalId: string; success: boolean }>;
+      writeTerminal: (terminalId: string, data: string) => Promise<boolean>;
+      resizeTerminal: (terminalId: string, cols: number, rows: number) => Promise<boolean>;
+      killTerminal: (terminalId: string) => Promise<boolean>;
+      
+      // Terminal event listeners
+      onTerminalData: (callback: (terminalId: string, data: string) => void) => () => void;
+      onTerminalExit: (callback: (terminalId: string, code: number | null, signal: string | null) => void) => () => void;
+      onTerminalError: (callback: (terminalId: string, error: string) => void) => () => void;
+      
       // Log streaming
       onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => () => void;
       

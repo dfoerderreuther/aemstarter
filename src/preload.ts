@@ -171,6 +171,33 @@ contextBridge.exposeInMainWorld(
     openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') =>
       ipcRenderer.invoke('open-dev-project', project, type),
 
+    // Terminal functionality
+    createTerminal: (options?: { cwd?: string; shell?: string }) =>
+      ipcRenderer.invoke('create-terminal', options),
+    writeTerminal: (terminalId: string, data: string) =>
+      ipcRenderer.invoke('write-terminal', terminalId, data),
+    resizeTerminal: (terminalId: string, cols: number, rows: number) =>
+      ipcRenderer.invoke('resize-terminal', terminalId, cols, rows),
+    killTerminal: (terminalId: string) =>
+      ipcRenderer.invoke('kill-terminal', terminalId),
+    
+    // Terminal event listeners
+    onTerminalData: (callback: (terminalId: string, data: string) => void) => {
+      const handler = (_: any, terminalId: string, data: string) => callback(terminalId, data);
+      ipcRenderer.on('terminal-data', handler);
+      return () => ipcRenderer.removeListener('terminal-data', handler);
+    },
+    onTerminalExit: (callback: (terminalId: string, code: number | null, signal: string | null) => void) => {
+      const handler = (_: any, terminalId: string, code: number | null, signal: string | null) => callback(terminalId, code, signal);
+      ipcRenderer.on('terminal-exit', handler);
+      return () => ipcRenderer.removeListener('terminal-exit', handler);
+    },
+    onTerminalError: (callback: (terminalId: string, error: string) => void) => {
+      const handler = (_: any, terminalId: string, error: string) => callback(terminalId, error);
+      ipcRenderer.on('terminal-error', handler);
+      return () => ipcRenderer.removeListener('terminal-error', handler);
+    },
+
     // Log streaming
     onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => {
       const handler = (_: any, data: { projectId: string; instanceType: string; data: string }) => callback(data);

@@ -15,6 +15,7 @@ import { AemInstanceManagerRegister } from './main/AemInstanceManagerRegister';
 import { DispatcherManagerRegister } from './main/DispatcherManagerRegister';
 import { ProjectManagerRegister } from './main/ProjectManagerRegister';
 import { Automation } from './main/services/automation/Automation';
+import { TerminalService } from './main/services/TerminalService';
 import { spawn } from 'child_process';
 
 // Set the app name immediately (this affects dock/taskbar display)
@@ -748,6 +749,32 @@ ipcMain.handle('open-dev-project', async (_, project: Project, type: 'files' | '
   }
 });
 
+// Terminal Service
+let terminalService: TerminalService;
+
+// Terminal IPC handlers
+ipcMain.handle('create-terminal', async (_, options: { cwd?: string; shell?: string } = {}) => {
+  if (!terminalService) {
+    terminalService = new TerminalService(mainWindow || undefined);
+  }
+  return terminalService.createTerminal(options);
+});
+
+ipcMain.handle('write-terminal', async (_, terminalId: string, data: string) => {
+  if (!terminalService) return false;
+  return terminalService.writeToTerminal(terminalId, data);
+});
+
+ipcMain.handle('resize-terminal', async (_, terminalId: string, cols: number, rows: number) => {
+  if (!terminalService) return false;
+  return terminalService.resizeTerminal(terminalId, cols, rows);
+});
+
+ipcMain.handle('kill-terminal', async (_, terminalId: string) => {
+  if (!terminalService) return false;
+  return terminalService.killTerminal(terminalId);
+});
+
 // Create application menu
 const createMenu = () => {
   // Helper function to create recent projects submenu
@@ -932,6 +959,11 @@ app.on('ready', () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
+  // Clean up terminal sessions
+  if (terminalService) {
+    terminalService.cleanup();
+  }
+  
   if (process.platform !== 'darwin') {
     app.quit();
   }

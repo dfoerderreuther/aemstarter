@@ -2,7 +2,7 @@ import { Project } from "../../types/Project";
 import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Select, Button } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
-import { Terminal, TerminalRef } from './Terminal';
+import { LogTerminal, LogTerminalRef } from './LogTerminal';
 import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser, IconExternalLink, IconTrash } from '@tabler/icons-react';
 import { Screenshot } from "./Screenshot";
 import { SettingsMenu } from "./SettingsMenu";
@@ -43,7 +43,7 @@ export const DispatcherView = ({
 
   const hasShownDispatcherOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
-  const terminalComponentRef = useRef<TerminalRef>(null);
+  const terminalComponentRef = useRef<LogTerminalRef>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
 
@@ -434,7 +434,7 @@ export const DispatcherView = ({
             borderRadius: 0
           }}>
             <div style={{ flex: 1, minHeight: 0 }}>
-              <Terminal onReady={handleTerminalReady} visible={visible} fontSize={terminalFontSize} ref={terminalComponentRef} />
+              <LogTerminal onReady={handleTerminalReady} visible={visible} fontSize={terminalFontSize} ref={terminalComponentRef} />
             </div>
           </Paper>
         </Box>
