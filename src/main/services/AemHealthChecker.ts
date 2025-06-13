@@ -156,7 +156,21 @@ export class AemHealthChecker {
       const instanceSettings = settings[instanceType];
       const healthCheckPath = instanceSettings?.healthCheckPath || '';
 
-      screenshotWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      // Disable cache to ensure fresh screenshots
+      const session = screenshotWindow.webContents.session;
+      
+      // Clear any existing cache for this URL
+      session.clearCache();
+      
+      // Disable HTTP cache
+      session.webRequest.onBeforeSendHeaders((details, callback) => {
+        details.requestHeaders['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+        details.requestHeaders['Pragma'] = 'no-cache';
+        details.requestHeaders['Expires'] = '0';
+        callback({ requestHeaders: details.requestHeaders });
+      });
+
+      session.webRequest.onHeadersReceived((details, callback) => {
         // Remove or modify restrictive Content Security Policy
         if (details.responseHeaders && details.responseHeaders['Content-Security-Policy']) {
           // Allow external images by modifying img-src directive
@@ -164,6 +178,14 @@ export class AemHealthChecker {
             return csp.replace(/img-src '[^']*'[^;]*;?/g, "img-src 'self' data: https: http:;");
           });
         }
+        
+        // Also ensure no caching on the response side
+        if (details.responseHeaders) {
+          details.responseHeaders['Cache-Control'] = ['no-cache, no-store, must-revalidate'];
+          details.responseHeaders['Pragma'] = ['no-cache'];
+          details.responseHeaders['Expires'] = ['0'];
+        }
+        
         callback({ responseHeaders: details.responseHeaders });
       });
 
