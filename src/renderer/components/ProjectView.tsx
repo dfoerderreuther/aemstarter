@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Tabs, Stack, SegmentedControl, Grid, Button, Tooltip } from '@mantine/core';
+import { Tabs, Stack, Button, Tooltip } from '@mantine/core';
 import { IconColumns3, IconColumns1 } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
