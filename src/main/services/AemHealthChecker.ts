@@ -70,9 +70,7 @@ export class AemHealthChecker {
         }
       }
     }
-    
-    console.log(`[AemHealthChecker] Checking health for ${instanceType} at ${url}`);
-    
+        
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
@@ -130,6 +128,7 @@ export class AemHealthChecker {
   }
 
   async takeScreenshot(instanceType: 'author' | 'publisher' | 'dispatcher', port: number): Promise<string> {
+    console.log(`[AemHealthChecker] Taking screenshot for ${instanceType} at ${port}`);
     const screenshotsDir = path.join(this.project.folderPath, 'screenshots');
     if (!fs.existsSync(screenshotsDir)) {
       fs.mkdirSync(screenshotsDir, { recursive: true });
@@ -271,8 +270,6 @@ export class AemHealthChecker {
   startHealthChecking(instanceType: 'author' | 'publisher' | 'dispatcher', port: number, intervalMs = 30000) {
     // Stop any existing health check
     this.stopHealthChecking(instanceType);
-
-    console.log(`[AemHealthChecker] Starting health checks for ${instanceType} on port ${port} (will check config on each run)`);
     
     // Store the current configuration
     this.currentIntervals.set(instanceType, { intervalMs, port });

@@ -5,7 +5,7 @@ import { AemInstanceManager } from "../AemInstanceManager";
 import { BackupService } from "../BackupService";
 import { AemInstanceManagerRegister } from "../../AemInstanceManagerRegister";
 import { DispatcherManagerRegister } from "../../DispatcherManagerRegister";
-import { Installer } from "../../installer/Installer";
+import { Installer } from "../Installer";
 
 export class AutomatedReinstall implements AutoTask {
 

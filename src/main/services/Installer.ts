@@ -3,7 +3,7 @@ import { Project } from "../../types/Project";
 import fs from 'fs';
 import extract from 'extract-zip';
 import process from 'process';
-import { ProjectSettings } from "../services/ProjectSettings";
+import { ProjectSettings } from "./ProjectSettings";
 import { exec } from "child_process";
 import { promisify } from 'util';
 

@@ -104,13 +104,11 @@ export class DispatcherManager {
             // Handle process output
             dispatcherProcess.stdout?.on('data', (data) => {
                 const output = data.toString();
-                console.log(`[Dispatcher stdout]: ${output}`);
                 this.sendLogData(output);
             });
 
             dispatcherProcess.stderr?.on('data', (data) => {
                 const output = data.toString();
-                console.log(`[Dispatcher stderr]: ${output}`);
                 this.sendLogData(output);
             });
 
@@ -151,7 +149,6 @@ export class DispatcherManager {
             // Start health checking after a short delay to allow dispatcher to start
             setTimeout(() => {
                 if (this.instance.process === dispatcherProcess && this.isDispatcherRunning()) {
-                    console.log('[DispatcherManager] Starting health checks for dispatcher');
                     this.healthChecker.startHealthChecking('dispatcher', this.instance.port, 30000);
                 }
             }, 10000); // Wait 10 seconds after startup
@@ -241,16 +238,7 @@ export class DispatcherManager {
             // Final force kill if absolutely necessary
             if (processToStop.exitCode === null && !processToStop.killed) {
                 console.log('Process still running, force killing with SIGKILL...');
-                if (pidToStop) {
-                    try {
-                        process.kill(-pidToStop, 'SIGKILL');
-                    } catch (killError) {
-                        console.warn('Error force killing process group:', killError);
-                        processToStop.kill('SIGKILL');
-                    }
-                } else {
-                    processToStop.kill('SIGKILL');
-                }
+                this.killDispatcher();
                 
                 // Wait a bit for force kill to take effect
                 await new Promise(resolve => setTimeout(resolve, 2000));
@@ -436,7 +424,6 @@ export class DispatcherManager {
     }
 
     private sendStatusUpdate(isRunning: boolean) {
-        console.log(`[DispatcherManager] Sending status update for project ${this.project.id}: isRunning=${isRunning}, pid=${this.instance.pid}, port=${this.instance.port}`);
         
         if (this.mainWindow && !this.mainWindow.isDestroyed()) {
             this.mainWindow.webContents.send('dispatcher-status', {
@@ -445,16 +432,9 @@ export class DispatcherManager {
                 pid: this.instance.pid,
                 port: this.instance.port
             });
-            console.log(`[DispatcherManager] Status update sent successfully`);
         } else {
             console.warn(`[DispatcherManager] Cannot send status update - mainWindow is ${this.mainWindow ? 'destroyed' : 'null'}`);
         }
-    }
-
-    async flushDispatcher() {
-        console.log('flushDispatcher');
-        // TODO: Implement dispatcher flush functionality
-        // This would typically send a flush request to the dispatcher
     }
 
     /**

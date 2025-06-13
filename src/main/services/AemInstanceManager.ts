@@ -198,7 +198,6 @@ export class AemInstanceManager {
     try {
       const files = fs.readdirSync(logPath);
       const logFiles = files.filter(file => file.endsWith('.log'));
-      console.log(`[AemInstanceManager] Found log files: ${logFiles}`);
       
       // Ensure error.log is always first if it exists, otherwise add it as default
       const errorLogIndex = logFiles.indexOf('error.log');
@@ -247,7 +246,6 @@ export class AemInstanceManager {
           }
           // Create empty log file
           fs.writeFileSync(logPath, '');
-          console.log(`[AemInstanceManager] Created oak-run log file: ${logPath}`);
         } catch (error) {
           console.error(`[AemInstanceManager] Failed to create oak-run log file: ${logPath}`, error);
           continue;
@@ -449,40 +447,6 @@ export class AemInstanceManager {
       }
     } else {
       throw new Error(`AEM instance not found at ${instanceDir}`);
-      /*
-      console.log('[AemInstanceManager] ### Starting AEM instance with quickstart.jar ###');
-      // Use quickstart.jar
-      const jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
-
-      if (!fs.existsSync(jarPath)) {
-        throw new Error(`AEM jar not found at ${jarPath}`);
-      }
-
-      const env = {
-        ...process.env,
-        CQ_PORT: port.toString(),
-        CQ_RUNMODE: runmode,
-        CQ_JVM_OPTS: jvmOpts,
-      };
-
-      // Use relative path for jar since we're setting cwd to instanceDir
-      const javaArgs = [
-        '-jar',
-        'aem-sdk-quickstart.jar', // Use relative path instead of absolute
-        '-port',
-        port.toString(),
-        '-r',
-        runmode,
-        'start',
-      ];
-
-      aemProcess = spawn('java', javaArgs, {
-        cwd: instanceDir,
-        env,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        detached: true
-      });
-      */
     }
 
     const instance: AemInstance = {
@@ -510,7 +474,6 @@ export class AemInstanceManager {
         const realPid = await this.findJavaProcess(port);
         if (realPid) {
           instance.pid = realPid;
-          console.log(`[AemInstanceManager] Found AEM ${instanceType} process with PID ${realPid}`);
           this.sendPidStatusUpdate(instanceType, realPid, true);
           clearInterval(pidCheckInterval);
         }

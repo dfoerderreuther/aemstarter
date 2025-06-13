@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, Menu } from 
 import path from 'node:path';
 import fs from 'fs';
 import started from 'electron-squirrel-startup';
-import { Installer } from './main/installer/Installer';
+import { Installer } from './main/services/Installer';
 import { ProjectSettings } from './main/services/ProjectSettings';
 import { PackageInstaller } from './main/services/PackageInstaller';
 import { ReplicationSettings } from './main/services/ReplicationSettings';
