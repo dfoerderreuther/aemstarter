@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
 import { IconPlayerPlay, IconPlayerStop, IconSkull, IconSettings, IconBug, IconBrowser, IconColumns3, IconColumns1, IconDeviceFloppy, IconFolder, IconTerminal2, IconCode, IconRobot } from '@tabler/icons-react';
-import { InstallService } from '../services/installService';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
@@ -46,12 +45,10 @@ interface MainActionsViewProps {
 }
 
 export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewMode, setViewMode }) => {
-  const [showInstallConfirm, setShowInstallConfirm] = useState(false);
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
   const [showAutomation, setShowAutomation] = useState(false);
-  const [isInstalling, setIsInstalling] = useState(false);
   const [isAuthorRunning, setIsAuthorRunning] = useState(false);
   const [isAuthorDebugging, setIsAuthorDebugging] = useState(false);
   const [isPublisherRunning, setIsPublisherRunning] = useState(false);
@@ -127,19 +124,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
   }, [project]);
 
 
-  const confirmInstall = async () => {
-    try {
-      setIsInstalling(true);
-      setShowInstallConfirm(false);
-      await InstallService.installAEM(project);
-      // Add a small delay to ensure file system operations are complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } catch (error) {
-      console.error('Installation failed:', error);
-    } finally {
-      setIsInstalling(false);
-    }
-  };
+
 
   const handleKillAll = () => {
     setShowKillAllConfirm(true);
@@ -338,7 +323,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
     }
   };
 
-  const installButtonStyles = {
+  const secondButtonStyles = {
     root: { 
       height: 30,
       padding: '0 12px',
@@ -617,7 +602,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   color={viewMode === 'columns' ? 'blue' : 'gray'}
                   variant={viewMode === 'columns' ? 'filled' : 'light'}
                   size="xs"
-                  styles={installButtonStyles}
+                  styles={secondButtonStyles}
                   onClick={() => setViewMode('columns')}
                 >
                   <IconColumns3 size={16} />
@@ -628,7 +613,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   color={viewMode === 'tabs' ? 'blue' : 'gray'}
                   variant={viewMode === 'tabs' ? 'filled' : 'light'}
                   size="xs"
-                  styles={installButtonStyles}
+                  styles={secondButtonStyles}
                   onClick={() => setViewMode('tabs')}
                 >
                   <IconColumns1 size={16} />
@@ -649,7 +634,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   color="green" 
                   variant="filled" 
                   size="xs"
-                  styles={installButtonStyles}
+                  styles={secondButtonStyles}
                   onClick={() => setShowSettings(true)}
                 >
                   <IconSettings size={16} />
@@ -660,7 +645,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   color="green" 
                   variant="filled" 
                   size="xs"
-                  styles={installButtonStyles}
+                  styles={secondButtonStyles}
                   onClick={() => setShowAutomation(true)}
                 >
                   <IconRobot size={16} />
@@ -671,7 +656,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   color="blue"
                   variant="filled"
                   size="xs"
-                  styles={installButtonStyles}
+                  styles={secondButtonStyles}
                   disabled={isAuthorRunning || isPublisherRunning || isDispatcherRunning}
                   onClick={() => setShowBackup(true)}
                 >
@@ -693,7 +678,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   color="blue" 
                   variant="filled" 
                   size="xs"
-                  styles={installButtonStyles}
+                  styles={secondButtonStyles}
                   disabled={!projectSettings?.dev?.path}
                   onClick={async () => {
                     try {
@@ -711,7 +696,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   color="blue" 
                   variant="filled" 
                   size="xs"
-                  styles={installButtonStyles}
+                  styles={secondButtonStyles}
                   disabled={!projectSettings?.dev?.path}
                   onClick={async () => {
                     try {
@@ -729,7 +714,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
                   color="blue" 
                   variant="filled" 
                   size="xs"
-                  styles={installButtonStyles}
+                  styles={secondButtonStyles}
                   disabled={!projectSettings?.dev?.path}
                   onClick={async () => {
                     try {
@@ -747,36 +732,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, viewM
         </Paper>
 
       </Group>
-
-      <Modal
-        opened={showInstallConfirm}
-        onClose={() => setShowInstallConfirm(false)}
-        title="Confirm Installation"
-        size="md"
-      >
-        <Stack>
-          <Text size="sm">
-            This action will:
-          </Text>
-          <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            <li>Delete existing folders (if any)</li>
-            <li>Create new folders: author, publisher, dispatcher, install</li>
-            <li>Copy license.properties to author and publisher folders</li>
-            <li>Unzip SDK package to install folder</li>
-          </ul>
-          <Text size="sm" c="red" mt="md">
-            Are you sure you want to proceed?
-          </Text>
-          <Group justify="flex-end" mt="md">
-            <Button variant="outline" onClick={() => setShowInstallConfirm(false)}>
-              Cancel
-            </Button>
-            <Button color="red" onClick={confirmInstall}>
-              Proceed with Installation
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
 
       <Modal
         opened={showKillAllConfirm}
