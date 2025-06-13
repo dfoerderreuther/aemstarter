@@ -90,7 +90,7 @@ export class AemHealthChecker {
         timestamp: Date.now()
       };
 
-      console.log(`[AemHealthChecker] Health check result for ${instanceType}: status=${response.status}, ok=${response.ok}, url=${url}`);
+      //console.log(`[AemHealthChecker] Health check result for ${instanceType}: status=${response.status}, ok=${response.ok}, url=${url}`);
 
       // Take a screenshot regardless of health status (for debugging)
       try {

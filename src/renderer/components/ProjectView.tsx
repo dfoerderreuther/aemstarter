@@ -4,13 +4,8 @@ import {
   IconColumns3, 
   IconColumns1, 
   IconServer, 
-  IconEdit, 
-  IconWorld, 
-  IconRoute, 
   IconFolder, 
-  IconTerminal, 
-  IconCode, 
-  IconTerminal2 
+  IconTerminal
 } from '@tabler/icons-react';
 import { Project, ProjectSettings } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
