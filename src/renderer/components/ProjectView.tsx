@@ -1,6 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Tabs, Stack, Button, Tooltip, Divider } from '@mantine/core';
-import { IconColumns3, IconColumns1 } from '@tabler/icons-react';
+import { 
+  IconColumns3, 
+  IconColumns1, 
+  IconServer, 
+  IconEdit, 
+  IconWorld, 
+  IconRoute, 
+  IconFolder, 
+  IconTerminal, 
+  IconCode, 
+  IconTerminal2 
+} from '@tabler/icons-react';
 import { Project, ProjectSettings } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './files/FilesView';
@@ -69,22 +80,23 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         <Tabs.List>
           {viewMode === 'columns' ? (
             <>
-            <Tabs.Tab value="instances">Instances</Tabs.Tab>
+            <Tabs.Tab value="instances" color="blue" leftSection={<IconServer size={16} />}>AEM Instances</Tabs.Tab>
             </>
           ) : (
             <>
-              <Tabs.Tab value="author">Author</Tabs.Tab>
-              <Tabs.Tab value="publisher">Publisher</Tabs.Tab>
-              <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
+              <Tabs.Tab value="author" color="blue" leftSection={<IconServer size={16} />}>AEM Author</Tabs.Tab>
+              <Tabs.Tab value="publisher" color="blue" leftSection={<IconServer size={16} />}>AEM Publisher</Tabs.Tab>
+              <Tabs.Tab value="dispatcher" color="blue" leftSection={<IconServer size={16} />}>AEM Dispatcher</Tabs.Tab>
             </>
           )
           }
-          <Tabs.Tab value="files">Files</Tabs.Tab>
-          <Tabs.Tab value="terminal">Terminal</Tabs.Tab>
+          <Tabs.Tab value="files" color="blue" leftSection={<IconFolder size={16} />}>AEM Files</Tabs.Tab>
+          <Tabs.Tab value="terminal" color="blue" leftSection={<IconTerminal size={16} />}>AEM Terminal</Tabs.Tab>
           {projectSettings?.dev?.path && (
             <>
-              <Tabs.Tab value="devfiles">Dev Files</Tabs.Tab>
-              <Tabs.Tab value="devterminal">Dev Terminal</Tabs.Tab>
+              <Divider orientation='vertical' />
+              <Tabs.Tab value="devfiles" color="green" leftSection={<IconFolder size={16} />}>Dev Files</Tabs.Tab>
+              <Tabs.Tab value="devterminal" color="green" leftSection={<IconTerminal size={16} />}>Dev Terminal</Tabs.Tab>
             </>
           )}
           
