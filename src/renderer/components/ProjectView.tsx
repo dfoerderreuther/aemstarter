@@ -39,7 +39,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         backgroundColor: '#1A1B1E'
       }}
     >
-      <MainActionsView project={project} viewMode={viewMode} setViewMode={setViewMode} />
+      <MainActionsView project={project} />
 
         <Tabs 
           defaultValue="author" 
