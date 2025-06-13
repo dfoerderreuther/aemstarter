@@ -3,12 +3,47 @@ import { Grid, ScrollArea, Box, Text } from '@mantine/core';
 import { FileTreeView, FileTreeViewRef } from './FileTreeView';
 import { EditorView } from './EditorView';
 import { isBinaryFileByExtension, isBinaryContent } from '../../utils/fileUtils';
+import { Project } from '../../../types/Project';
+
+interface ProjectSettings {
+  version: string;
+  general: {
+    name: string;
+    healthCheck: boolean;
+  };
+  author: {
+    port: number;
+    runmode: string;
+    jvmOpts: string;
+    debugJvmOpts: string;
+    healthCheckPath: string;
+  };
+  publisher: {
+    port: number;
+    runmode: string;
+    jvmOpts: string;
+    debugJvmOpts: string;
+    healthCheckPath: string;
+  };
+  dispatcher: {
+    port: number;
+    config: string;
+    healthCheckPath: string;
+  };
+  dev: {
+    path: string;
+    editor: string;
+    customEditorPath: string;
+  };
+}
 
 interface FilesViewProps {
   rootPath: string;
+  project?: Project;
+  projectSettings?: ProjectSettings | null;
 }
 
-export const FilesView: React.FC<FilesViewProps> = ({ rootPath }) => {
+export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project, projectSettings }) => {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isBinaryFile, setIsBinaryFile] = useState<boolean>(false);
@@ -86,18 +121,13 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath }) => {
   return (
     <Grid style={{ height: '100%', margin: 0 }}>
       <Grid.Col style={{ height: '100%', padding: 0, width: '400px', maxWidth: '400px', flex: '0 0 400px' }}>
-        <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
-            <Text size="xs" fw={700} c="dimmed">FILE TREE</Text>
-          </Box>
-          <ScrollArea h="100%" scrollbarSize={6}>
-            <FileTreeView 
-              rootPath={rootPath} 
-              onFileSelect={handleFileSelect}
-              ref={fileTreeRef}
-            />
-          </ScrollArea>
-        </Box>
+          <FileTreeView 
+            rootPath={rootPath} 
+            onFileSelect={handleFileSelect}
+            project={project}
+            projectSettings={projectSettings}
+            ref={fileTreeRef}
+          />
       </Grid.Col>
       
       <Grid.Col style={{ height: '100%', padding: 0, borderLeft: '1px solid #2C2E33', flex: 1 }}>

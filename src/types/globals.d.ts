@@ -16,6 +16,7 @@ declare global {
       showOpenDialog: (options: any) => Promise<Electron.OpenDialogReturnValue>;
       openUrl: (url: string) => Promise<boolean>;
       openInFinder: (folderPath: string) => Promise<boolean>;
+      openInEditor: (folderPath: string, project?: Project) => Promise<boolean>;
       
       // Global settings
       getGlobalSettings: () => Promise<{ aemSdkPath?: string; licensePath?: string }>;

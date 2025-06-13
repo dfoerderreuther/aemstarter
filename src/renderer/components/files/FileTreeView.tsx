@@ -1,7 +1,8 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Collapse, Group, Text, Box, Stack, Loader, UnstyledButton, ActionIcon } from '@mantine/core';
-import { IconFolder, IconFolderOpen, IconFile, IconChevronRight, IconChevronDown, IconRefresh, IconEye, IconEyeOff, IconPhoto, IconFileZip, IconMusic, IconVideo, IconFileText } from '@tabler/icons-react';
+import { Collapse, Group, Text, Box, Stack, Loader, UnstyledButton, ActionIcon, Divider } from '@mantine/core';
+import { IconFolder, IconFolderOpen, IconFile, IconChevronRight, IconChevronDown, IconRefresh, IconEye, IconEyeOff, IconPhoto, IconFileZip, IconMusic, IconVideo, IconFileText, IconCode } from '@tabler/icons-react';
 import { isBinaryFileByExtension, getFileExtension } from '../../utils/fileUtils';
+import { Project } from '../../../types/Project';
 
 export interface FileSystemEntry {
   name: string;
@@ -9,6 +10,38 @@ export interface FileSystemEntry {
   isDirectory: boolean;
   isFile: boolean;
   isSymlink: boolean;
+}
+
+interface ProjectSettings {
+  version: string;
+  general: {
+    name: string;
+    healthCheck: boolean;
+  };
+  author: {
+    port: number;
+    runmode: string;
+    jvmOpts: string;
+    debugJvmOpts: string;
+    healthCheckPath: string;
+  };
+  publisher: {
+    port: number;
+    runmode: string;
+    jvmOpts: string;
+    debugJvmOpts: string;
+    healthCheckPath: string;
+  };
+  dispatcher: {
+    port: number;
+    config: string;
+    healthCheckPath: string;
+  };
+  dev: {
+    path: string;
+    editor: string;
+    customEditorPath: string;
+  };
 }
 
 interface FileTreeEntryProps {
@@ -22,6 +55,8 @@ interface FileTreeEntryProps {
 interface FileTreeViewProps {
   rootPath: string;
   onFileSelect?: (filePath: string) => void;
+  project?: Project;
+  projectSettings?: ProjectSettings | null;
 }
 
 export interface FileTreeViewRef {
@@ -162,7 +197,7 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
   );
 };
 
-export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ rootPath, onFileSelect }, ref) => {
+export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ rootPath, onFileSelect, project, projectSettings }, ref) => {
   const [rootEntries, setRootEntries] = useState<FileSystemEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -245,12 +280,12 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   }
   
   return (
-    <Stack gap={0}>
-      <Group p="xs" justify="space-between">
-        <Group gap="xs">
-          <IconFolder size={16} />
-          <Text size="sm" fw={500}>Files</Text>
-          <ActionIcon 
+    <>
+    <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
+      <Group justify="space-between" align="center">
+        <Text size="xs" fw={700} c="dimmed">FILE TREE</Text>
+        <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
+        <ActionIcon 
             variant="subtle" 
             onClick={loadRootEntries}
             title="Refresh directory"
@@ -264,7 +299,9 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
               title={showHidden ? "Hide hidden files" : "Show hidden files"}
             >
               {showHidden ? <IconEye size={16} /> : <IconEyeOff size={16} />}
-            </ActionIcon>
+          </ActionIcon>
+
+          <Divider orientation='vertical' />
 
           <ActionIcon 
             variant="subtle"
@@ -274,9 +311,21 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
           >
             <IconFolder size={16} />
           </ActionIcon>
-            
+
+          {project && projectSettings?.dev?.editor && (
+            <ActionIcon 
+              variant="subtle"
+              onClick={() => rootPath && rootPath.trim() !== '' && window.electronAPI.openInEditor(rootPath, project)}
+              title={`Open in ${projectSettings.dev.editor === 'code' ? 'VS Code' : projectSettings.dev.editor === 'cursor' ? 'Cursor' : projectSettings.dev.editor === 'idea' ? 'IntelliJ IDEA' : 'Editor'}`}
+              disabled={!rootPath || rootPath.trim() === ''}
+            >
+              <IconCode size={16} />
+            </ActionIcon>
+          )}
         </Group>
       </Group>
+      </Box>
+      <Stack gap={0} style={{ height: 'calc(100vh - 235px)', overflowY: 'scroll' }}>
       {rootEntries.map((entry) => (
         <FileTreeEntry 
           key={entry.path} 
@@ -288,5 +337,6 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
         />
       ))}
     </Stack>
+    </>
   );
 }); 

@@ -239,11 +239,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         </Tabs.Panel>
 
         <Tabs.Panel value="files" p="md">
-          <FilesView rootPath={project.folderPath} />
+          <FilesView rootPath={project.folderPath} project={project} projectSettings={projectSettings} />
         </Tabs.Panel>
 
         <Tabs.Panel value="devfiles" p="md">
-          <FilesView rootPath={projectSettings?.dev?.path || ''} />
+          <FilesView rootPath={projectSettings?.dev?.path || ''} project={project} projectSettings={projectSettings} />
         </Tabs.Panel>
       </Tabs>
 

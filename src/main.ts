@@ -15,6 +15,7 @@ import { AemInstanceManagerRegister } from './main/AemInstanceManagerRegister';
 import { DispatcherManagerRegister } from './main/DispatcherManagerRegister';
 import { ProjectManagerRegister } from './main/ProjectManagerRegister';
 import { Automation } from './main/services/automation/Automation';
+import { spawn } from 'child_process';
 
 // Set the app name immediately (this affects dock/taskbar display)
 app.setName('AEM Starter');
@@ -198,6 +199,42 @@ ipcMain.handle('open-in-finder', async (_, folderPath) => {
     return true;
   } catch (error) {
     console.error('Error opening folder in finder:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('open-in-editor', async (_, folderPath: string, project?: Project) => {
+  try {
+    if (!project) {
+      // Fallback: try to open with default editor
+      await shell.openPath(folderPath);
+      return true;
+    }
+
+    const settings = ProjectSettings.getSettings(project);
+    const customEditorPath = settings.dev.customEditorPath;
+    const editor = settings.dev.editor;
+    
+    let command = editor === 'custom' && customEditorPath ? customEditorPath : editor;
+    
+    // Parse command and arguments
+    const parts = command.split(' ');
+    const cmd = parts[0];
+    const args = [...parts.slice(1), folderPath];
+
+    // Spawn detached process that runs independently of the app
+    const child = spawn(cmd, args, {
+      detached: true,
+      stdio: 'ignore',
+      cwd: process.cwd()
+    });
+
+    // Unreference the child process so parent can exit independently
+    child.unref();
+    
+    return true;
+  } catch (error) {
+    console.error('Error opening folder in editor:', error);
     throw error;
   }
 });

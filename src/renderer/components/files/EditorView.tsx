@@ -253,7 +253,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
           </Group>
         </Group>
       </Box>
-      <Box style={{ height: 'calc(100vh - 197px)' }}>
+      <Box style={{ height: 'calc(100vh - 235px)' }}>
         {isBinaryFile ? (
           selectedFile && isImageFile(selectedFile) ? renderImageViewer() : renderBinaryFileMessage()
         ) : fileContent ? (

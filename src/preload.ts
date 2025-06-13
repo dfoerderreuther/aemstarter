@@ -45,6 +45,8 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('open-url', url),
     openInFinder: (folderPath: string) =>
       ipcRenderer.invoke('open-in-finder', folderPath),
+    openInEditor: (folderPath: string, project?: Project) =>
+      ipcRenderer.invoke('open-in-editor', folderPath, project),
       
     // File system operations
     readDirectory: (dirPath: string, showHidden = false) =>
