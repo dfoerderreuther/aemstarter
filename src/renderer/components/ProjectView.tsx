@@ -17,6 +17,7 @@ import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './files/FilesView';
 import { DispatcherView } from './DispatcherView';
 import { MainActionsView } from './MainActionsView';
+import { TerminalTab } from './TerminalTab';
 
 interface ProjectViewProps {
   project: Project;
@@ -242,8 +243,17 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           <FilesView rootPath={project.folderPath} project={project} projectSettings={projectSettings} />
         </Tabs.Panel>
 
+        <Tabs.Panel value="terminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <TerminalTab rootPath={project.folderPath}
+                visible={activeTab === 'terminal'}  />
+        </Tabs.Panel>
+
         <Tabs.Panel value="devfiles" p="md">
           <FilesView rootPath={projectSettings?.dev?.path || ''} project={project} projectSettings={projectSettings} />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="devterminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <TerminalTab rootPath={projectSettings?.dev?.path || ''} visible={activeTab === 'devterminal'} />
         </Tabs.Panel>
       </Tabs>
 
