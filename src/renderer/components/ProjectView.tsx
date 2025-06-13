@@ -3,7 +3,7 @@ import { Tabs, Stack, Button, Tooltip } from '@mantine/core';
 import { IconColumns3, IconColumns1 } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
-import { FilesView } from './FilesView';
+import { FilesView } from './files/FilesView';
 import { DispatcherView } from './DispatcherView';
 import { MainActionsView } from './MainActionsView';
 

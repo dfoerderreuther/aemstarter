@@ -1,7 +1,7 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Collapse, Group, Text, Box, Stack, Loader, UnstyledButton, ActionIcon } from '@mantine/core';
 import { IconFolder, IconFolderOpen, IconFile, IconChevronRight, IconChevronDown, IconRefresh, IconEye, IconEyeOff, IconPhoto, IconFileZip, IconMusic, IconVideo, IconFileText } from '@tabler/icons-react';
-import { isBinaryFileByExtension, getFileExtension } from '../utils/fileUtils';
+import { isBinaryFileByExtension, getFileExtension } from '../../utils/fileUtils';
 
 export interface FileSystemEntry {
   name: string;
