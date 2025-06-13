@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Paper, 
   Group, 
   Text, 
   Button, 
@@ -8,7 +7,6 @@ import {
   Badge, 
   Loader,
   Alert,
-  Divider,
   Indicator,
   Modal,
   Grid
