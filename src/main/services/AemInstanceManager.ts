@@ -800,8 +800,8 @@ export class AemInstanceManager {
     
     // Strategy 1: Try current and lower patch versions
     const currentMajor = major;
-    const currentMinor = minor;
-    const currentPatch = patch;
+    let currentMinor = minor;
+    let currentPatch = patch;
     
     for (let attempt = 0; attempt < 15; attempt++) {
       const tryVersion = `${currentMajor}.${currentMinor}.${currentPatch}`;

@@ -36,7 +36,7 @@ export class AutomatedLastBackupAndRun implements AutoTask {
         progress('Stopping any currently running AEM and Dispatcher instances...');
         await this.stopWhenRunning();
         
-        progress(`Restoring backup "${lastBackup.name}" - this may take several minutes...`);
+        progress(`Restoring backup "${lastBackup.name}" - this may take some time...`);
         await this.restore(lastBackup);
         
         progress('Starting AEM Author, Publisher, and Dispatcher instances...');
