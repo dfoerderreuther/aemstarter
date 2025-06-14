@@ -203,7 +203,7 @@ const App: React.FC = () => {
               </Title>
             </Group>
             <Group align="center" gap={8}>
-              <SystemCheckView />
+              <SystemCheckView project={selectedProject || undefined} />
               <Button
                 leftSection={<IconPlus size={16} />}
                 onClick={() => setModalOpen(true)}

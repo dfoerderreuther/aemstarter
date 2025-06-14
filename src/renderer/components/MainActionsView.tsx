@@ -585,18 +585,19 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
         <Paper style={sectionStyles}>
           <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">Other</Text>
-            <Button.Group>
-              <Tooltip label="Settings">
-                <Button 
-                  color="green" 
-                  variant="filled" 
-                  size="xs"
-                  styles={secondButtonStyles}
-                  onClick={() => setShowSettings(true)}
-                >
-                  <IconSettings size={16} />
-                </Button>
-              </Tooltip>
+            <Group gap="xs">
+              <Button.Group>
+                <Tooltip label="Settings">
+                  <Button 
+                    color="green" 
+                    variant="filled" 
+                    size="xs"
+                    styles={secondButtonStyles}
+                    onClick={() => setShowSettings(true)}
+                  >
+                    <IconSettings size={16} />
+                  </Button>
+                </Tooltip>
               <Tooltip label="Automation">
                 <Button 
                   color="green" 
@@ -621,7 +622,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
                 </Button>
               </Tooltip>
              
-            </Button.Group>
+              </Button.Group>
+            </Group>
           </Stack>
         </Paper>
         <Divider orientation="vertical" />

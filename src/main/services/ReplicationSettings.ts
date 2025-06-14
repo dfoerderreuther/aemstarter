@@ -1,7 +1,7 @@
 import { Project } from "../../types/Project";
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { ProjectSettings } from "./ProjectSettings";
+import { ProjectSettingsService } from "./ProjectSettingsService";
 import path from "path";
 import fs from 'fs';
 
@@ -34,7 +34,7 @@ export class ReplicationSettings {
     }
 
     private async setReplicationDispatcher(project: Project) {
-        const settings = ProjectSettings.getSettings(project);
+        const settings = ProjectSettingsService.getSettings(project);
         
         const dispatcherConfig = settings.dispatcher.config;
 

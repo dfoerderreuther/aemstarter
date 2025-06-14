@@ -13,6 +13,7 @@ import {
 } from '@mantine/core';
 import { IconRefresh, IconCheck, IconX, IconAlertCircle, IconSettings } from '@tabler/icons-react';
 import { SystemCheckResults } from '../../types/SystemCheckResults';
+import { Project, ProjectSettings } from '../../types/Project';
 
 interface SystemCheckItemProps {
   label: string;
@@ -50,18 +51,81 @@ const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, secondaryLabel
   );
 };
 
-export const SystemCheckView: React.FC = () => {
+interface SystemCheckViewProps {
+  project?: Project;
+}
+
+export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => {
   const [modalOpened, setModalOpened] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SystemCheckResults | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null);
+
+  // Load project settings when component mounts or project changes
+    const loadProjectSettings = async () => {
+      try {
+        console.log('SystemCheckView project', project);
+        if (project) {
+          // Get settings for specific project
+          const settings = await window.electronAPI.getProjectSettings(project);
+          setProjectSettings(settings);
+        } else {
+          // Get default settings when no project context
+          const defaultSettings: ProjectSettings = {
+            version: "1.0.0",
+            general: {
+              name: "Default",
+              healthCheck: true
+            },
+            author: {
+              port: 4502,
+              runmode: "author,default",
+              jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
+              debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5005,suspend=n,server=y",
+              healthCheckPath: ""
+            },
+            publisher: {
+              port: 4503,
+              runmode: "publish,default",
+              jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
+              debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5006,suspend=n,server=y",
+              healthCheckPath: ""
+            },
+            dispatcher: {
+              port: 80,
+              config: "./config",
+              healthCheckPath: ""
+            },
+            dev: {
+              path: "",
+              editor: "",
+              customEditorPath: ""
+            }
+          };
+          setProjectSettings(defaultSettings);
+        }
+      } catch (error) {
+        console.error('Error loading project settings:', error);
+        setError('Failed to load project settings');
+      }
+    };
+
+  useEffect(() => {
+    loadProjectSettings();
+  }, [project]);
 
   const runSystemCheck = async () => {
+    if (!projectSettings) {
+      setError('Project settings not loaded');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     
     try {
-      const checkResults = await window.electronAPI.runSystemCheck();
+      const checkResults = await window.electronAPI.runSystemCheck(projectSettings);
       setResults(checkResults);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to run system check');
@@ -71,10 +135,12 @@ export const SystemCheckView: React.FC = () => {
     }
   };
 
-  // Run system check on component mount
+  // Run system check on component mount when project settings are loaded
   useEffect(() => {
-    runSystemCheck();
-  }, []);
+    if (projectSettings) {
+      runSystemCheck();
+    }
+  }, [projectSettings]);
 
   const getOverallStatus = () => {
     if (!results) return 'unknown';
@@ -140,7 +206,10 @@ export const SystemCheckView: React.FC = () => {
             <Button
               size="sm"
               leftSection={isLoading ? <Loader size={14} /> : <IconRefresh size={14} />}
-              onClick={runSystemCheck}
+              onClick={async () => {
+                await loadProjectSettings();
+                await runSystemCheck();
+              }}
               disabled={isLoading}
               variant="light"
             >
@@ -185,7 +254,7 @@ export const SystemCheckView: React.FC = () => {
                 <div>
                   <Text size="sm" fw={600} c="dimmed" mb="xs">Port Availability</Text>
                   <Stack gap="xs">
-                    <SystemCheckItem label="Port 80" secondaryLabel="Dispatcher" status={results.port80Available} />
+                    <SystemCheckItem label={`Port ${projectSettings?.dispatcher?.port}`} secondaryLabel="Dispatcher" status={results.port80Available} />
                     <SystemCheckItem label="Port 4502" secondaryLabel="AEM Author" status={results.port4502Available} />
                     <SystemCheckItem label="Port 4503" secondaryLabel="AEM Publisher" status={results.port4503Available} />
                     <SystemCheckItem label="Port 5005" secondaryLabel="AEM Author Debug" status={results.portAuthorDebugAvailable} />

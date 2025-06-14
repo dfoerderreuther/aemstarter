@@ -2,7 +2,7 @@ import { Project } from "../../types/Project";
 import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
-import { ProjectSettings } from './ProjectSettings';
+import { ProjectSettingsService } from './ProjectSettingsService';
 
 export class PackageInstaller {
 
@@ -99,7 +99,7 @@ export class PackageInstaller {
         }
 
         // Get instance settings to determine port
-        const settings = ProjectSettings.getSettings(this.project);
+        const settings = ProjectSettingsService.getSettings(this.project);
         const instanceSettings = settings[instance];
         const port = instanceSettings.port;
         const host = 'localhost'; // Default host

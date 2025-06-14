@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
-import { ProjectSettings } from './ProjectSettings';
+import { ProjectSettingsService } from './ProjectSettingsService';
 import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
 import { BackupService } from './BackupService';
 
@@ -368,7 +368,7 @@ export class AemInstanceManager {
     startType: 'start' | 'debug'
   ): Promise<void> {
     // Load settings from ProjectSettings
-    const settings = ProjectSettings.getSettings(this.project);
+    const settings = ProjectSettingsService.getSettings(this.project);
     const instanceSettings = settings[instanceType];
     
     if (!instanceSettings) {

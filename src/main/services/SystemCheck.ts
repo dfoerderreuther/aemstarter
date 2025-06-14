@@ -3,18 +3,19 @@ import { promisify } from 'util';
 import * as net from 'net';
 import { SystemCheckResults } from '../../types/SystemCheckResults';
 import { EditorAvailableResults } from '../../types/EditorAvailableResults';
+import { ProjectSettings } from '../../types/Project';
 
 const execAsync = promisify(exec);
 
 export class SystemCheck {
 
-    async runAllChecks(): Promise<SystemCheckResults> {
+    async runAllChecks(settings: ProjectSettings): Promise<SystemCheckResults> {
         const javaAvailable = await this.checkJavaAvailability();
         const javaVersion = await this.checkJavaVersion();
         const dockerAvailable = await this.checkDockerAvailability();
         const dockerDaemonRunning = await this.checkDockerDaemonRunning();
         const dockerVersion = await this.checkDockerVersion();
-        const port80Available = await this.checkPort80Available();
+        const port80Available = await this.checkPortDispatcherAvailable(settings);
         const port4502Available = await this.checkPort4502Available();
         const port4503Available = await this.checkPort4503Available();
         const portAuthorDebugAvailable = await this.checkPortAuthorDebugAvailable();
@@ -112,8 +113,8 @@ export class SystemCheck {
         });
     }
 
-    private async checkPort80Available(): Promise<boolean> {
-        return this.checkPortAvailable(80);
+    private async checkPortDispatcherAvailable(settings: ProjectSettings): Promise<boolean> {
+        return this.checkPortAvailable(settings.dispatcher.port);
     }
 
     private async checkPort4502Available(): Promise<boolean> {

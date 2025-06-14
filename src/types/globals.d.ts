@@ -26,7 +26,7 @@ declare global {
       refreshMenu: () => Promise<boolean>;
 
       // System Check
-      runSystemCheck: () => Promise<SystemCheckResults>;
+      runSystemCheck: (settings: any) => Promise<SystemCheckResults>;
       
       // File system operations
       readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;

@@ -3,10 +3,10 @@ import path from 'node:path';
 import fs from 'fs';
 import started from 'electron-squirrel-startup';
 import { Installer } from './main/services/Installer';
-import { ProjectSettings } from './main/services/ProjectSettings';
+import { ProjectSettingsService } from './main/services/ProjectSettingsService';
 import { PackageInstaller } from './main/services/PackageInstaller';
 import { ReplicationSettings } from './main/services/ReplicationSettings';
-import { Project } from './types/Project';
+import { Project, ProjectSettings } from './types/Project';
 //import { BackupManager } from './main/services/BackupManager';
 import { BackupService } from './main/services/BackupService';
 import { SystemCheck } from './main/services/SystemCheck';
@@ -212,7 +212,7 @@ ipcMain.handle('open-in-editor', async (_, folderPath: string, project?: Project
       return true;
     }
 
-    const settings = ProjectSettings.getSettings(project);
+    const settings = ProjectSettingsService.getSettings(project);
     const customEditorPath = settings.dev.customEditorPath;
     const editor = settings.dev.editor;
     
@@ -460,7 +460,7 @@ protocol.registerSchemesAsPrivileged([
 // Project Settings
 ipcMain.handle('get-project-settings', async (_, project: Project) => {
   try {
-    return ProjectSettings.getSettings(project);
+    return ProjectSettingsService.getSettings(project);
   } catch (error) {
     console.error('Error getting project settings:', error);
     throw error;
@@ -480,7 +480,7 @@ ipcMain.handle('check-editor-availability', async () => {
 
 ipcMain.handle('save-project-settings', async (_, project: Project, settings: any) => {
   try {
-    ProjectSettings.saveSettings(project, settings);
+    ProjectSettingsService.saveSettings(project, settings);
     
     // Check if health checking was enabled for running instances and start it
     const manager = AemInstanceManagerRegister.getInstanceManager(project);
@@ -727,10 +727,10 @@ ipcMain.handle('check-dispatcher-health', async (_, project: Project) => {
 });
 
 // System check IPC handler
-ipcMain.handle('run-system-check', async () => {
+ipcMain.handle('run-system-check', async (_, settings: ProjectSettings) => {
   try {
     const systemCheck = new SystemCheck();
-    return await systemCheck.runAllChecks();
+    return await systemCheck.runAllChecks(settings);
   } catch (error) {
     console.error('Error running system check:', error);
     throw error;

@@ -1,5 +1,5 @@
 import { Project } from "../../types/Project";
-import { ProjectSettings } from "./ProjectSettings";
+import { ProjectSettingsService } from "./ProjectSettingsService";
 import { spawn } from 'child_process';
 
 export class DevProjectUtils {
@@ -19,17 +19,17 @@ export class DevProjectUtils {
     }
 
     private async openFiles(project: Project) : Promise<void> {
-        const settings = ProjectSettings.getSettings(project);
+        const settings = ProjectSettingsService.getSettings(project);
         await this.execCommand('open', settings.dev.path)
     }
 
     private async openTerminal(project: Project) : Promise<void> {
-        const settings = ProjectSettings.getSettings(project);
+        const settings = ProjectSettingsService.getSettings(project);
         await this.execCommand('open -a Terminal', settings.dev.path)
     }
 
     private async openEditor(project: Project) : Promise<void> {
-        const settings = ProjectSettings.getSettings(project);
+        const settings = ProjectSettingsService.getSettings(project);
 
         const customEditorPath = settings.dev.customEditorPath;
         const editor = settings.dev.editor;

@@ -3,7 +3,7 @@ import { Project } from "../../types/Project";
 import fs from 'fs';
 import extract from 'extract-zip';
 import process from 'process';
-import { ProjectSettings } from "./ProjectSettings";
+import { ProjectSettingsService } from "./ProjectSettingsService";
 import { exec } from "child_process";
 import { promisify } from 'util';
 
@@ -153,7 +153,7 @@ export class Installer {
     }
 
     private createSettings() {
-        const settingsContent = ProjectSettings.SETTINGS_TEMPLATE
+        const settingsContent = ProjectSettingsService.SETTINGS_TEMPLATE
             .replace('{{PROJECT_NAME}}', this.project.name)
         fs.writeFileSync(`${this.project.folderPath}/settings.json`, settingsContent);
     }

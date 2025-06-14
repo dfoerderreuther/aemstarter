@@ -286,8 +286,8 @@ contextBridge.exposeInMainWorld(
     },
 
     // System Check
-    runSystemCheck: () =>
-      ipcRenderer.invoke('run-system-check'),
+    runSystemCheck: (settings: any) =>
+      ipcRenderer.invoke('run-system-check', settings),
 
     // Dispatcher Management
     startDispatcher: (project: Project) =>

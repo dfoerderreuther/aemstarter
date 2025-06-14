@@ -1,6 +1,6 @@
 import { ChildProcess, spawn } from 'child_process';
 import { Project } from '../../types/Project';
-import { ProjectSettings } from './ProjectSettings';
+import { ProjectSettingsService } from './ProjectSettingsService';
 import path from 'path';
 import fs from 'fs';
 import { BrowserWindow } from 'electron';
@@ -54,7 +54,7 @@ export class DispatcherManager {
         this.instance.pid = null;
 
         // Load settings from ProjectSettings
-        const settings = ProjectSettings.getSettings(this.project);
+        const settings = ProjectSettingsService.getSettings(this.project);
         const dispatcherSettings = settings.dispatcher;
         
         if (!dispatcherSettings) {

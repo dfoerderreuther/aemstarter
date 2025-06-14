@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron';
 import { Project } from '../../types/Project';
 import path from 'path';
 import fs from 'fs';
-import { ProjectSettings } from './ProjectSettings';
+import { ProjectSettingsService } from './ProjectSettingsService';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'starting' | 'unknown';
@@ -25,7 +25,7 @@ export class AemHealthChecker {
 
   async checkHealth(instanceType: 'author' | 'publisher' | 'dispatcher', port: number): Promise<HealthStatus> {
     // Read configuration on every health check run
-    const settings = ProjectSettings.getSettings(this.project);
+    const settings = ProjectSettingsService.getSettings(this.project);
     
     // Skip health check if disabled in general configuration
     if (!settings.general?.healthCheck) {
@@ -151,7 +151,7 @@ export class AemHealthChecker {
         }
       });
 
-      const settings = ProjectSettings.getSettings(this.project);
+      const settings = ProjectSettingsService.getSettings(this.project);
       const instanceSettings = settings[instanceType];
       const healthCheckPath = instanceSettings?.healthCheckPath || '';
 
