@@ -255,7 +255,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
 
   const handleOpenAuthor = async () => {
     try {
-      await window.electronAPI.openUrl('http://localhost:4502');
+      await window.electronAPI.openUrl(`http://localhost:${projectSettings?.author?.port}`);
     } catch (error) {
       console.error('Error opening author URL:', error);
     }
@@ -263,7 +263,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
 
   const handleOpenPublisher = async () => {
     try {
-      await window.electronAPI.openUrl('http://localhost:4503');
+      await window.electronAPI.openUrl(`http://localhost:${projectSettings?.publisher?.port}`);
     } catch (error) {
       console.error('Error opening publisher URL:', error);
     }
@@ -271,7 +271,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
 
   const handleOpenDispatcher = async () => {
     try {
-      await window.electronAPI.openUrl('http://localhost:80');
+      await window.electronAPI.openUrl(`http://localhost:${projectSettings?.dispatcher?.port}`);
     } catch (error) {
       console.error('Error opening dispatcher URL:', error);
     }

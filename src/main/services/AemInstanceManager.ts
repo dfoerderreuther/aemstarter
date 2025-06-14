@@ -116,8 +116,6 @@ export class AemInstanceManager {
 
         try {
           if (process.platform === 'win32') {
-            // Parse Windows netstat output
-            // Format: TCP    0.0.0.0:4502    0.0.0.0:0    LISTENING    1234
             const lines = stdout.trim().split('\n');
             for (const line of lines) {
               const parts = line.trim().split(/\s+/);
