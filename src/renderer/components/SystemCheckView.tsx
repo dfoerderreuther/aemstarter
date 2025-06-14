@@ -254,9 +254,9 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
                 <div>
                   <Text size="sm" fw={600} c="dimmed" mb="xs">Port Availability</Text>
                   <Stack gap="xs">
-                    <SystemCheckItem label={`Port ${projectSettings?.dispatcher?.port}`} secondaryLabel="Dispatcher" status={results.port80Available} />
-                    <SystemCheckItem label="Port 4502" secondaryLabel="AEM Author" status={results.port4502Available} />
-                    <SystemCheckItem label="Port 4503" secondaryLabel="AEM Publisher" status={results.port4503Available} />
+                    <SystemCheckItem label={`Port ${projectSettings?.dispatcher?.port}`} secondaryLabel="Dispatcher" status={results.portDispatcherAvailable} />
+                    <SystemCheckItem label="Port 4502" secondaryLabel="AEM Author" status={results.portAuthorAvailable} />
+                    <SystemCheckItem label="Port 4503" secondaryLabel="AEM Publisher" status={results.portPublisherAvailable} />
                     <SystemCheckItem label="Port 5005" secondaryLabel="AEM Author Debug" status={results.portAuthorDebugAvailable} />
                     <SystemCheckItem label="Port 5006" secondaryLabel="AEM Publisher Debug" status={results.portPublisherDebugAvailable} />
                   </Stack>
