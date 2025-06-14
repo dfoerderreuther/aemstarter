@@ -5,6 +5,10 @@ import path from 'path';
 import fs from 'fs';
 import { BrowserWindow } from 'electron';
 import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 interface DispatcherInstance {
   process: ChildProcess | null;
@@ -265,10 +269,6 @@ export class DispatcherManager {
             // Stop health checking first
             this.healthChecker.stopHealthChecking('dispatcher');
             
-            // Import exec to run shell commands
-            const { exec } = require('child_process');
-            const { promisify } = require('util');
-            const execAsync = promisify(exec);
             
             // Find containers using the dispatcher port
             console.log(`Looking for Docker containers using port ${port}...`);

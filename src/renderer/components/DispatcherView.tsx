@@ -34,7 +34,7 @@ export const DispatcherView = ({
   visible = true, 
   viewMode = 'tabs',
   isCollapsed = false,
-  onToggleCollapse = () => {}
+  onToggleCollapse = () => { console.log('Toggle collapse not provided'); }
 }: DispatcherViewProps) => {
   const [isRunning, setIsRunning] = useState(false);
   const [filterText, setFilterText] = useState('');

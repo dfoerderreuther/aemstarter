@@ -34,7 +34,7 @@ export class DevProjectUtils {
         const customEditorPath = settings.dev.customEditorPath;
         const editor = settings.dev.editor;
 
-        let command = editor === 'custom' && customEditorPath ? customEditorPath : editor;
+        const command = editor === 'custom' && customEditorPath ? customEditorPath : editor;
 
         await this.execCommand(command, settings.dev.path);
     }

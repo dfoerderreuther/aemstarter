@@ -23,7 +23,7 @@ export class AutomatedLastBackupAndRun implements AutoTask {
     }
 
     public async run(progressCallback?: (message: string) => void) : Promise<void> {
-        const progress = progressCallback || (() => {});
+        const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
         
         const lastBackup = await this.findBackup();
         if (lastBackup) {

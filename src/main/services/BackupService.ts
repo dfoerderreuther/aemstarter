@@ -23,7 +23,7 @@ export class BackupService {
         this.project = project;
     }
 
-    async backup(tarName: string, compress: boolean = true): Promise<void> {
+    async backup(tarName: string, compress = true): Promise<void> {
         tarName = this.fixTarName(tarName, compress);
         
         for (const instance of ['author', 'publisher'] as const) {
@@ -34,7 +34,7 @@ export class BackupService {
         const backupFolderPath = this.getBackupFolder();
         const backupPath = path.join(backupFolderPath, tarName); 
 
-        var paths = this.getBackupPaths();
+        const paths = this.getBackupPaths();
 
         const tarCommand = compress ? 'tar -czf' : 'tar -cf';
         const command = `${tarCommand} "${backupPath}" ${paths.join(' ')}`;
@@ -109,7 +109,7 @@ export class BackupService {
     }
 
     private getBackupPaths(): string[] {
-        var paths = [];
+        const paths = [];
         paths.push(...BackupService.aemBackupPaths.map(p => path.join('author', p)));
         paths.push(...BackupService.aemBackupPaths.map(p => path.join('publisher', p)));
         paths.push(...BackupService.dispatcherBackupPaths.map(p => path.join('dispatcher', p)));

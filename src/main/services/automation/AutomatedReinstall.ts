@@ -23,7 +23,7 @@ export class AutomatedReinstall implements AutoTask {
     }
 
     public async run(progressCallback?: (message: string) => void) : Promise<void> {
-        const progress = progressCallback || (() => {});
+        const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
         
         progress('Initiating automated AEM reinstallation process...');
         await this.stopWhenRunning();

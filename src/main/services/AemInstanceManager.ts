@@ -784,7 +784,7 @@ export class AemInstanceManager {
     }
     const major = parseInt(versionMatch[1], 10);
     const minor = parseInt(versionMatch[2], 10);
-    let patch = parseInt(versionMatch[3], 10);
+    const patch = parseInt(versionMatch[3], 10);
 
     // Create install directory if it doesn't exist
     const installDir = path.join(this.project.folderPath, 'install');
@@ -799,9 +799,9 @@ export class AemInstanceManager {
     let lastError: any = null;
     
     // Strategy 1: Try current and lower patch versions
-    let currentMajor = major;
-    let currentMinor = minor;
-    let currentPatch = patch;
+    const currentMajor = major;
+    const currentMinor = minor;
+    const currentPatch = patch;
     
     for (let attempt = 0; attempt < 15; attempt++) {
       const tryVersion = `${currentMajor}.${currentMinor}.${currentPatch}`;

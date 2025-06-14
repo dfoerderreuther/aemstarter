@@ -14,7 +14,7 @@ const config: ForgeConfig = {
     icon: './icons/icon', // Path without extension - Electron Forge will choose the right format
     // macOS specific configuration
     osxSign: {
-      identity: '9C86B0E8B0AADB16EC370431C6E7DDAC50D97DE4',
+      identity: 'Apple Development: dominik.foerderreuther@gmail.com (3ZHD6SW8R2)',
       optionsForFile: (_filePath: string) => {
         // Return entitlements for the main app
         return {

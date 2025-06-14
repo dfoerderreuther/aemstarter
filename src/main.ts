@@ -216,7 +216,7 @@ ipcMain.handle('open-in-editor', async (_, folderPath: string, project?: Project
     const customEditorPath = settings.dev.customEditorPath;
     const editor = settings.dev.editor;
     
-    let command = editor === 'custom' && customEditorPath ? customEditorPath : editor;
+    const command = editor === 'custom' && customEditorPath ? customEditorPath : editor;
     
     // Parse command and arguments
     const parts = command.split(' ');
@@ -572,7 +572,7 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
   }
 });
 
-ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string, compress: boolean = true) => {
+ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string, compress = true) => {
   try {
     const backupManager = new BackupService(project);
     await backupManager.backup(tarName, compress);

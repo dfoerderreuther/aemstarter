@@ -25,7 +25,7 @@ export const AemInstanceView = ({
   visible = true, 
   viewMode = 'tabs',
   isCollapsed = false,
-  onToggleCollapse = () => {}
+  onToggleCollapse = () => { console.log('Toggle collapse not provided'); }
 }: AemInstanceViewProps) => {
   const [isRunning, setIsRunning] = useState(false);
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);

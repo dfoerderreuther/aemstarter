@@ -115,7 +115,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
     return (
       <Modal
         opened={opened}
-        onClose={isTaskCompleted ? onClose : () => {}} // Allow closing only when completed
+        onClose={isTaskCompleted ? onClose : () => { console.log('not closing')}} // Allow closing only when completed
         title={
           <Group gap="sm">
             <ThemeIcon variant="light" color="blue" size="md">
