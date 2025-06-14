@@ -254,13 +254,13 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
                 <div>
                   <Text size="sm" fw={600} c="dimmed" mb="xs">Port Availability</Text>
                   <Stack gap="xs">
-                    <SystemCheckItem label={`Port ${projectSettings?.dispatcher?.port}`} secondaryLabel="Dispatcher" status={results.portDispatcherAvailable} />
-                    <SystemCheckItem label="Port 4502" secondaryLabel="AEM Author" status={results.portAuthorAvailable} />
-                    <SystemCheckItem label="Port 4503" secondaryLabel="AEM Publisher" status={results.portPublisherAvailable} />
-                    <SystemCheckItem label="Port 5005" secondaryLabel="AEM Author Debug" status={results.portAuthorDebugAvailable} />
-                    <SystemCheckItem label="Port 5006" secondaryLabel="AEM Publisher Debug" status={results.portPublisherDebugAvailable} />
+                    <SystemCheckItem label={`Port ${results.portDispatcherAvailable[0]}`} secondaryLabel="Dispatcher" status={results.portDispatcherAvailable[1]} />
+                    <SystemCheckItem label={`Port ${results.portAuthorAvailable[0]}`} secondaryLabel="AEM Author" status={results.portAuthorAvailable[1]} />
+                    <SystemCheckItem label={`Port ${results.portPublisherAvailable[0]}`} secondaryLabel="AEM Publisher" status={results.portPublisherAvailable[1]} />
+                    <SystemCheckItem label={`Port ${results.portAuthorDebugAvailable[0]}`} secondaryLabel="AEM Author Debug" status={results.portAuthorDebugAvailable[1]} />
+                    <SystemCheckItem label={`Port ${results.portPublisherDebugAvailable[0]}`} secondaryLabel="AEM Publisher Debug" status={results.portPublisherDebugAvailable[1]} />
                   </Stack>
-                </div>
+                </div>  
               </Grid.Col>
             </Grid>
           )}

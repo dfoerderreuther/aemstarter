@@ -4,9 +4,9 @@ export interface SystemCheckResults {
     dockerAvailable: boolean;
     dockerDaemonRunning: boolean;
     dockerVersion: string;
-    portDispatcherAvailable: boolean;
-    portAuthorAvailable: boolean;
-    portPublisherAvailable: boolean;
-    portAuthorDebugAvailable: boolean;
-    portPublisherDebugAvailable: boolean;
+    portDispatcherAvailable: [number, boolean];
+    portAuthorAvailable: [number, boolean];
+    portPublisherAvailable: [number, boolean];
+    portAuthorDebugAvailable: [number, boolean];
+    portPublisherDebugAvailable: [number, boolean];
 } 

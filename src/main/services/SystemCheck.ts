@@ -16,10 +16,10 @@ export class SystemCheck {
         const dockerDaemonRunning = await this.checkDockerDaemonRunning();
         const dockerVersion = await this.checkDockerVersion();
         const portDispatcherAvailable = await this.checkPortDispatcherAvailable(settings);
-        const portAuthorAvailable = await this.checkportAuthorAvailable();
-        const portPublisherAvailable = await this.checkportPublisherAvailable();
-        const portAuthorDebugAvailable = await this.checkPortAuthorDebugAvailable();
-        const portPublisherDebugAvailable = await this.checkPortPublisherDebugAvailable();
+        const portAuthorAvailable = await this.checkportAuthorAvailable(settings);
+        const portPublisherAvailable = await this.checkportPublisherAvailable(settings);
+        const portAuthorDebugAvailable = await this.checkPortAuthorDebugAvailable(settings);
+        const portPublisherDebugAvailable = await this.checkPortPublisherDebugAvailable(settings);
 
         return {
             javaAvailable,
@@ -96,40 +96,54 @@ export class SystemCheck {
         }
     }
 
-    private async checkPortAvailable(port: number): Promise<boolean> {
+    private async checkPortAvailable(port: number): Promise<[number, boolean]> {
         return new Promise((resolve) => {
             const server = net.createServer();
             
             server.listen(port, () => {
                 server.once('close', () => {
-                    resolve(true);
+                    resolve([port, true]);
                 });
                 server.close();
             });
             
             server.on('error', () => {
-                resolve(false);
+                resolve([port, false]);
             });
         });
     }
 
-    private async checkPortDispatcherAvailable(settings: ProjectSettings): Promise<boolean> {
+    private parseDebugPortFromJvmOpts(debugJvmOpts: string, defaultPort: number): number {
+        // Parse the debug port from JVM options like:
+        // " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5005,suspend=n,server=y"
+        const addressMatch = debugJvmOpts.match(/address=(\d+)/);
+        if (addressMatch) {
+            return parseInt(addressMatch[1], 10);
+        }
+        
+        // Fallback to default port if parsing fails
+        return defaultPort;
+    }
+
+    private async checkPortDispatcherAvailable(settings: ProjectSettings): Promise<[number, boolean]> {
         return this.checkPortAvailable(settings.dispatcher.port);
     }
 
-    private async checkportAuthorAvailable(): Promise<boolean> {
-        return this.checkPortAvailable(4502);
+    private async checkportAuthorAvailable(settings: ProjectSettings): Promise<[number, boolean]> {
+        return this.checkPortAvailable(settings.author.port);
     }
 
-    private async checkportPublisherAvailable(): Promise<boolean> {
-        return this.checkPortAvailable(4503);
+    private async checkportPublisherAvailable(settings: ProjectSettings): Promise<[number, boolean]> {
+        return this.checkPortAvailable(settings.publisher.port);
     }
 
-    private async checkPortAuthorDebugAvailable(): Promise<boolean> {
-        return this.checkPortAvailable(5005);
+    private async checkPortAuthorDebugAvailable(settings: ProjectSettings): Promise<[number, boolean]> {
+        const debugPort = this.parseDebugPortFromJvmOpts(settings.author.debugJvmOpts, 5005);
+        return this.checkPortAvailable(debugPort);
     }
 
-    private async checkPortPublisherDebugAvailable(): Promise<boolean> {
-        return this.checkPortAvailable(5006);
+    private async checkPortPublisherDebugAvailable(settings: ProjectSettings): Promise<[number, boolean]> {
+        const debugPort = this.parseDebugPortFromJvmOpts(settings.publisher.debugJvmOpts, 5006);
+        return this.checkPortAvailable(debugPort);
     }
 }
