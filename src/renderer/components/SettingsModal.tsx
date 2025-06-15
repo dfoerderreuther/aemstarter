@@ -329,9 +329,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
             <Select
               label="Editor"
               description="Select your preferred code editor"
-              value={settings.dev?.editor || 'code'}
+              value={settings.dev?.editor || ''}
               onChange={(value) => updateDevSettings('editor', value)}
               data={[
+                { value: '', label: 'None' },
                 { value: 'code', label: `Visual Studio Code${getEditorAvailabilityIcon('visualStudioCode')}` },
                 { value: 'cursor', label: `Cursor${getEditorAvailabilityIcon('cursor')}` },
                 { value: 'idea', label: `IntelliJ IDEA${getEditorAvailabilityIcon('idea')}` },
