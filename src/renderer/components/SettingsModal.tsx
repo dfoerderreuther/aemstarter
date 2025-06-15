@@ -25,15 +25,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
     }
   }, [opened, project]);
 
-  const loadSettings = async () => {
+  const loadSettings = () => {
     try {
-      // Use settings from the project object if available, otherwise load from file
-      if (project.settings) {
-        setSettings(project.settings);
-      } else {
-        const projectSettings = await window.electronAPI.getProjectSettings(project);
-        setSettings(projectSettings);
-      }
+      // Use settings from the project object - should always be available now
+      setSettings(project.settings || null);
     } catch (error) {
       console.error('Error loading settings:', error);
     } 

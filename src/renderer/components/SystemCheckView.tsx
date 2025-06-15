@@ -60,72 +60,55 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SystemCheckResults | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null);
 
-  // Load project settings when component mounts or project changes
-    const loadProjectSettings = async () => {
-      try {
-        console.log('SystemCheckView project', project);
-        if (project) {
-          // Get settings for specific project
-          const settings = await window.electronAPI.getProjectSettings(project);
-          setProjectSettings(settings);
-        } else {
-          // Get default settings when no project context
-          const defaultSettings: ProjectSettings = {
-            version: "1.0.0",
-            general: {
-              name: "Default",
-              healthCheck: true
-            },
-            author: {
-              port: 4502,
-              runmode: "author,default",
-              jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
-              debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5005,suspend=n,server=y",
-              healthCheckPath: ""
-            },
-            publisher: {
-              port: 4503,
-              runmode: "publish,default",
-              jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
-              debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5006,suspend=n,server=y",
-              healthCheckPath: ""
-            },
-            dispatcher: {
-              port: 80,
-              config: "./config",
-              healthCheckPath: ""
-            },
-            dev: {
-              path: "",
-              editor: "",
-              customEditorPath: ""
-            }
-          };
-          setProjectSettings(defaultSettings);
-        }
-      } catch (error) {
-        console.error('Error loading project settings:', error);
-        setError('Failed to load project settings');
+  // Get project settings directly from project object or use defaults
+  const getProjectSettings = (): ProjectSettings => {
+    if (project && project.settings) {
+      return project.settings;
+    }
+    
+    // Default settings when no project context
+    // TODO: Remove this once we have a default project
+    return {
+      version: "1.0.0",
+      general: {
+        name: "Default",
+        healthCheck: true
+      },
+      author: {
+        port: 4502,
+        runmode: "author,default",
+        jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
+        debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5005,suspend=n,server=y",
+        healthCheckPath: ""
+      },
+      publisher: {
+        port: 4503,
+        runmode: "publish,default",
+        jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
+        debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5006,suspend=n,server=y",
+        healthCheckPath: ""
+      },
+      dispatcher: {
+        port: 80,
+        config: "./config",
+        healthCheckPath: ""
+      },
+      dev: {
+        path: "",
+        editor: "",
+        customEditorPath: ""
       }
     };
-
-  useEffect(() => {
-    loadProjectSettings();
-  }, [project]);
+  };
 
   const runSystemCheck = async () => {
-    if (!projectSettings) {
-      setError('Project settings not loaded');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     
     try {
-      const checkResults = await window.electronAPI.runSystemCheck(projectSettings);
+      const settings = getProjectSettings();
+      const checkResults = await window.electronAPI.runSystemCheck(settings);
       setResults(checkResults);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to run system check');
@@ -135,12 +118,10 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
     }
   };
 
-  // Run system check on component mount when project settings are loaded
+  // Run system check on component mount
   useEffect(() => {
-    if (projectSettings) {
-      runSystemCheck();
-    }
-  }, [projectSettings]);
+    runSystemCheck();
+  }, [project]);
 
   const getOverallStatus = () => {
     if (!results) return 'unknown';
@@ -206,10 +187,7 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
             <Button
               size="sm"
               leftSection={isLoading ? <Loader size={14} /> : <IconRefresh size={14} />}
-              onClick={async () => {
-                await loadProjectSettings();
-                await runSystemCheck();
-              }}
+              onClick={runSystemCheck}
               disabled={isLoading}
               variant="light"
             >

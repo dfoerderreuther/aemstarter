@@ -39,7 +39,6 @@ export const DispatcherView = ({
   const [isRunning, setIsRunning] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [terminalFontSize, setTerminalFontSize] = useState(9);
-  const [projectSettings, setProjectSettings] = useState<any>(null);
 
   const hasShownDispatcherOutputRef = useRef(false);
   const terminalRef = useRef<XTerm | null>(null);
@@ -102,18 +101,8 @@ export const DispatcherView = ({
     return cleanup;
   }, [project.id]);
 
-  // Load project settings on mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settings = await window.electronAPI.getProjectSettings(project);
-        setProjectSettings(settings);
-      } catch (error) {
-        console.error('Error loading project settings:', error);
-      }
-    };
-    loadSettings();
-  }, [project]);
+  // Use project settings directly from project object
+  const projectSettings = project.settings;
 
   // Helper function to highlight filtered text with red background
   const highlightFilteredText = (text: string, filter: string): string => {

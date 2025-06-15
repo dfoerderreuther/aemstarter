@@ -79,7 +79,7 @@ export class DispatcherManager {
         const args = [
             dockerRunScript,
             dispatcherSettings.config,
-            `host.docker.internal:${dispatcherSettings.port}`,
+            `host.docker.internal:${settings.publisher.port}`,
             dispatcherSettings.port.toString()
         ];
 

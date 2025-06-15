@@ -24,10 +24,9 @@ export const Screenshot = ({
 
   // Check if health checking is enabled for this instance
   useEffect(() => {
-    const checkHealthCheckConfig = async () => {
+    const checkHealthCheckConfig = () => {
       try {
-        const settings = await window.electronAPI.getProjectSettings(project);
-        const newHealthCheckEnabled = settings.general?.healthCheck || false;
+        const newHealthCheckEnabled = project.settings?.general?.healthCheck || false;
         
         // If health checking was just enabled and instance is running, 
         // we might need to wait a moment for the backend to start health checking
@@ -42,14 +41,6 @@ export const Screenshot = ({
       }
     };
     checkHealthCheckConfig();
-    
-    // Set up an interval to periodically check for configuration changes
-    // This ensures we pick up changes made in the settings modal
-    const configCheckInterval = setInterval(checkHealthCheckConfig, 2000);
-    
-    return () => {
-      clearInterval(configCheckInterval);
-    };
   }, [project, instance, healthCheckEnabled, isRunning]);
 
   // Listen for health status updates

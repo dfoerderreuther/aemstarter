@@ -31,7 +31,6 @@ export const AemInstanceView = ({
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
   const [selectedLogFiles, setSelectedLogFiles] = useState<string[]>(['error.log']);
   const [filterText, setFilterText] = useState('');
-  const [projectSettings, setProjectSettings] = useState<any>(null);
 
   const [terminalFontSize, setTerminalFontSize] = useState(9);
   const hasShownAemOutputRef = useRef(false);
@@ -113,18 +112,8 @@ export const AemInstanceView = ({
     return cleanup;
   }, [project.id, instance]);
 
-  // Load project settings on mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settings = await window.electronAPI.getProjectSettings(project);
-        setProjectSettings(settings);
-      } catch (error) {
-        console.error('Error loading project settings:', error);
-      }
-    };
-    loadSettings();
-  }, [project]);
+  // Use project settings directly from project object
+  const projectSettings = project.settings;
 
   // Handle log file selection changes
   const handleLogFileChange = async (newSelectedFiles: string[]) => {
