@@ -6,6 +6,7 @@ export interface Project {
   licensePath: string;
   createdAt: Date;
   lastModified: Date;
+  settings: ProjectSettings;
 }
 
 export interface ProjectSettings {

@@ -12,37 +12,7 @@ export interface FileSystemEntry {
   isSymlink: boolean;
 }
 
-interface ProjectSettings {
-  version: string;
-  general: {
-    name: string;
-    healthCheck: boolean;
-  };
-  author: {
-    port: number;
-    runmode: string;
-    jvmOpts: string;
-    debugJvmOpts: string;
-    healthCheckPath: string;
-  };
-  publisher: {
-    port: number;
-    runmode: string;
-    jvmOpts: string;
-    debugJvmOpts: string;
-    healthCheckPath: string;
-  };
-  dispatcher: {
-    port: number;
-    config: string;
-    healthCheckPath: string;
-  };
-  dev: {
-    path: string;
-    editor: string;
-    customEditorPath: string;
-  };
-}
+
 
 interface FileTreeEntryProps {
   entry: FileSystemEntry;
@@ -56,7 +26,6 @@ interface FileTreeViewProps {
   rootPath: string;
   onFileSelect?: (filePath: string) => void;
   project?: Project;
-  projectSettings?: ProjectSettings | null;
 }
 
 export interface FileTreeViewRef {
@@ -197,7 +166,7 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
   );
 };
 
-export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ rootPath, onFileSelect, project, projectSettings }, ref) => {
+export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ rootPath, onFileSelect, project }, ref) => {
   const [rootEntries, setRootEntries] = useState<FileSystemEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -312,11 +281,11 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
             <IconFolder size={16} />
           </ActionIcon>
 
-          {project && projectSettings?.dev?.editor && (
+          {project && project.settings?.dev?.editor && (
             <ActionIcon 
               variant="subtle"
               onClick={() => rootPath && rootPath.trim() !== '' && window.electronAPI.openInEditor(rootPath, project)}
-              title={`Open in ${projectSettings.dev.editor === 'code' ? 'VS Code' : projectSettings.dev.editor === 'cursor' ? 'Cursor' : projectSettings.dev.editor === 'idea' ? 'IntelliJ IDEA' : 'Editor'}`}
+              title={`Open in ${project.settings.dev.editor === 'code' ? 'VS Code' : project.settings.dev.editor === 'cursor' ? 'Cursor' : project.settings.dev.editor === 'idea' ? 'IntelliJ IDEA' : 'Editor'}`}
               disabled={!rootPath || rootPath.trim() === ''}
             >
               <IconCode size={16} />

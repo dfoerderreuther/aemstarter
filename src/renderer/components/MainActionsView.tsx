@@ -1,50 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
 import { IconPlayerPlay, IconPlayerStop, IconSkull, IconSettings, IconBug, IconBrowser, IconDeviceFloppy, IconFolder, IconTerminal2, IconCode, IconRobot } from '@tabler/icons-react';
-import { Project } from '../../types/Project';
+import { Project, ProjectSettings } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
 import { AutomationModal } from './automation/AutomationModal';
 
-interface ProjectSettings {
-  version: string;
-  general: {
-    name: string;
-    healthCheck: boolean;
-  };
-  author: {
-    port: number;
-    runmode: string;
-    jvmOpts: string;
-    debugJvmOpts: string;
-    healthCheckPath: string;
-  };
-  publisher: {
-    port: number;
-    runmode: string;
-    jvmOpts: string;
-    debugJvmOpts: string;
-    healthCheckPath: string;
-  };
-  dispatcher: {
-    port: number;
-    config: string;
-    healthCheckPath: string;
-  };
-  dev: {
-    path: string;
-    editor: string;
-    customEditorPath: string;
-  };
-}
+
 
 interface MainActionsViewProps {
   project: Project;
-  projectSettings: ProjectSettings | null;
-  setProjectSettings: React.Dispatch<React.SetStateAction<ProjectSettings | null>>;
+  onProjectUpdated?: (updatedProject: Project) => void;
 }
 
-export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, projectSettings, setProjectSettings }) => {
+export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onProjectUpdated }) => {
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
@@ -255,7 +224,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
 
   const handleOpenAuthor = async () => {
     try {
-      await window.electronAPI.openUrl(`http://localhost:${projectSettings?.author?.port}`);
+              await window.electronAPI.openUrl(`http://localhost:${project.settings?.author?.port}`);
     } catch (error) {
       console.error('Error opening author URL:', error);
     }
@@ -263,7 +232,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
 
   const handleOpenPublisher = async () => {
     try {
-      await window.electronAPI.openUrl(`http://localhost:${projectSettings?.publisher?.port}`);
+              await window.electronAPI.openUrl(`http://localhost:${project.settings?.publisher?.port}`);
     } catch (error) {
       console.error('Error opening publisher URL:', error);
     }
@@ -271,7 +240,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
 
   const handleOpenDispatcher = async () => {
     try {
-      await window.electronAPI.openUrl(`http://localhost:${projectSettings?.dispatcher?.port}`);
+              await window.electronAPI.openUrl(`http://localhost:${project.settings?.dispatcher?.port}`);
     } catch (error) {
       console.error('Error opening dispatcher URL:', error);
     }
@@ -628,17 +597,17 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
         </Paper>
         <Divider orientation="vertical" />
 
-        <Paper style={projectSettings?.dev?.path ? sectionStyles : disabledSectionStyles}>
+        <Paper style={project.settings?.dev?.path ? sectionStyles : disabledSectionStyles}>
           <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">AEM Dev Project</Text>
             <Button.Group>
-              <Tooltip label={!projectSettings?.dev?.path ? "Configure dev path in settings" : "Open files in Finder"}>
+              <Tooltip label={!project.settings?.dev?.path ? "Configure dev path in settings" : "Open files in Finder"}>
                 <Button 
                   color="blue" 
                   variant="filled" 
                   size="xs"
                   styles={secondButtonStyles}
-                  disabled={!projectSettings?.dev?.path}
+                  disabled={!project.settings?.dev?.path}
                   onClick={async () => {
                     try {
                       await window.electronAPI.openDevProject(project, 'files');
@@ -650,13 +619,13 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
                   <IconFolder size={16} />
                 </Button>
               </Tooltip>
-              <Tooltip label={!projectSettings?.dev?.path ? "Configure dev path in settings" : "Open in terminal"}>
+              <Tooltip label={!project.settings?.dev?.path ? "Configure dev path in settings" : "Open in terminal"}>
                 <Button 
                   color="blue" 
                   variant="filled" 
                   size="xs"
                   styles={secondButtonStyles}
-                  disabled={!projectSettings?.dev?.path}
+                  disabled={!project.settings?.dev?.path}
                   onClick={async () => {
                     try {
                       await window.electronAPI.openDevProject(project, 'terminal');
@@ -668,13 +637,13 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
                   <IconTerminal2 size={16} />
                 </Button>
               </Tooltip>
-              <Tooltip label={!projectSettings?.dev?.path ? "Configure dev path in settings" : "Open in editor"}>
+              <Tooltip label={!project.settings?.dev?.path ? "Configure dev path in settings" : "Open in editor"}>
                 <Button 
                   color="blue" 
                   variant="filled" 
                   size="xs"
                   styles={secondButtonStyles}
-                  disabled={!projectSettings?.dev?.path}
+                  disabled={!project.settings?.dev?.path}
                   onClick={async () => {
                     try {
                       await window.electronAPI.openDevProject(project, 'editor');
@@ -723,17 +692,14 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, proje
       
       <SettingsModal
         opened={showSettings}
-        onClose={async () => {
-          setShowSettings(false);
-          // Reload project settings after closing settings modal
-          try {
-            const settings = await window.electronAPI.getProjectSettings(project);
-            setProjectSettings(settings);
-          } catch (error) {
-            console.error('Error loading project settings:', error);
+        onClose={() => setShowSettings(false)}
+        project={project}
+        onProjectUpdated={(updatedProject) => {
+          // Notify parent component about the updated project
+          if (onProjectUpdated) {
+            onProjectUpdated(updatedProject);
           }
         }}
-        project={project}
       />
       <BackupModal
         opened={showBackup}

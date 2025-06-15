@@ -16,13 +16,13 @@ import { TerminalTab } from './TerminalTab';
 
 interface ProjectViewProps {
   project: Project;
+  onProjectUpdated?: (updatedProject: Project) => void;
 }
 
-export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
+export const ProjectView: React.FC<ProjectViewProps> = ({ project, onProjectUpdated }) => {
   const [activeTab, setActiveTab] = useState<string | null>('author');
   const [viewMode, setViewMode] = useState<'tabs' | 'columns'>('columns');
   const [isColumnsCollapsed, setIsColumnsCollapsed] = useState(false);
-  const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null);
 
   useEffect(() => {
     if (viewMode === 'columns') {
@@ -32,18 +32,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
     }
   }, [viewMode]);
 
-  useEffect(() => {
-    const loadProjectSettings = async () => {
-      try {
-        const settings = await window.electronAPI.getProjectSettings(project);
-        setProjectSettings(settings);
-      } catch (error) {
-        console.error('Error loading project settings:', error);
-      }
-    };
 
-    loadProjectSettings();
-  }, [project]);
 
   const handleColumnsToggleCollapse = () => {
     setIsColumnsCollapsed(!isColumnsCollapsed);
@@ -60,7 +49,10 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         backgroundColor: '#1A1B1E'
       }}
     >
-      <MainActionsView project={project} projectSettings={projectSettings} setProjectSettings={setProjectSettings} />
+      <MainActionsView 
+        project={project} 
+        onProjectUpdated={onProjectUpdated}
+      />
 
       <Tabs 
         defaultValue="author" 
@@ -88,7 +80,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
           }
           <Tabs.Tab value="files" color="blue" leftSection={<IconFolder size={16} />}>AEM Files</Tabs.Tab>
           <Tabs.Tab value="terminal" color="blue" leftSection={<IconTerminal size={16} />}>AEM Terminal</Tabs.Tab>
-          {projectSettings?.dev?.path && (
+          {project.settings?.dev?.path && (
             <>
               <Divider orientation='vertical' />
               <Tabs.Tab value="devfiles" color="green" leftSection={<IconFolder size={16} />}>Dev Files</Tabs.Tab>
@@ -235,7 +227,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         </Tabs.Panel>
 
         <Tabs.Panel value="files" p="md">
-          <FilesView rootPath={project.folderPath} project={project} projectSettings={projectSettings} />
+                      <FilesView rootPath={project.folderPath} project={project} />
         </Tabs.Panel>
 
         <Tabs.Panel value="terminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -244,11 +236,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project }) => {
         </Tabs.Panel>
 
         <Tabs.Panel value="devfiles" p="md">
-          <FilesView rootPath={projectSettings?.dev?.path || ''} project={project} projectSettings={projectSettings} />
+                      <FilesView rootPath={project.settings?.dev?.path || ''} project={project} />
         </Tabs.Panel>
 
         <Tabs.Panel value="devterminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <TerminalTab rootPath={projectSettings?.dev?.path || ''} visible={activeTab === 'devterminal'} />
+                      <TerminalTab rootPath={project.settings?.dev?.path || ''} visible={activeTab === 'devterminal'} />
         </Tabs.Panel>
       </Tabs>
 

@@ -5,45 +5,12 @@ import { EditorView } from './EditorView';
 import { isBinaryFileByExtension, isBinaryContent } from '../../utils/fileUtils';
 import { Project } from '../../../types/Project';
 
-interface ProjectSettings {
-  version: string;
-  general: {
-    name: string;
-    healthCheck: boolean;
-  };
-  author: {
-    port: number;
-    runmode: string;
-    jvmOpts: string;
-    debugJvmOpts: string;
-    healthCheckPath: string;
-  };
-  publisher: {
-    port: number;
-    runmode: string;
-    jvmOpts: string;
-    debugJvmOpts: string;
-    healthCheckPath: string;
-  };
-  dispatcher: {
-    port: number;
-    config: string;
-    healthCheckPath: string;
-  };
-  dev: {
-    path: string;
-    editor: string;
-    customEditorPath: string;
-  };
-}
-
 interface FilesViewProps {
   rootPath: string;
   project?: Project;
-  projectSettings?: ProjectSettings | null;
 }
 
-export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project, projectSettings }) => {
+export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project }) => {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isBinaryFile, setIsBinaryFile] = useState<boolean>(false);
@@ -125,7 +92,6 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project, project
             rootPath={rootPath} 
             onFileSelect={handleFileSelect}
             project={project}
-            projectSettings={projectSettings}
             ref={fileTreeRef}
           />
       </Grid.Col>

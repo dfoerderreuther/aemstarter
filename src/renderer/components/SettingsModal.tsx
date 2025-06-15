@@ -1,48 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Tabs, Stack, TextInput, NumberInput, Group, Button, Text, Checkbox, Select, ActionIcon } from '@mantine/core';
 import { IconFolder } from '@tabler/icons-react';
-import { Project } from '../../types/Project';
+import { Project, ProjectSettings } from '../../types/Project';
 import { EditorAvailableResults } from '../../types/EditorAvailableResults';
 
 interface SettingsModalProps {
   opened: boolean;
   onClose: () => void;
   project: Project;
+  onProjectUpdated?: (updatedProject: Project) => void;
 }
 
-interface ProjectSettings {
-  version: string;
-  general: {
-    name: string;
-    healthCheck: boolean;
-  };
-  author: {
-    port: number;
-    runmode: string;
-    jvmOpts: string;
-    debugJvmOpts: string;
-    healthCheckPath: string;
-  };
-  publisher: {
-    port: number;
-    runmode: string;
-    jvmOpts: string;
-    debugJvmOpts: string;
-    healthCheckPath: string;
-  };
-  dispatcher: {
-    port: number;
-    config: string;
-    healthCheckPath: string;
-  };
-  dev: {
-    path: string;
-    editor: string;
-    customEditorPath: string;
-  };
-}
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, project }) => {
+
+export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, project, onProjectUpdated }) => {
   const [settings, setSettings] = useState<ProjectSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [editorAvailability, setEditorAvailability] = useState<EditorAvailableResults | null>(null);
@@ -56,8 +27,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
 
   const loadSettings = async () => {
     try {
-      const projectSettings = await window.electronAPI.getProjectSettings(project);
-      setSettings(projectSettings);
+      // Use settings from the project object if available, otherwise load from file
+      if (project.settings) {
+        setSettings(project.settings);
+      } else {
+        const projectSettings = await window.electronAPI.getProjectSettings(project);
+        setSettings(projectSettings);
+      }
     } catch (error) {
       console.error('Error loading settings:', error);
     } 
@@ -77,7 +53,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
     
     try {
       setSaving(true);
-      await window.electronAPI.saveProjectSettings(project, settings);
+      const updatedProject = await window.electronAPI.saveProjectSettings(project, settings);
+      
+      // Notify parent component about the updated project
+      if (onProjectUpdated) {
+        onProjectUpdated(updatedProject);
+      }
+      
       onClose();
     } catch (error) {
       console.error('Error saving settings:', error);

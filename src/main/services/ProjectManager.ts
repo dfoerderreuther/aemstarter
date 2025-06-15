@@ -2,6 +2,7 @@ import { Project } from '../../types/Project';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
+import { ProjectSettingsService } from './ProjectSettingsService';
 
 export class ProjectManager {
   private projects: Project[] = [];
@@ -33,10 +34,29 @@ export class ProjectManager {
       if (fs.existsSync(this.projectsFilePath)) {
         const data = fs.readFileSync(this.projectsFilePath, 'utf-8');
         this.projects = JSON.parse(data);
+        
+        // Load settings for each existing project
+        this.projects = this.projects.map(project => this.loadProjectSettings(project));
       }
     } catch (error) {
       console.error('Error loading projects:', error);
       this.projects = [];
+    }
+  }
+
+  private loadProjectSettings(project: Project): Project {
+    try {
+      const settings = ProjectSettingsService.getSettings(project);
+      return {
+        ...project,
+        settings
+      };
+    } catch (error) {
+      console.error('Error loading settings for project:', project.name, error);
+      return {
+        ...project,
+        settings: ProjectSettingsService.getDefaultSettings(project)
+      };
     }
   }
 
@@ -108,7 +128,17 @@ export class ProjectManager {
       aemSdkPath,
       licensePath,
       createdAt: new Date(),
-      lastModified: new Date()
+      lastModified: new Date(),
+      settings: ProjectSettingsService.getDefaultSettings({
+        id: uuidv4(),
+        name,
+        folderPath,
+        aemSdkPath,
+        licensePath,
+        createdAt: new Date(),
+        lastModified: new Date(),
+        settings: {} as any // Temporary placeholder
+      })
     };
 
     this.projects.push(project);
@@ -129,12 +159,25 @@ export class ProjectManager {
       aemSdkPath: '', // Not needed for existing installations
       licensePath: '', // Not needed for existing installations
       createdAt: new Date(),
-      lastModified: new Date()
+      lastModified: new Date(),
+      settings: ProjectSettingsService.getDefaultSettings({
+        id: uuidv4(),
+        name,
+        folderPath,
+        aemSdkPath: '',
+        licensePath: '',
+        createdAt: new Date(),
+        lastModified: new Date(),
+        settings: {} as any // Temporary placeholder
+      })
     };
 
-    this.projects.push(project);
+    // Load settings from existing project folder if available
+    const projectWithSettings = this.loadProjectSettings(project);
+
+    this.projects.push(projectWithSettings);
     this.saveProjects();
-    return project;
+    return projectWithSettings;
   }
 
   updateProject(id: string, updates: Partial<Project>): Project | undefined {
@@ -152,6 +195,32 @@ export class ProjectManager {
 
     this.projects[index] = updatedProject;
     this.saveProjects();
+    return updatedProject;
+  }
+
+  updateProjectSettings(id: string, settings: any): Project | undefined {
+    const index = this.projects.findIndex(p => p.id === id);
+    if (index === -1) {
+      return undefined;
+    }
+
+    const project = this.projects[index];
+    const updatedProject = {
+      ...project,
+      settings,
+      lastModified: new Date()
+    };
+
+    this.projects[index] = updatedProject;
+    this.saveProjects();
+    
+    // Also save to the project's settings.json file
+    try {
+      ProjectSettingsService.saveSettings(updatedProject, settings);
+    } catch (error) {
+      console.error('Error saving project settings to file:', error);
+    }
+
     return updatedProject;
   }
 

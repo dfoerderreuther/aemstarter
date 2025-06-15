@@ -90,7 +90,7 @@ declare global {
       
       // Project Settings
       getProjectSettings: (project: Project) => Promise<any>;
-      saveProjectSettings: (project: Project, settings: any) => Promise<boolean>;
+      saveProjectSettings: (project: Project, settings: any) => Promise<Project>;
       
       // Editor Availability Check
       checkEditorAvailability: () => Promise<EditorAvailableResults>;

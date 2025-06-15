@@ -222,7 +222,17 @@ const App: React.FC = () => {
 
         <AppShell.Main>
           {selectedProject ? (
-            <ProjectView project={selectedProject} />
+            <ProjectView 
+            project={selectedProject} 
+            onProjectUpdated={(updatedProject) => {
+              // Update the selected project with the new settings
+              setSelectedProject(updatedProject);
+              // Update the projects list with the updated project
+              setProjects(prevProjects => 
+                prevProjects.map(p => p.id === updatedProject.id ? updatedProject : p)
+              );
+            }}
+          />
           ) : (
             <Container size="xl" py="md">
               <Stack gap="lg" align="center">

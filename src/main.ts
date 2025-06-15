@@ -480,10 +480,15 @@ ipcMain.handle('check-editor-availability', async () => {
 
 ipcMain.handle('save-project-settings', async (_, project: Project, settings: any) => {
   try {
-    ProjectSettingsService.saveSettings(project, settings);
+    // Update the project settings in memory and save to file
+    const updatedProject = ProjectManagerRegister.getManager().updateProjectSettings(project.id, settings);
+    
+    if (!updatedProject) {
+      throw new Error('Project not found');
+    }
     
     // Check if health checking was enabled for running instances and start it
-    const manager = AemInstanceManagerRegister.getInstanceManager(project);
+    const manager = AemInstanceManagerRegister.getInstanceManager(updatedProject);
     // Check author instance
     if (settings.general?.healthCheck && manager.isInstanceRunning('author')) {
       console.log('[main] Starting health checking for author instance after settings change');
@@ -497,7 +502,7 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
     }
     
     // Check dispatcher health checking
-    const dispatcherManager = DispatcherManagerRegister.getManager(project);
+    const dispatcherManager = DispatcherManagerRegister.getManager(updatedProject);
     if (dispatcherManager.isDispatcherRunning()) {
       if (settings.general?.healthCheck) {
         console.log('[main] Starting health checking for dispatcher after settings change');
@@ -508,7 +513,8 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
       }
     }
     
-    return true;
+    // Return the updated project so the frontend can update its state
+    return updatedProject;
   } catch (error) {
     console.error('Error saving project settings:', error);
     throw error;
