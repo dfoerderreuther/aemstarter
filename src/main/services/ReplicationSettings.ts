@@ -136,7 +136,7 @@ export class ReplicationSettings {
         './userId=&' + 
         './logLevel=error&' + 
         './reverseReplication@Delete=&' + 
-        './transportUri=http://localhost:80/dispatcher/invalidate.cache&' + 
+        './transportUri=http://localhost:' + project.settings.dispatcher.port + '/dispatcher/invalidate.cache&' + 
         './transportUser=&' + 
         './transportPassword=&' + 
         './transportNTLMDomain=&' + 
@@ -177,7 +177,7 @@ export class ReplicationSettings {
         './queueBatchMaxSize=';
         
         const dataRaw = encodeURI(data);
-        const command = "curl -u admin:admin 'http://localhost:4503/etc/replication/agents.publish/flush/jcr:content' " + 
+        const command = "curl -u admin:admin 'http://localhost:" + project.settings.publisher.port + "/etc/replication/agents.publish/flush/jcr:content' " + 
                     "-H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' " + 
                     "--data-raw '." + dataRaw + "'"
 
@@ -207,7 +207,7 @@ export class ReplicationSettings {
         './userId=&' + 
         './logLevel=info&' + 
         './reverseReplication@Delete=&' + 
-        './transportUri=http://localhost:4503/bin/receive?sling:authRequestLogin=1&' + 
+        './transportUri=http://localhost:' + project.settings.publisher.port + '/bin/receive?sling:authRequestLogin=1&' + 
         './transportUser=admin&' + 
         './transportPassword=admin&' + 
         './transportNTLMDomain=&' + 
@@ -239,7 +239,7 @@ export class ReplicationSettings {
         './queueBatchMaxSize=';
         
         const dataRaw = encodeURI(data);
-        const command = "curl -u admin:admin 'http://localhost:4502/etc/replication/agents.author/publish/jcr:content' " + 
+        const command = "curl -u admin:admin 'http://localhost:" + project.settings.author.port + "/etc/replication/agents.author/publish/jcr:content' " + 
                     "-H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' " + 
                     "--data-raw '." + dataRaw + "'"
 

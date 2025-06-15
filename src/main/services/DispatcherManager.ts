@@ -83,8 +83,8 @@ export class DispatcherManager {
             dispatcherSettings.port.toString()
         ];
 
-        console.log(`Starting dispatcher with command: ${args.join(' ')}`);
-        console.log(`Working directory: ${dispatcherDir}`);
+        console.log(`[DispatcherManager] Starting dispatcher with command: ${args.join(' ')}`);
+        console.log(`[DispatcherManager] Working directory: ${dispatcherDir}`);
 
         try {
             // Start the dispatcher process
@@ -118,7 +118,7 @@ export class DispatcherManager {
 
             // Handle process exit - ensure cleanup
             dispatcherProcess.on('exit', (code, signal) => {
-                console.log(`Dispatcher process exited with code ${code} and signal ${signal}`);
+                console.log(`[DispatcherManager] Dispatcher process exited with code ${code} and signal ${signal}`);
                 // Only clean up if this is still our current process
                 if (this.instance.process === dispatcherProcess) {
                     this.instance.process = null;
@@ -129,7 +129,7 @@ export class DispatcherManager {
             });
 
             dispatcherProcess.on('error', (error) => {
-                console.error('Dispatcher process error:', error);
+                console.error('[DispatcherManager] Dispatcher process error:', error);
                 // Only clean up if this is still our current process
                 if (this.instance.process === dispatcherProcess) {
                     this.instance.process = null;
@@ -164,9 +164,9 @@ export class DispatcherManager {
                 }
             }, 1000);
 
-            console.log(`Dispatcher started successfully with PID: ${dispatcherProcess.pid}`);
+            console.log(`[DispatcherManager] Dispatcher started successfully with PID: ${dispatcherProcess.pid}`);
         } catch (error) {
-            console.error('Error starting dispatcher:', error);
+            console.error('[DispatcherManager] Error starting dispatcher:', error);
             // Ensure clean state on error
             this.instance.process = null;
             this.instance.pid = null;
@@ -187,7 +187,7 @@ export class DispatcherManager {
         const pidToStop = this.instance.pid;
 
         try {
-            console.log(`Stopping dispatcher with PID: ${pidToStop}`);
+            console.log(`[DispatcherManager] Stopping dispatcher with PID: ${pidToStop}`);
             
             // Send SIGINT (Ctrl+C) to the process group - this is the standard way
             // the dispatcher script expects to be stopped
@@ -195,9 +195,9 @@ export class DispatcherManager {
                 try {
                     // Kill the entire process group with SIGINT (Ctrl+C equivalent)
                     process.kill(-pidToStop, 'SIGINT');
-                    console.log('Sent SIGINT to process group');
+                    console.log('[DispatcherManager] Sent SIGINT to process group');
                 } catch (killError) {
-                    console.warn('Error sending SIGINT to process group, trying individual process:', killError);
+                    console.warn('[DispatcherManager] Error sending SIGINT to process group, trying individual process:', killError);
                     // Fallback to killing just the main process
                     processToStop.kill('SIGINT');
                 }
@@ -206,7 +206,7 @@ export class DispatcherManager {
             }
             
             // Wait longer for graceful shutdown since Docker containers may take time to stop
-            console.log('Waiting for graceful shutdown...');
+            console.log('[DispatcherManager] Waiting for graceful shutdown...');
             let waitTime = 0;
             const maxWaitTime = 10000; // 10 seconds
             const checkInterval = 500; // Check every 500ms
@@ -218,12 +218,12 @@ export class DispatcherManager {
             
             // If still running, try SIGTERM
             if (processToStop.exitCode === null && !processToStop.killed) {
-                console.log('Process still running, sending SIGTERM...');
+                console.log('[DispatcherManager] Process still running, sending SIGTERM...');
                 if (pidToStop) {
                     try {
                         process.kill(-pidToStop, 'SIGTERM');
                     } catch (killError) {
-                        console.warn('Error sending SIGTERM to process group:', killError);
+                        console.warn('[DispatcherManager] Error sending SIGTERM to process group:', killError);
                         processToStop.kill('SIGTERM');
                     }
                 } else {
@@ -241,16 +241,16 @@ export class DispatcherManager {
             
             // Final force kill if absolutely necessary
             if (processToStop.exitCode === null && !processToStop.killed) {
-                console.log('Process still running, force killing with SIGKILL...');
+                console.log('[DispatcherManager] Process still running, force killing with SIGKILL...');
                 this.killDispatcher();
                 
                 // Wait a bit for force kill to take effect
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
 
-            console.log('Dispatcher stopped successfully');
+            console.log('[DispatcherManager] Dispatcher stopped successfully');
         } catch (error) {
-            console.error('Error stopping dispatcher:', error);
+            console.error('[DispatcherManager] Error stopping dispatcher:', error);
         } finally {
             // Always clean up instance state, regardless of how stopping went
             if (this.instance.process === processToStop) {
@@ -271,7 +271,7 @@ export class DispatcherManager {
             
             
             // Find containers using the dispatcher port
-            console.log(`Looking for Docker containers using port ${port}...`);
+            console.log(`[DispatcherManager] Looking for Docker containers using port ${port}...`);
             
             // First, try to find containers by port mapping
             let containerIds: string[] = [];
@@ -280,35 +280,35 @@ export class DispatcherManager {
                 const { stdout: portOutput } = await execAsync(`docker ps --format "{{.ID}} {{.Ports}}" | grep ":${port}->"`, { timeout: 10000 });
                 if (portOutput.trim()) {
                     containerIds = portOutput.trim().split('\n').map((line: string) => line.split(' ')[0]);
-                    console.log(`Found containers by port mapping: ${containerIds.join(', ')}`);
+                    console.log(`[DispatcherManager] Found containers by port mapping: ${containerIds.join(', ')}`);
                 }
             } catch (portError) {
-                console.log('No containers found by port mapping or error occurred:', portError instanceof Error ? portError.message : String(portError));
+                console.log('[DispatcherManager] No containers found by port mapping or error occurred:', portError instanceof Error ? portError.message : String(portError));
             }
             
             if (containerIds.length === 0) {
-                console.log('No Docker containers found to kill');
+                console.log('[DispatcherManager] No Docker containers found to kill');
                 this.sendLogData('No Docker containers found to kill\n');
             } else {
-                console.log(`Found ${containerIds.length} container(s) to kill: ${containerIds.join(', ')}`);
+                console.log(`[DispatcherManager] Found ${containerIds.length} container(s) to kill: ${containerIds.join(', ')}`);
                 this.sendLogData(`Killing ${containerIds.length} Docker container(s): ${containerIds.join(', ')}\n`);
                 
                 // Kill each container
                 for (const containerId of containerIds) {
                     try {
-                        console.log(`Killing container ${containerId}...`);
+                        console.log(`[DispatcherManager] Killing container ${containerId}...`);
                         await execAsync(`docker kill ${containerId}`, { timeout: 10000 });
                         this.sendLogData(`Killed container ${containerId}\n`);
                         
                         // Also remove the container to clean up
                         try {
                             await execAsync(`docker rm ${containerId}`, { timeout: 5000 });
-                            console.log(`Removed container ${containerId}`);
+                            console.log(`[DispatcherManager] Removed container ${containerId}`);
                         } catch (rmError) {
-                            console.warn(`Could not remove container ${containerId}:`, rmError instanceof Error ? rmError.message : String(rmError));
+                            console.warn(`[DispatcherManager] Could not remove container ${containerId}:`, rmError instanceof Error ? rmError.message : String(rmError));
                         }
                     } catch (killError) {
-                        console.error(`Error killing container ${containerId}:`, killError);
+                        console.error(`[DispatcherManager] Error killing container ${containerId}:`, killError);
                         this.sendLogData(`Error killing container ${containerId}: ${killError instanceof Error ? killError.message : String(killError)}\n`);
                     }
                 }
@@ -319,11 +319,11 @@ export class DispatcherManager {
             this.instance.pid = null;
             this.sendStatusUpdate(false);
             
-            console.log('Docker dispatcher kill operation completed');
+            console.log('[DispatcherManager] Docker dispatcher kill operation completed');
             this.sendLogData('Docker dispatcher kill operation completed\n');
             
         } catch (error) {
-            console.error('Error during killDispatcher:', error);
+            console.error('[DispatcherManager] Error during killDispatcher:', error);
             this.sendLogData(`Error during force kill: ${error instanceof Error ? error.message : String(error)}\n`);
             
             // Still clean up our state even if Docker operations failed
@@ -397,7 +397,7 @@ export class DispatcherManager {
     cleanupStaleReferences(): void {
         if (this.instance.process) {
             if (this.instance.process.killed || this.instance.process.exitCode !== null) {
-                console.log('Cleaning up stale process reference');
+                console.log('[DispatcherManager] Cleaning up stale process reference');
                 this.instance.process = null;
                 this.instance.pid = null;
                 this.sendStatusUpdate(false);
@@ -467,7 +467,7 @@ export class DispatcherManager {
 
     startHealthChecking(intervalMs = 30000) {
         if (!this.isDispatcherRunning()) {
-            console.warn('Cannot start health checking for dispatcher: not running');
+            console.warn('[DispatcherManager] Cannot start health checking for dispatcher: not running');
             return;
         }
 

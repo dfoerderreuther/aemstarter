@@ -170,7 +170,7 @@ export class AemInstanceManager {
     const startTime = Date.now();
     while (!fs.existsSync(logPath)) {
       if (Date.now() - startTime > maxWaitSeconds * 1000) {
-        console.warn(`Timeout waiting for log file after ${maxWaitSeconds} seconds: ${logPath}`);
+        console.warn(`[AemInstanceManager] Timeout waiting for log file after ${maxWaitSeconds} seconds: ${logPath}`);
         return false;
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -207,7 +207,7 @@ export class AemInstanceManager {
       
       return logFiles;
     } catch (error) {
-      console.error(`Error reading log directory: ${error}`);
+      console.error(`[AemInstanceManager] Error reading log directory: ${error}`);
       return ['error.log']; // Return default on error
     }
   }
@@ -251,7 +251,7 @@ export class AemInstanceManager {
         // Wait for log file to exist (for regular AEM logs)
         const exists = await this.waitForLogFile(logPath);
         if (!exists) {
-          console.warn(`Log file not found: ${logPath}`);
+          console.warn(`[AemInstanceManager] Log file not found: ${logPath}`);
           continue;
         }
       }
@@ -296,13 +296,13 @@ export class AemInstanceManager {
       });
 
       tailProcess.on('error', (error) => {
-        console.error(`Error in tail process for ${logFile}: ${error}`);
+        console.error(`[AemInstanceManager] Error in tail process for ${logFile}: ${error}`);
         this.sendLogData(instanceType, `Error tailing log file ${logFile}: ${error.message}`);
       });
 
       tailProcess.on('exit', (code, _signal) => {
         if (code !== 0 && !tailProcess.killed) {
-          console.warn(`Tail process for ${logFile} exited unexpectedly, restarting...`);
+          console.warn(`[AemInstanceManager] Tail process for ${logFile} exited unexpectedly, restarting...`);
           setTimeout(() => {
             if (instance.selectedLogFiles.includes(logFile)) {
               this.startTailing(instanceType, instance, [logFile]);
@@ -312,7 +312,7 @@ export class AemInstanceManager {
       });
 
       if (!tailProcess.pid) {
-        console.error(`Failed to start tail process for ${logFile}`);
+        console.error(`[AemInstanceManager] Failed to start tail process for ${logFile}`);
         continue;
       }
     }
@@ -486,7 +486,7 @@ export class AemInstanceManager {
     }, 300000);
 
     aemProcess.on('error', (error) => {
-      console.error(`Error starting ${instanceType} instance:`, error);
+      console.error(`[AemInstanceManager] Error starting ${instanceType} instance:`, error);
     });
 
     aemProcess.on('exit', async (code, signal) => {
@@ -639,7 +639,7 @@ export class AemInstanceManager {
 
     exec(cmd, (error) => {
       if (error) {
-        console.error(`Error killing all instances:`, error);
+        console.error(`[AemInstanceManager] Error killing all instances:`, error);
       }
     });
 
@@ -717,7 +717,7 @@ export class AemInstanceManager {
   startHealthChecking(instanceType: 'author' | 'publisher', intervalMs = 30000) {
     const instance = this.instances.get(instanceType);
     if (!instance || !instance.pid) {
-      console.warn(`Cannot start health checking for ${instanceType}: instance not running`);
+      console.warn(`[AemInstanceManager] Cannot start health checking for ${instanceType}: instance not running`);
       return;
     }
 
