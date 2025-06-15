@@ -19,6 +19,13 @@ export class BackupService {
         'config'
     ]
 
+    private static aemDeleteBeforeRestorePaths = []
+
+    private static dispatcherDeleteBeforeRestorePaths = [
+        'cache', 
+        'config'
+    ]
+
     constructor(project: Project) {
         this.project = project;
     }
@@ -87,7 +94,50 @@ export class BackupService {
         return backupInfo;
     }
 
+    private getCleanPaths(): string[] {
+        const paths = [];
+        paths.push(...BackupService.aemDeleteBeforeRestorePaths.map(p => path.join('author', p)));
+        paths.push(...BackupService.aemDeleteBeforeRestorePaths.map(p => path.join('publisher', p)));
+        paths.push(...BackupService.dispatcherDeleteBeforeRestorePaths.map(p => path.join('dispatcher', p)));
+        return paths;
+    }
+
+    async cleanBeforeRestore(): Promise<void> {
+        const paths = this.getCleanPaths();
+        
+        for (const relativePath of paths) {
+            const fullPath = path.join(this.project.folderPath, relativePath);
+            
+            try {
+                if (fs.existsSync(fullPath)) {
+                    const stats = fs.statSync(fullPath);
+                    if (stats.isDirectory()) {
+                        console.log(`[Clean] Deleting directory: ${fullPath}`);
+                        await this.deleteDirectory(fullPath);
+                    } else {
+                        console.log(`[Clean] Deleting file: ${fullPath}`);
+                        fs.unlinkSync(fullPath);
+                    }
+                } else {
+                    console.log(`[Clean] Path does not exist, skipping: ${fullPath}`);
+                }
+            } catch (error) {
+                console.error(`[Clean] Error deleting path ${fullPath}:`, error);
+            }
+        }
+    }
+
+    private async deleteDirectory(dirPath: string): Promise<void> {
+        try {
+            await fs.promises.rm(dirPath, { recursive: true, force: true });
+        } catch (error) {
+            console.error(`[Clean] Error deleting directory ${dirPath}:`, error);
+            throw error;
+        }
+    }
+
     async restore(tarName: string): Promise<void> {
+        await this.cleanBeforeRestore();
         const backupFolderPath = this.getBackupFolder();
         const backupPath = path.join(backupFolderPath, tarName);
 
