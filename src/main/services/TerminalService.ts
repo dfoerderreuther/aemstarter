@@ -32,9 +32,7 @@ export class TerminalService {
     try {
       const shell = options.shell || this.getDefaultShell();
       const cwd = options.cwd || process.env.HOME || process.cwd();
-      
-      console.log(`Creating PTY terminal: shell=${shell}, cwd=${cwd}`);
-      
+            
       // Create PTY process with proper terminal emulation
       const ptyProcess = pty.spawn(shell, [], {
         name: 'xterm-color',
@@ -82,7 +80,6 @@ export class TerminalService {
         }
       });
 
-      console.log(`PTY Terminal ${terminalId} created successfully`);
       return { terminalId, success: true };
     } catch (error) {
       console.error('Error creating PTY terminal:', error);
@@ -102,11 +99,9 @@ export class TerminalService {
 
   async writeToTerminal(terminalId: string, data: string): Promise<boolean> {
     const session = this.terminals.get(terminalId);
-    console.log(`writeToTerminal called: terminalId=${terminalId}, data=${JSON.stringify(data)}, charCode=${data.charCodeAt(0)}`);
     
     if (session && session.ptyProcess) {
       try {
-        console.log(`Writing data to PTY terminal ${terminalId}: "${data}"`);
         session.ptyProcess.write(data);
         return true;
       } catch (error) {

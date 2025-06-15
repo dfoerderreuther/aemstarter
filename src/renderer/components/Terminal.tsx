@@ -115,17 +115,15 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
       try {
         console.log('Initializing terminal with cwd:', cwd);
         const result = await window.electronAPI.createTerminal({ cwd });
-        console.log('Terminal creation result:', result);
+
         
         if (result.success) {
           setTerminalId(result.terminalId);
           setIsConnected(true);
-          console.log(`Terminal connected with ID: ${result.terminalId}`);
           
           // Set up data handler
           const cleanupData = window.electronAPI.onTerminalData((id, data) => {
             if (id === result.terminalId && xtermRef.current) {
-              console.log(`Received data for terminal ${id}:`, data);
               xtermRef.current.write(data);
             }
           });
@@ -151,7 +149,6 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
           
           // Handle user input
           xterm.onData((data) => {
-            console.log(`Sending data to terminal ${result.terminalId}:`, data.charCodeAt(0), data);
             if (result.terminalId) {
               window.electronAPI.writeTerminal(result.terminalId, data);
             }
@@ -159,7 +156,6 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
           
           // Handle terminal resize
           xterm.onResize(({ cols, rows }) => {
-            console.log(`Terminal resize: ${cols}x${rows}`);
             if (result.terminalId) {
               window.electronAPI.resizeTerminal(result.terminalId, cols, rows);
             }
