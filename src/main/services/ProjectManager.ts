@@ -207,6 +207,7 @@ export class ProjectManager {
     const project = this.projects[index];
     const updatedProject = {
       ...project,
+      name: settings.general?.name || project.name, // Sync project.name with settings.general.name
       settings,
       lastModified: new Date()
     };

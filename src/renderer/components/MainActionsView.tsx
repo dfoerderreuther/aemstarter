@@ -558,7 +558,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
               <Button.Group>
                 <Tooltip label="Settings">
                   <Button 
-                    color="green" 
+                    color="gray" 
                     variant="filled" 
                     size="xs"
                     styles={secondButtonStyles}
@@ -569,7 +569,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
                 </Tooltip>
               <Tooltip label="Automation">
                 <Button 
-                  color="green" 
+                  color="gray" 
                   variant="filled" 
                   size="xs"
                   styles={secondButtonStyles}
@@ -580,7 +580,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
               </Tooltip>
               <Tooltip label="Backup & Restore">
                 <Button
-                  color="blue"
+                  color="gray"
                   variant="filled"
                   size="xs"
                   styles={secondButtonStyles}
@@ -603,7 +603,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
             <Button.Group>
               <Tooltip label={!project.settings?.dev?.path ? "Configure dev path in settings" : "Open files in Finder"}>
                 <Button 
-                  color="blue" 
+                  color="gray" 
                   variant="filled" 
                   size="xs"
                   styles={secondButtonStyles}
@@ -621,7 +621,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
               </Tooltip>
               <Tooltip label={!project.settings?.dev?.path ? "Configure dev path in settings" : "Open in terminal"}>
                 <Button 
-                  color="blue" 
+                  color="gray" 
                   variant="filled" 
                   size="xs"
                   styles={secondButtonStyles}
@@ -639,7 +639,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
               </Tooltip>
               <Tooltip label={!project.settings?.dev?.path ? "Configure dev path in settings" : "Open in editor"}>
                 <Button 
-                  color="blue" 
+                  color="gray" 
                   variant="filled" 
                   size="xs"
                   styles={secondButtonStyles}

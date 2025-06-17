@@ -271,7 +271,7 @@ export const AemInstanceView = ({
         <Box p="xs" style={{ borderBottom: '1px solid #2C2E33', margin: 0 }}>
           <Group justify="space-between" align="center" wrap="nowrap" style={{ width: '100%' }}>
             <Text size="xs" fw={700} c="dimmed" style={{ whiteSpace: 'nowrap' }}>
-              {instance.toUpperCase()} INSTANCE 
+              {instance.toUpperCase()} 
             </Text>
             <Box style={{ flex: 1 }} />
             <TextInput

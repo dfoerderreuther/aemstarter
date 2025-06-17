@@ -513,6 +513,9 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: an
       }
     }
     
+    // Refresh menu to update recent projects with new name if it changed
+    createMenu();
+    
     // Return the updated project so the frontend can update its state
     return updatedProject;
   } catch (error) {

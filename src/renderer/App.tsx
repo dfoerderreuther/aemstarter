@@ -26,7 +26,6 @@ const App: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Handle new project creation callback
   const handleProjectCreated = async (project: Project) => {
@@ -92,22 +91,6 @@ const App: React.FC = () => {
       cleanupRecentProject();
     };
   }, [projects]);
-
-  // Save selected project when it changes
-  const handleProjectSelect = async (project: Project | null) => {
-    setSelectedProject(project);
-    if (project) {
-      await window.electronAPI.setLastProjectId(project.id);
-    } else {
-      await window.electronAPI.setLastProjectId(null);
-    }
-  };
-
-  // Handle dropdown change
-  const handleDropdownChange = (projectId: string | null) => {
-    const project = projects.find(p => p.id === projectId) || null;
-    handleProjectSelect(project);
-  };
 
   // Handle opening an existing project folder
   const handleOpenProjectFolder = async (folderPath: string) => {
