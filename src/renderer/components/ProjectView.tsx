@@ -232,7 +232,9 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, onProjectUpda
 
         <Tabs.Panel value="terminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <TerminalTab rootPath={project.folderPath}
-                visible={activeTab === 'terminal'}  />
+                visible={activeTab === 'terminal'} 
+                type="project"
+                />
         </Tabs.Panel>
 
         <Tabs.Panel value="devfiles" p="md">
@@ -240,7 +242,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, onProjectUpda
         </Tabs.Panel>
 
         <Tabs.Panel value="devterminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                      <TerminalTab rootPath={project.settings?.dev?.path || ''} visible={activeTab === 'devterminal'} />
+                      <TerminalTab rootPath={project.settings?.dev?.path || ''} visible={activeTab === 'devterminal'} type="dev" />
         </Tabs.Panel>
       </Tabs>
 

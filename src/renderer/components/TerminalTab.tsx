@@ -8,12 +8,14 @@ interface TerminalTabProps {
   rootPath: string;
   visible?: boolean;
   viewMode?: 'tabs' | 'columns';
+  type: 'project' | 'dev';
 }
 
 export const TerminalTab = ({ 
   rootPath, 
   visible = true, 
-  viewMode = 'tabs'
+  viewMode = 'tabs', 
+  type = 'project'
 }: TerminalTabProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [terminalFontSize, setTerminalFontSize] = useState(11);
@@ -60,6 +62,14 @@ export const TerminalTab = ({
   const handleClearTerminal = () => {
     if (terminalComponentRef.current) {
       terminalComponentRef.current.clear();
+    }
+  };
+
+  // Handle clicking on command text to insert into terminal
+  const handleCommandClick = (command: string) => {
+    if (terminalComponentRef.current) {
+      terminalComponentRef.current.writeToShell(command);
+      terminalComponentRef.current.focus();
     }
   };
 
@@ -176,8 +186,52 @@ export const TerminalTab = ({
                 gap: '12px',
                 alignItems: viewMode === 'columns' ? 'flex-start' : 'stretch'
               }}>
-                {/* Directory Info Block */}
-                <Text size="xs" fw={500} c="dimmed" mb="xs">actions comming soon</Text>
+                {type === 'project' && (
+                  <Stack gap="xs">
+                    <Text 
+                      size="xs" 
+                      fw={500} 
+                      c="dimmed" 
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleCommandClick('cd author')}
+                      title="Click to insert into terminal"
+                    >
+                      cd author
+                    </Text>
+                    <Text 
+                      size="xs" 
+                      fw={500} 
+                      c="dimmed" 
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleCommandClick('cd publisher')}
+                      title="Click to insert into terminal"
+                    >
+                      cd publisher
+                    </Text>
+                    <Text 
+                      size="xs" 
+                      fw={500} 
+                      c="dimmed" 
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleCommandClick('java -Xss16m -Xmx8g -jar oak-run.jar compact crx-quickstart/repository/segmentstore')}
+                      title="Click to insert into terminal"
+                    >
+                      java -Xss16m -Xmx8g -jar oak-run.jar compact crx-quickstart/repository/segmentstore
+                    </Text>
+                  </Stack>
+                )}
+                {type === 'dev' && (
+                  <Text 
+                    size="xs" 
+                    fw={500} 
+                    c="dimmed" 
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleCommandClick('mvn clean install -PautoInstallSinglePackage')}
+                    title="Click to insert into terminal"
+                  >
+                    mvn clean install -PautoInstallSinglePackage
+                  </Text>
+                )}
 
                   
               </Box>

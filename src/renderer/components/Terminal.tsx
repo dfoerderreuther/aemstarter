@@ -15,6 +15,7 @@ export interface TerminalRef {
   clear: () => void;
   focus: () => void;
   getTerminalId: () => string | null;
+  writeToShell: (data: string) => void;
 }
 
 export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visible = true, fontSize = 13, cwd }, ref) => {
@@ -46,7 +47,12 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
         xtermRef.current.focus();
       }
     },
-    getTerminalId: () => terminalId
+    getTerminalId: () => terminalId,
+    writeToShell: (data: string) => {
+      if (terminalId) {
+        window.electronAPI.writeTerminal(terminalId, data);
+      }
+    }
   }), [terminalId]);
 
   // Handle font size changes
