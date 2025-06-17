@@ -1,13 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Group, Stack, Paper, Text, Box, ActionIcon, Select, Button } from '@mantine/core';
+import { useState, useRef, useEffect } from 'react';
+import { Group, Stack, Text, Box, ActionIcon, Select } from '@mantine/core';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
-import { IconChevronLeft, IconChevronRight, IconTextSize, IconEraser, IconFolder, IconCode, IconTerminal, IconFile } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight, IconTextSize, IconEraser } from '@tabler/icons-react';
+import { Project } from '../../types/Project';
 
 interface TerminalTabProps {
   rootPath: string;
   visible?: boolean;
   viewMode?: 'tabs' | 'columns';
+  project: Project;
   type: 'project' | 'dev';
 }
 
@@ -15,7 +17,8 @@ export const TerminalTab = ({
   rootPath, 
   visible = true, 
   viewMode = 'tabs', 
-  type = 'project'
+  type = 'project',
+  project
 }: TerminalTabProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [terminalFontSize, setTerminalFontSize] = useState(11);
@@ -186,52 +189,48 @@ export const TerminalTab = ({
                 gap: '12px',
                 alignItems: viewMode === 'columns' ? 'flex-start' : 'stretch'
               }}>
-                {type === 'project' && (
-                  <Stack gap="xs">
-                    <Text 
-                      size="xs" 
-                      fw={500} 
-                      c="dimmed" 
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleCommandClick('cd author')}
-                      title="Click to insert into terminal"
-                    >
-                      cd author
-                    </Text>
-                    <Text 
-                      size="xs" 
-                      fw={500} 
-                      c="dimmed" 
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleCommandClick('cd publisher')}
-                      title="Click to insert into terminal"
-                    >
-                      cd publisher
-                    </Text>
-                    <Text 
-                      size="xs" 
-                      fw={500} 
-                      c="dimmed" 
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleCommandClick('java -Xss16m -Xmx8g -jar oak-run.jar compact crx-quickstart/repository/segmentstore')}
-                      title="Click to insert into terminal"
-                    >
-                      java -Xss16m -Xmx8g -jar oak-run.jar compact crx-quickstart/repository/segmentstore
-                    </Text>
-                  </Stack>
-                )}
-                {type === 'dev' && (
-                  <Text 
-                    size="xs" 
-                    fw={500} 
-                    c="dimmed" 
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleCommandClick('mvn clean install -PautoInstallSinglePackage')}
-                    title="Click to insert into terminal"
-                  >
-                    mvn clean install -PautoInstallSinglePackage
-                  </Text>
-                )}
+                {/* Command shortcuts */}
+                {(() => {
+                  const projectCommands = [
+                    `cd ${rootPath}`,
+                    'ls -la',
+                    'cd author',
+                    'cd publisher', 
+                    'tail -f crx-quickstart/logs/*',
+                    'java -Xss16m -Xmx8g -jar oak-run.jar compact crx-quickstart/repository/segmentstore'
+                  ];
+                  
+                  const devCommands = [
+                    `cd ${rootPath}`,
+                    'ls -la',
+                    'mvn clean install -PautoInstallSinglePackage',
+                    'mvn clean install -PautoInstallSinglePackagePublish',
+                    `mvn clean install -PautoInstallSinglePackage -Daem.port=${project.settings?.author?.port}`,
+                    `mvn clean install -PautoInstallSinglePackage -Daem.port=${project.settings?.publisher?.port}`,
+                    'cd ui.frontend',
+                    'npm install & npm run start'
+                  ];
+                  
+                  const commands = type === 'project' ? projectCommands : devCommands;
+                  
+                  return (
+                    <Stack gap="xs">
+                      {commands.map((command, index) => (
+                        <Text 
+                          key={index}
+                          size="xs" 
+                          fw={500} 
+                          c="dimmed" 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => handleCommandClick(command)}
+                          title="Click to insert into terminal"
+                        >
+                          {command}
+                        </Text>
+                      ))}
+                    </Stack>
+                  );
+                })()}
 
                   
               </Box>

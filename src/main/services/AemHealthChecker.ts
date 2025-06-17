@@ -24,8 +24,8 @@ export class AemHealthChecker {
   }
 
   async checkHealth(instanceType: 'author' | 'publisher' | 'dispatcher', port: number): Promise<HealthStatus> {
-    // Read configuration on every health check run
-    const settings = ProjectSettingsService.getSettings(this.project);
+    // Use cached settings from project object
+    const settings = this.project.settings;
     
     // Skip health check if disabled in general configuration
     if (!settings.general?.healthCheck) {
@@ -151,7 +151,7 @@ export class AemHealthChecker {
         }
       });
 
-      const settings = ProjectSettingsService.getSettings(this.project);
+      const settings = this.project.settings;
       const instanceSettings = settings[instanceType];
       const healthCheckPath = instanceSettings?.healthCheckPath || '';
 

@@ -53,8 +53,8 @@ export class DispatcherManager {
         this.instance.process = null;
         this.instance.pid = null;
 
-        // Load settings from ProjectSettings
-        const settings = ProjectSettingsService.getSettings(this.project);
+        // Load settings from project object
+        const settings = this.project.settings;
         const dispatcherSettings = settings.dispatcher;
         
         if (!dispatcherSettings) {

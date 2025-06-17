@@ -7,7 +7,7 @@ import {
   IconFolder, 
   IconTerminal
 } from '@tabler/icons-react';
-import { Project, ProjectSettings } from '../../types/Project';
+import { Project } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './files/FilesView';
 import { DispatcherView } from './DispatcherView';
@@ -78,15 +78,14 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, onProjectUpda
             </>
           )
           }
+          <Divider orientation='vertical' />
           <Tabs.Tab value="files" color="blue" leftSection={<IconFolder size={16} />}>AEM Files</Tabs.Tab>
           <Tabs.Tab value="terminal" color="blue" leftSection={<IconTerminal size={16} />}>AEM Terminal</Tabs.Tab>
-          {project.settings?.dev?.path && (
-            <>
-              <Divider orientation='vertical' />
-              <Tabs.Tab value="devfiles" color="green" leftSection={<IconFolder size={16} />}>Dev Files</Tabs.Tab>
-              <Tabs.Tab value="devterminal" color="green" leftSection={<IconTerminal size={16} />}>Dev Terminal</Tabs.Tab>
-            </>
-          )}
+          
+          <Divider orientation='vertical' />
+          <Tabs.Tab value="devfiles" color="green" leftSection={<IconFolder size={16} />} disabled={!project.settings?.dev?.path}>Dev Files</Tabs.Tab>
+          <Tabs.Tab value="devterminal" color="green" leftSection={<IconTerminal size={16} />} disabled={!project.settings?.dev?.path}>Dev Terminal</Tabs.Tab>
+          
           
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
             <Button.Group>
@@ -234,6 +233,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, onProjectUpda
           <TerminalTab rootPath={project.folderPath}
                 visible={activeTab === 'terminal'} 
                 type="project"
+                project={project}
                 />
         </Tabs.Panel>
 
@@ -242,7 +242,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, onProjectUpda
         </Tabs.Panel>
 
         <Tabs.Panel value="devterminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                      <TerminalTab rootPath={project.settings?.dev?.path || ''} visible={activeTab === 'devterminal'} type="dev" />
+          <TerminalTab rootPath={project.settings?.dev?.path || ''} visible={activeTab === 'devterminal'} type="dev" project={project} />
         </Tabs.Panel>
       </Tabs>
 

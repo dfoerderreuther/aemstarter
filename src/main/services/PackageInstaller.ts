@@ -99,7 +99,7 @@ export class PackageInstaller {
         }
 
         // Get instance settings to determine port
-        const settings = ProjectSettingsService.getSettings(this.project);
+        const settings = this.project.settings;
         const instanceSettings = settings[instance];
         const port = instanceSettings.port;
         const host = 'localhost'; // Default host

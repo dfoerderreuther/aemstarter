@@ -365,8 +365,8 @@ export class AemInstanceManager {
     instanceType: 'author' | 'publisher',
     startType: 'start' | 'debug'
   ): Promise<void> {
-    // Load settings from ProjectSettings
-    const settings = ProjectSettingsService.getSettings(this.project);
+    // Load settings from project object
+    const settings = this.project.settings;
     const instanceSettings = settings[instanceType];
     
     if (!instanceSettings) {
