@@ -16,5 +16,6 @@ AEM Starter is a comprehensive desktop application designed to streamline the se
 
 ## Requirements
 
+- This app currently only runs on Apple Silicon Macs. Please reach out if you want to help with supporting other environments!
 - Access to https://experience.adobe.com and download permission for AEM-SDK 
 
