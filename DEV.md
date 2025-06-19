@@ -6,6 +6,10 @@ Dev:
 
     npm start
 
+Lint:
+
+    npm run lint
+
 Prod:
 
     npm run make

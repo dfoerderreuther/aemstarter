@@ -407,10 +407,49 @@ ipcMain.handle('take-aem-screenshot', async (_, project: Project, instanceType: 
   }
 });
 
-ipcMain.handle('get-latest-screenshot', async (_, project: Project, instanceType: 'author' | 'publisher') => {
+ipcMain.handle('get-latest-screenshot', async (_, project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') => {
   try {
-    const manager = AemInstanceManagerRegister.getInstanceManager(project);
-    return manager.getLatestScreenshot(instanceType);
+    console.log(`[main] Getting latest screenshot for ${project.name} ${instanceType}`);
+    
+    // First try to get from memory (health status)
+    let screenshotPath: string | null = null;
+    
+    if (instanceType === 'author' || instanceType === 'publisher') {
+      const manager = AemInstanceManagerRegister.getInstanceManager(project);
+      screenshotPath = manager.getLatestScreenshot(instanceType);
+      if (screenshotPath) {
+        console.log(`[main] Found screenshot from health status: ${screenshotPath}`);
+        return screenshotPath;
+      }
+    }
+    
+    // If not found in memory, look for files on disk
+    const screenshotsDir = path.join(project.folderPath, 'screenshots');
+    console.log(`[main] Looking for screenshot files in: ${screenshotsDir}`);
+    
+    if (!fs.existsSync(screenshotsDir)) {
+      console.log(`[main] Screenshots directory does not exist: ${screenshotsDir}`);
+      return null;
+    }
+    
+    // Get all screenshot files for this instance type
+    const files = fs.readdirSync(screenshotsDir)
+      .filter(file => file.startsWith(`${instanceType}-`) && file.endsWith('.png'))
+      .map(file => ({
+        name: file,
+        path: path.join(screenshotsDir, file),
+        mtime: fs.statSync(path.join(screenshotsDir, file)).mtime
+      }))
+      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime()); // Sort by most recent first
+    
+    if (files.length > 0) {
+      const latestScreenshot = files[0].path;
+      console.log(`[main] Found latest screenshot file: ${latestScreenshot}`);
+      return latestScreenshot;
+    }
+    
+    console.log(`[main] No screenshot files found for ${instanceType}`);
+    return null;
   } catch (error) {
     console.error('Error getting latest screenshot:', error);
     return null;
@@ -763,30 +802,47 @@ ipcMain.handle('open-dev-project', async (_, project: Project, type: 'files' | '
   }
 });
 
-// Terminal Service
+// Terminal management
 let terminalService: TerminalService;
 
-// Terminal IPC handlers
-ipcMain.handle('create-terminal', async (_, options: { cwd?: string; shell?: string } = {}) => {
+function initializeTerminalService() {
   if (!terminalService) {
-    terminalService = new TerminalService(mainWindow || undefined);
+    terminalService = new TerminalService();
+    if (mainWindow) {
+      terminalService.setMainWindow(mainWindow);
+    }
   }
+}
+
+// Terminal IPC handlers
+ipcMain.handle('create-terminal', async (_, options: { cwd?: string; shell?: string }) => {
+  initializeTerminalService();
   return terminalService.createTerminal(options);
 });
 
 ipcMain.handle('write-terminal', async (_, terminalId: string, data: string) => {
-  if (!terminalService) return false;
+  initializeTerminalService();
   return terminalService.writeToTerminal(terminalId, data);
 });
 
 ipcMain.handle('resize-terminal', async (_, terminalId: string, cols: number, rows: number) => {
-  if (!terminalService) return false;
+  initializeTerminalService();
   return terminalService.resizeTerminal(terminalId, cols, rows);
 });
 
 ipcMain.handle('kill-terminal', async (_, terminalId: string) => {
-  if (!terminalService) return false;
+  initializeTerminalService();
   return terminalService.killTerminal(terminalId);
+});
+
+// Clear all terminals (used when switching projects)
+ipcMain.handle('clear-all-terminals', async () => {
+  initializeTerminalService();
+  if (terminalService) {
+    terminalService.clearAllTerminals();
+    return true;
+  }
+  return false;
 });
 
 // Create application menu

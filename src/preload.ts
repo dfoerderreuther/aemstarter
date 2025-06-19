@@ -106,7 +106,7 @@ contextBridge.exposeInMainWorld(
     takeAemScreenshot: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('take-aem-screenshot', project, instanceType),
     
-    getLatestScreenshot: (project: Project, instanceType: 'author' | 'publisher') =>
+    getLatestScreenshot: (project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') =>
       ipcRenderer.invoke('get-latest-screenshot', project, instanceType),
     
     getHealthStatus: (project: Project, instanceType: 'author' | 'publisher') =>
@@ -116,7 +116,19 @@ contextBridge.exposeInMainWorld(
     readScreenshot: (screenshotPath: string) =>
       ipcRenderer.invoke('read-screenshot', screenshotPath),
 
-
+    // Terminal management
+    createTerminal: (options: { cwd?: string; shell?: string }) =>
+      ipcRenderer.invoke('create-terminal', options),
+    writeTerminal: (terminalId: string, data: string) =>
+      ipcRenderer.invoke('write-terminal', terminalId, data),
+    resizeTerminal: (terminalId: string, cols: number, rows: number) =>
+      ipcRenderer.invoke('resize-terminal', terminalId, cols, rows),
+    killTerminal: (terminalId: string) =>
+      ipcRenderer.invoke('kill-terminal', terminalId),
+    
+    // Clear all terminals (used when switching projects)
+    clearAllTerminals: () =>
+      ipcRenderer.invoke('clear-all-terminals'),
 
     // Oak-run.jar functionality
     isOakJarAvailable: (project: Project, instanceType: 'author' | 'publisher') =>
@@ -172,16 +184,6 @@ contextBridge.exposeInMainWorld(
     openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') =>
       ipcRenderer.invoke('open-dev-project', project, type),
 
-    // Terminal functionality
-    createTerminal: (options?: { cwd?: string; shell?: string }) =>
-      ipcRenderer.invoke('create-terminal', options),
-    writeTerminal: (terminalId: string, data: string) =>
-      ipcRenderer.invoke('write-terminal', terminalId, data),
-    resizeTerminal: (terminalId: string, cols: number, rows: number) =>
-      ipcRenderer.invoke('resize-terminal', terminalId, cols, rows),
-    killTerminal: (terminalId: string) =>
-      ipcRenderer.invoke('kill-terminal', terminalId),
-    
     // Terminal event listeners
     onTerminalData: (callback: (terminalId: string, data: string) => void) => {
       const handler = (_: Electron.IpcRendererEvent, terminalId: string, data: string) => callback(terminalId, data);
@@ -194,9 +196,16 @@ contextBridge.exposeInMainWorld(
       return () => ipcRenderer.removeListener('terminal-exit', handler);
     },
     onTerminalError: (callback: (terminalId: string, error: string) => void) => {
-      const handler = (_: Electron.IpcRendererEvent, terminalId: string, error: string) => callback(terminalId, error);
-      ipcRenderer.on('terminal-error', handler);
-      return () => ipcRenderer.removeListener('terminal-error', handler);
+      const listener = (_: any, terminalId: string, error: string) => callback(terminalId, error);
+      ipcRenderer.on('terminal-error', listener);
+      return () => ipcRenderer.removeListener('terminal-error', listener);
+    },
+
+    // Listen for terminals cleared event
+    onTerminalsCleared: (callback: () => void) => {
+      const listener = () => callback();
+      ipcRenderer.on('terminals-cleared', listener);
+      return () => ipcRenderer.removeListener('terminals-cleared', listener);
     },
 
     // Log streaming

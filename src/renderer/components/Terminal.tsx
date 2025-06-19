@@ -234,6 +234,31 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     }
   }, [visible]);
 
+  // Handle terminals cleared event (when switching projects)
+  useEffect(() => {
+    const cleanup = window.electronAPI.onTerminalsCleared(() => {
+      console.log('Terminals cleared - resetting terminal state');
+      // Reset terminal state
+      setTerminalId(null);
+      setIsConnected(false);
+      
+      // Clean up existing xterm instance
+      if (xtermRef.current) {
+        xtermRef.current.dispose();
+        xtermRef.current = null;
+      }
+      
+      // Clean up fit addon
+      fitAddonRef.current = null;
+      
+      // Clean up event listeners
+      cleanupFuncsRef.current.forEach(cleanupFunc => cleanupFunc());
+      cleanupFuncsRef.current = [];
+    });
+
+    return cleanup;
+  }, []);
+
   return (
     <div 
       ref={terminalRef} 

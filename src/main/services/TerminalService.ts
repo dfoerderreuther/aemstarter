@@ -178,6 +178,26 @@ export class TerminalService {
     this.terminals.clear();
   }
 
+  // Clear all terminals (used when switching projects)
+  clearAllTerminals(): void {
+    console.log('Clearing all terminals for project switch');
+    // Kill all active terminal sessions
+    for (const [terminalId, session] of this.terminals) {
+      try {
+        session.ptyProcess.kill();
+        console.log(`Cleared terminal ${terminalId}`);
+      } catch (error) {
+        console.error(`Error clearing terminal ${terminalId}:`, error);
+      }
+    }
+    this.terminals.clear();
+    
+    // Notify renderer that all terminals have been cleared
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      this.mainWindow.webContents.send('terminals-cleared');
+    }
+  }
+
   private generateTerminalId(): string {
     return `term_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   }

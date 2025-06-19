@@ -96,34 +96,42 @@ export const Screenshot = ({
     return cleanup;
   }, [project.id, instance, healthCheckEnabled, isRunning]);
 
-  // Load latest screenshot on mount and when instance status changes
+  // Load screenshot when project, instance, or health check settings change
   useEffect(() => {
     const loadLatestScreenshot = async () => {
-      // Only load manually when health checking is disabled
-      if (healthCheckEnabled) return;
+      console.log(`[Screenshot] Loading screenshot for project: ${project.name} (${project.id}), instance: ${instance}, healthCheck: ${healthCheckEnabled}`);
       
-      if (isRunning) {
-        try {
-          const screenshotPath = await window.electronAPI.getLatestScreenshot(project, instance);
-          
-          // Load the screenshot as data URL
-          if (screenshotPath) {
-            const dataUrl = await window.electronAPI.readScreenshot(screenshotPath);
+      // Always try to load the latest screenshot, regardless of health check status or running state
+      try {
+        const screenshotPath = await window.electronAPI.getLatestScreenshot(project, instance);
+        console.log(`[Screenshot] Screenshot path for ${project.name} ${instance}:`, screenshotPath);
+        
+        // Load the screenshot as data URL
+        if (screenshotPath) {
+          const dataUrl = await window.electronAPI.readScreenshot(screenshotPath);
+          if (dataUrl) {
+            console.log(`[Screenshot] Successfully loaded screenshot for ${project.name} ${instance}`);
             setScreenshotDataUrl(dataUrl);
-            setLastUpdateTime(new Date()); // Set current time for existing screenshots
+            setLastUpdateTime(new Date());
           } else {
+            console.log(`[Screenshot] Failed to read screenshot data for ${project.name} ${instance}`);
             setScreenshotDataUrl(null);
             setLastUpdateTime(null);
           }
-        } catch (error) {
-          console.error('Error loading latest screenshot:', error);
+        } else {
+          console.log(`[Screenshot] No screenshot found for ${project.name} ${instance}`);
+          setScreenshotDataUrl(null);
+          setLastUpdateTime(null);
         }
-      } else {
+      } catch (error) {
+        console.error(`[Screenshot] Error loading latest screenshot for ${project.name} ${instance}:`, error);
         setScreenshotDataUrl(null);
+        setLastUpdateTime(null);
       }
     };
+    
     loadLatestScreenshot();
-  }, [project, instance, isRunning, healthCheckEnabled]);
+  }, [project.id, instance, healthCheckEnabled]); // Trigger when project, instance, or health check changes
 
   // Cleanup on unmount
   useEffect(() => {

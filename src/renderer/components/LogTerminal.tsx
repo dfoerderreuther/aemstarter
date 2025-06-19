@@ -11,6 +11,7 @@ interface LogTerminalProps {
 
 export interface LogTerminalRef {
   resize: () => void;
+  clear: () => void;
 }
 
 export const LogTerminal = forwardRef<LogTerminalRef, LogTerminalProps>(({ onReady, visible = true, fontSize = 13 }, ref) => {
@@ -23,7 +24,7 @@ export const LogTerminal = forwardRef<LogTerminalRef, LogTerminalProps>(({ onRea
     onReadyRef.current = onReady;
   }, [onReady]);
 
-  // Expose resize method to parent
+  // Expose resize and clear methods to parent
   useImperativeHandle(ref, () => ({
     resize: () => {
       if (fitAddonRef.current && xtermRef.current) {
@@ -39,6 +40,11 @@ export const LogTerminal = forwardRef<LogTerminalRef, LogTerminalProps>(({ onRea
         } catch (error) {
           console.warn('Failed to fit terminal:', error);
         }
+      }
+    },
+    clear: () => {
+      if (xtermRef.current) {
+        xtermRef.current.clear();
       }
     }
   }), []);
@@ -147,6 +153,18 @@ export const LogTerminal = forwardRef<LogTerminalRef, LogTerminalProps>(({ onRea
       }
     }
   }, [visible]);
+
+  // Handle terminals cleared event (when switching projects)
+  useEffect(() => {
+    const cleanup = window.electronAPI.onTerminalsCleared(() => {
+      console.log('LogTerminal: Terminals cleared - clearing terminal content');
+      if (xtermRef.current) {
+        xtermRef.current.clear();
+      }
+    });
+
+    return cleanup;
+  }, []);
 
   return (
     <div 

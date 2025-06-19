@@ -80,24 +80,6 @@ declare global {
       
       // Read screenshot as base64 data URL
       readScreenshot: (screenshotPath: string) => Promise<string | null>;
-
-
-      
-      // Oak-run.jar functionality
-      isOakJarAvailable: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
-      loadOakJar: (project: Project) => Promise<boolean>;
-      runOakCompaction: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
-
-      
-      // Project Settings
-      getProjectSettings: (project: Project) => Promise<ProjectSettings>;
-      saveProjectSettings: (project: Project, settings: ProjectSettings) => Promise<Project>;
-      
-      // Editor Availability Check
-      checkEditorAvailability: () => Promise<EditorAvailableResults>;
-      
-      // Dev project utilities
-      openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') => Promise<boolean>;
       
       // Terminal functionality
       createTerminal: (options?: { cwd?: string; shell?: string }) => Promise<{ terminalId: string; success: boolean }>;
@@ -105,10 +87,16 @@ declare global {
       resizeTerminal: (terminalId: string, cols: number, rows: number) => Promise<boolean>;
       killTerminal: (terminalId: string) => Promise<boolean>;
       
+      // Clear all terminals (used when switching projects)
+      clearAllTerminals: () => Promise<boolean>;
+      
       // Terminal event listeners
       onTerminalData: (callback: (terminalId: string, data: string) => void) => () => void;
-      onTerminalExit: (callback: (terminalId: string, code: number | null, signal: string | null) => void) => () => void;
+      onTerminalExit: (callback: (terminalId: string, exitCode: number | null, signal: string | null) => void) => () => void;
       onTerminalError: (callback: (terminalId: string, error: string) => void) => () => void;
+      
+      // Listen for terminals cleared event
+      onTerminalsCleared: (callback: () => void) => () => void;
       
       // Log streaming
       onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => () => void;

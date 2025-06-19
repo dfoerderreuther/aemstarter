@@ -29,6 +29,25 @@ const App: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
 
+  // Clear terminals when project switches
+  useEffect(() => {
+    if (selectedProject) {
+      console.log(`[App] Project switched to: ${selectedProject.name} (ID: ${selectedProject.id})`);
+      
+      const clearProjectData = async () => {
+        try {
+          // Clear all terminals
+          await window.electronAPI.clearAllTerminals();
+          console.log(`Cleared terminals for project switch to: ${selectedProject.name}`);
+        } catch (error) {
+          console.error('Error clearing terminals on project switch:', error);
+        }
+      };
+      
+      clearProjectData();
+    }
+  }, [selectedProject?.id]); // Only trigger when project ID changes, not on other project updates
+
   // Handle new project creation callback
   const handleProjectCreated = async (project: Project) => {
     const allProjects = await window.electronAPI.getAllProjects();
