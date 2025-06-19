@@ -50,7 +50,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
     try {
       const result = await window.electronAPI.listBackupsAll(project);
       setBackups(Array.isArray(result) ? result : []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Don't show error for common cases like "no backup directory exists yet"
       console.log('No backups found or backup directory not initialized:', err);
       setBackups([]); // Just show empty state instead of error
@@ -73,7 +73,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
     try {
       await window.electronAPI.runRestoreAll(project, name);
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to restore backup');
     } finally {
       setRestoring(null);
@@ -88,7 +88,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
       await window.electronAPI.runBackupAll(project, backupName.trim(), compress);
       setBackupName('');
       await loadBackups();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to create backup');
     } finally {
       setCreating(false);
@@ -102,7 +102,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
     try {
       await window.electronAPI.deleteBackupAll(project, name);
       await loadBackups();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to delete backup');
     } finally {
       setDeleting(null);

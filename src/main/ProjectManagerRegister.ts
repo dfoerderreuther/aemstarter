@@ -1,4 +1,3 @@
-import { Project } from "../types/Project";
 import { ProjectManager } from "./services/ProjectManager";
 
 export class ProjectManagerRegister {

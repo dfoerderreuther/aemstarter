@@ -15,7 +15,7 @@ const config: ForgeConfig = {
     // macOS specific configuration
     osxSign: {
       identity: 'Apple Development: dominik.foerderreuther@gmail.com (3ZHD6SW8R2)',
-      optionsForFile: (_filePath: string) => {
+      optionsForFile: () => {
         // Return entitlements for the main app
         return {
           entitlements: 'entitlements.mac.plist',
@@ -25,7 +25,7 @@ const config: ForgeConfig = {
       }
     },
     // Increase memory limit for the app
-    executableName: 'AEM Starter',
+    executableName: 'AEM-Starter',
     // Add extra resources if needed
     extraResource: [],
   },

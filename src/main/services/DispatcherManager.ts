@@ -1,11 +1,9 @@
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess, spawn, exec } from 'child_process';
 import { Project } from '../../types/Project';
-import { ProjectSettingsService } from './ProjectSettingsService';
 import path from 'path';
 import fs from 'fs';
 import { BrowserWindow } from 'electron';
 import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
-import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);

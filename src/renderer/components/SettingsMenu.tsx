@@ -1,4 +1,4 @@
-import { Button, Menu, Divider, Box } from '@mantine/core';
+import { Button, Menu } from '@mantine/core';
 import { IconSettings, IconChevronDown, IconRefresh } from '@tabler/icons-react';
 import { useState } from 'react';
 import { Project } from '../../types/Project';

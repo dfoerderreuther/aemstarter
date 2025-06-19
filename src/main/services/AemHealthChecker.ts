@@ -2,7 +2,6 @@ import { BrowserWindow } from 'electron';
 import { Project } from '../../types/Project';
 import path from 'path';
 import fs from 'fs';
-import { ProjectSettingsService } from './ProjectSettingsService';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'starting' | 'unknown';

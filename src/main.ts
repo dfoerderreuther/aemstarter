@@ -18,11 +18,8 @@ import { Automation } from './main/services/automation/Automation';
 import { TerminalService } from './main/services/TerminalService';
 import { spawn } from 'child_process';
 
-// Get package.json for version info
-const packageJson = require('../../package.json');
-
 // Set the app name immediately (this affects dock/taskbar display)
-app.setName('AEM Starter');
+app.setName('AEM-Starter');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -30,7 +27,7 @@ if (started) {
 }
 
 // Set the app name again for emphasis
-app.setName('AEM Starter');
+app.setName('AEM-Starter');
 
 // Increase memory limits for AEM operations
 app.commandLine.appendSwitch('max-old-space-size', '8192'); // 8GB
@@ -96,7 +93,7 @@ const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    title: 'AEM Starter',
+    title: 'AEM-Starter',
     icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -195,11 +192,6 @@ ipcMain.handle('open-url', async (_, url) => {
     console.error('Error opening URL:', error);
     throw error;
   }
-});
-
-// Get app version
-ipcMain.handle('get-app-version', async () => {
-  return packageJson.version;
 });
 
 ipcMain.handle('open-in-finder', async (_, folderPath) => {
@@ -486,7 +478,7 @@ ipcMain.handle('check-editor-availability', async () => {
   }
 });
 
-ipcMain.handle('save-project-settings', async (_, project: Project, settings: any) => {
+ipcMain.handle('save-project-settings', async (_, project: Project, settings: ProjectSettings) => {
   try {
     // Update the project settings in memory and save to file
     const updatedProject = ProjectManagerRegister.getManager().updateProjectSettings(project.id, settings);
@@ -647,7 +639,9 @@ ipcMain.handle('run-automation-task', async (_, project: Project, task: string) 
 ipcMain.handle('start-dispatcher', async (_, project: Project) => {
   try {
     const manager = DispatcherManagerRegister.getManager(project);
-    manager.setMainWindow(mainWindow!);
+    if (mainWindow) {
+      manager.setMainWindow(mainWindow);
+    }
     await manager.startDispatcher();
     return true;
   } catch (error) {
@@ -682,7 +676,9 @@ ipcMain.handle('get-dispatcher-status', async (_, project: Project) => {
   try {
     const manager = DispatcherManagerRegister.getManager(project);
     // Always update the main window reference for existing managers
-    manager.setMainWindow(mainWindow!);
+    if (mainWindow) {
+      manager.setMainWindow(mainWindow);
+    }
     return manager.getDispatcherStatus();
   } catch (error) {
     console.error('Error getting dispatcher status:', error);
@@ -693,7 +689,8 @@ ipcMain.handle('get-dispatcher-status', async (_, project: Project) => {
 ipcMain.handle('flush-dispatcher', async (_, project: Project) => {
   try {
     const manager = DispatcherManagerRegister.getManager(project);
-    await manager.flushDispatcher();
+    // For now, clear cache as flush operation
+    manager.clearCache();
     return true;
   } catch (error) {
     console.error('Error flushing dispatcher:', error);
@@ -846,9 +843,9 @@ const createMenu = () => {
             
             const result = await dialog.showOpenDialog(mainWindow, {
               properties: ['openDirectory'],
-              title: 'Open AEM Starter Project',
+              title: 'Open AEM-Starter Project',
               buttonLabel: 'Open Project',
-              message: 'Select a folder containing an existing AEM Starter project'
+              message: 'Select a folder containing an existing AEM-Starter project'
             });
             
             if (!result.canceled && result.filePaths.length > 0) {
@@ -862,7 +859,7 @@ const createMenu = () => {
         },
         { type: 'separator' },
         {
-          label: process.platform === 'darwin' ? 'Quit AEM Starter' : 'Exit',
+          label: process.platform === 'darwin' ? 'Quit AEM-Starter' : 'Exit',
           accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
           click: () => {
             app.quit();
@@ -878,7 +875,7 @@ const createMenu = () => {
       label: app.getName(),
       submenu: [
         {
-          label: 'About AEM Starter',
+          label: 'About AEM-Starter',
           click: () => {
             if (mainWindow) {
               mainWindow.webContents.send('open-about-dialog');
@@ -940,7 +937,7 @@ const createMenu = () => {
       label: 'Help',
       submenu: [
         {
-          label: 'About AEM Starter',
+          label: 'About AEM-Starter',
           click: () => {
             if (mainWindow) {
               mainWindow.webContents.send('open-about-dialog');
@@ -960,7 +957,7 @@ const createMenu = () => {
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   // Set app name again when ready
-  app.setName('AEM Starter');
+  app.setName('AEM-Starter');
   
   // Register the custom protocol handler
   protocol.handle('local-file', async (request) => {

@@ -1,8 +1,8 @@
-# AEM Starter
+# AEM-Starter
 
-![AEM Starter Application](doc/screenshots/aem-starter-main.png)
+![AEM-Starter Application](doc/screenshots/aem-starter-main.png)
 
-AEM Starter is a comprehensive desktop application designed to streamline the setup and management of local AEM-SDK environments. It provides developers with an intuitive interface to handle all aspects of AEM development workflows.
+AEM-Starter is a comprehensive desktop application designed to streamline the setup and management of local AEM-SDK environments. It provides developers with an intuitive interface to handle all aspects of AEM development workflows.
 
 ## Features
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MantineProvider, AppShell, Title, Container, Center, Text, ThemeIcon, Group, Stack, createTheme, rem, Select, Button } from '@mantine/core';
+import { MantineProvider, AppShell, Title, Container, Center, Text, ThemeIcon, Group, Stack, createTheme, rem, Button, MantineTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { ProjectView } from './components/ProjectView';
 import { NewProjectModal } from './components/NewProjectModal';
@@ -13,7 +13,7 @@ const theme = createTheme({
   primaryColor: 'blue',
   components: {
     AppShell: {
-      styles: (theme: any) => ({
+      styles: (theme: MantineTheme) => ({
         main: {
           background: theme.colors.dark[8],
         },
@@ -102,7 +102,7 @@ const App: React.FC = () => {
   // Handle opening an existing project folder
   const handleOpenProjectFolder = async (folderPath: string) => {
     try {
-      // Check if this folder contains a complete AEM Starter project installation
+      // Check if this folder contains a complete AEM-Starter project installation
       const entries = await window.electronAPI.readDirectory(folderPath);
       const hasSettings = entries.some(entry => entry.name === 'settings.json' && entry.isFile);
       const hasAuthor = entries.some(entry => entry.name === 'author' && entry.isDirectory);
@@ -111,7 +111,7 @@ const App: React.FC = () => {
       const hasInstall = entries.some(entry => entry.name === 'install' && entry.isDirectory);
       
       if (hasSettings && hasAuthor && hasPublisher && hasDispatcher && hasInstall) {
-        // This is a complete AEM Starter project installation
+        // This is a complete AEM-Starter project installation
         // Try to read the settings to get the project name
         let projectName = 'Imported Project';
         try {
@@ -148,7 +148,7 @@ const App: React.FC = () => {
         await window.electronAPI.setLastProjectId(project.id);
         await window.electronAPI.refreshMenu();
         
-        console.log('Successfully imported existing AEM Starter project:', projectName);
+        console.log('Successfully imported existing AEM-Starter project:', projectName);
       } else {
         const missingComponents = [];
         if (!hasSettings) missingComponents.push('settings.json');
@@ -157,7 +157,7 @@ const App: React.FC = () => {
         if (!hasDispatcher) missingComponents.push('dispatcher/');
         if (!hasInstall) missingComponents.push('install/');
         
-        alert(`The selected folder does not appear to contain a complete AEM Starter project installation.\n\nMissing components:\n${missingComponents.map(c => `- ${c}`).join('\n')}\n\nSelected: ${folderPath}`);
+        alert(`The selected folder does not appear to contain a complete AEM-Starter project installation.\n\nMissing components:\n${missingComponents.map(c => `- ${c}`).join('\n')}\n\nSelected: ${folderPath}`);
       }
     } catch (error) {
       console.error('Error opening project folder:', error);
@@ -189,7 +189,7 @@ const App: React.FC = () => {
                 <img src={AemLogo} alt="AEM Logo" style={{ width: 32, height: 32 }} />
               </ThemeIcon>
               <Title order={2}>
-                {selectedProject ? selectedProject.name : 'AEM Starter'}
+                {selectedProject ? selectedProject.name : 'AEM-Starter'}
               </Title>
             </Group>
             <Group align="center" gap={8}>
@@ -231,7 +231,7 @@ const App: React.FC = () => {
           ) : (
             <Container size="xl" py="md">
               <Stack gap="lg" align="center">
-                <Title order={2}>Welcome to AEM Starter</Title>
+                <Title order={2}>Welcome to AEM-Starter</Title>
                 <Text size="lg" c="dimmed" ta="center" maw={400} py="md">
                   Select or create a project.
                 </Text>

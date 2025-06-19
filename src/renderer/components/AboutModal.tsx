@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import { Modal, Stack, Text, Group, ThemeIcon, Button, Anchor } from '@mantine/core';
 import { IconBrandGithub, IconLicense } from '@tabler/icons-react';
 import AemLogo from '../assets/AEM.svg';
@@ -9,38 +8,21 @@ interface AboutModalProps {
 }
 
 export const AboutModal: React.FC<AboutModalProps> = ({ opened, onClose }) => {
-  const [version, setVersion] = useState('1.0.0');
-
-  useEffect(() => {
-    const loadVersion = async () => {
-      try {
-        const appVersion = await window.electronAPI.getAppVersion();
-        setVersion(appVersion);
-      } catch (error) {
-        console.error('Failed to load app version:', error);
-        // Keep the fallback version if the API call fails
-      }
-    };
-
-    if (opened) {
-      loadVersion();
-    }
-  }, [opened]);
 
   const handleOpenGitHub = () => {
     window.electronAPI.openUrl('https://github.com/dfoerderreuther/aemstarter');
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="About AEM Starter" size="md" centered>
+    <Modal opened={opened} onClose={onClose} title="About AEM-Starter" size="md" centered>
       <Stack gap="lg" align="center">
         <ThemeIcon size={80} radius="md" variant="transparent">
           <img src={AemLogo} alt="AEM Logo" style={{ width: 64, height: 64 }} />
         </ThemeIcon>
         
         <Stack gap="sm" align="center">
-          <Text size="xl" fw={600}>AEM Starter</Text>
-          <Text size="lg" c="dimmed">Version {version}</Text>
+          <Text size="xl" fw={600}>AEM-Starter</Text>
+          <Text size="lg" c="dimmed">Version 1.0.0</Text>
         </Stack>
         
         <Text size="md" ta="center" maw={400}>

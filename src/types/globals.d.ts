@@ -1,4 +1,4 @@
-import { Project } from './Project';
+import { Project, ProjectSettings } from './Project';
 import { BackupInfo } from './BackupInfo';
 import { SystemCheckResults } from './SystemCheckResults';
 import { EditorAvailableResults } from './EditorAvailableResults';
@@ -13,13 +13,11 @@ declare global {
       deleteProject: (id: string) => Promise<boolean>;
       setLastProjectId: (id: string | null) => Promise<boolean>;
       getLastProjectId: () => Promise<string | undefined>;
-      showOpenDialog: (options: any) => Promise<Electron.OpenDialogReturnValue>;
+      showOpenDialog: (options: Electron.OpenDialogOptions) => Promise<Electron.OpenDialogReturnValue>;
       openUrl: (url: string) => Promise<boolean>;
       openInFinder: (folderPath: string) => Promise<boolean>;
       openInEditor: (folderPath: string, project?: Project) => Promise<boolean>;
       
-      // App info
-      getAppVersion: () => Promise<string>;
       
       // Global settings
       getGlobalSettings: () => Promise<{ aemSdkPath?: string; licensePath?: string }>;
@@ -29,7 +27,7 @@ declare global {
       refreshMenu: () => Promise<boolean>;
 
       // System Check
-      runSystemCheck: (settings: any) => Promise<SystemCheckResults>;
+      runSystemCheck: (settings: ProjectSettings) => Promise<SystemCheckResults>;
       
       // File system operations
       readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
@@ -72,13 +70,13 @@ declare global {
       installPackage: (project: Project, instance: 'author' | 'publisher', packageUrl: string) => Promise<boolean>;
 
       // Replication Settings
-      setupReplication: (project: Project, instance: 'author' | 'publisher' | 'dispatcher') => Promise<{ success: boolean; output?: string; error?: any }>;
+      setupReplication: (project: Project, instance: 'author' | 'publisher' | 'dispatcher') => Promise<{ success: boolean; output?: string; error?: unknown }>;
       
       
       // Screenshot and Health Check functionality
       takeAemScreenshot: (project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') => Promise<string>;
       getLatestScreenshot: (project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') => Promise<string | null>;
-      getHealthStatus: (project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') => Promise<any>;
+      getHealthStatus: (project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') => Promise<unknown>;
       
       // Read screenshot as base64 data URL
       readScreenshot: (screenshotPath: string) => Promise<string | null>;
@@ -92,8 +90,8 @@ declare global {
 
       
       // Project Settings
-      getProjectSettings: (project: Project) => Promise<any>;
-      saveProjectSettings: (project: Project, settings: any) => Promise<Project>;
+      getProjectSettings: (project: Project) => Promise<ProjectSettings>;
+      saveProjectSettings: (project: Project, settings: ProjectSettings) => Promise<Project>;
       
       // Editor Availability Check
       checkEditorAvailability: () => Promise<EditorAvailableResults>;
@@ -119,7 +117,7 @@ declare global {
       onAemPidStatus: (callback: (data: { projectId: string; instanceType: string; pid: number | null; isRunning: boolean }) => void) => () => void;
       
       // Health status streaming
-      onAemHealthStatus: (callback: (data: { projectId: string; instanceType: string; status: any }) => void) => () => void;
+      onAemHealthStatus: (callback: (data: { projectId: string; instanceType: string; status: unknown }) => void) => () => void;
       
       removeAemLogDataListener: (cleanup?: () => void) => void;
 
@@ -139,8 +137,8 @@ declare global {
 
       // Dispatcher Health Checking
       takeDispatcherScreenshot: (project: Project) => Promise<string>;
-      getDispatcherHealthStatus: (project: Project) => Promise<any>;
-      checkDispatcherHealth: (project: Project) => Promise<any>;
+      getDispatcherHealthStatus: (project: Project) => Promise<unknown>;
+      checkDispatcherHealth: (project: Project) => Promise<unknown>;
 
       // Dispatcher log streaming
       onDispatcherLogData: (callback: (data: { projectId: string; data: string }) => void) => () => void;

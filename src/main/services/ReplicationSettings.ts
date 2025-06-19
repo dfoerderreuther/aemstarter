@@ -25,9 +25,9 @@ export class ReplicationSettings {
         if (instance === 'dispatcher') {
             await this.setReplicationDispatcher(project);
         } else if (instance === 'author') {
-            await this.setReplicationAuthor(project, instance);
+            await this.setReplicationAuthor(project);
         } else if (instance === 'publisher') {
-            await this.setReplicationPublisher(project, instance);
+            await this.setReplicationPublisher(project);
         } else {
             throw new Error(`Invalid instance: ${instance}`);
         }
@@ -120,8 +120,8 @@ export class ReplicationSettings {
         }
     }
 
-    private async setReplicationPublisher(project: Project, instance: 'author' | 'publisher') {
-        console.log('setReplicationPublisher', project, instance);
+    private async setReplicationPublisher(project: Project) {
+        console.log('setReplicationPublisher', project);
 
         const data = '/sling:resourceType=cq/replication/components/agent&' + 
         './jcr:lastModified=&' + 
@@ -182,7 +182,7 @@ export class ReplicationSettings {
                     "--data-raw '." + dataRaw + "'"
 
         try {
-            const { stdout, stderr } = await execAsync(command);
+            const { stdout } = await execAsync(command);
             console.log('Replication agent configured successfully:', stdout);
             return { success: true, output: stdout };
         } catch (error) {
@@ -191,7 +191,7 @@ export class ReplicationSettings {
         }
     }
 
-    private async setReplicationAuthor(project: Project, instance: 'author' | 'publisher') {
+    private async setReplicationAuthor(project: Project) {
         // TODO: dynamic ports
         const data = '/sling:resourceType=cq/replication/components/agent&' + 
         './jcr:lastModified=&' + 
@@ -244,7 +244,7 @@ export class ReplicationSettings {
                     "--data-raw '." + dataRaw + "'"
 
         try {
-            const { stdout, stderr } = await execAsync(command);
+            const { stdout } = await execAsync(command);
             console.log('Replication agent configured successfully:', stdout);
             return { success: true, output: stdout };
         } catch (error) {

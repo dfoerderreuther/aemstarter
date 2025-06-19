@@ -2,6 +2,7 @@ import { Project } from '../../types/Project';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
+import { app } from 'electron';
 import { ProjectSettingsService } from './ProjectSettingsService';
 
 export class ProjectManager {
@@ -15,13 +16,8 @@ export class ProjectManager {
   } = {};
 
   constructor() {
-    // Store projects in user's app data directory
-    const userDataPath = process.env.APPDATA || 
-      (process.platform === 'darwin' 
-        ? process.env.HOME + '/Library/Application Support' 
-        : process.env.HOME + '/.local/share');
-    
-    const appDataPath = path.join(userDataPath, 'aem-starter');
+    // Store projects in user's app data directory using Electron's userData path
+    const appDataPath = app.getPath('userData');
     this.projectsFilePath = path.join(appDataPath, 'projects.json');
     this.settingsFilePath = path.join(appDataPath, 'settings.json');
     

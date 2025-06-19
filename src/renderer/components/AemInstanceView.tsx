@@ -1,5 +1,5 @@
 import { Project } from "../../types/Project";
-import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Select, Menu, Button } from '@mantine/core';
+import { TextInput, Group, Stack, Paper, Text, Box, ActionIcon, Select, Button } from '@mantine/core';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { LogTerminal, LogTerminalRef } from './LogTerminal';

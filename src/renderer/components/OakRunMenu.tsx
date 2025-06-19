@@ -1,6 +1,6 @@
 import { Project } from "../../types/Project";
-import { Button, Menu, Divider, Box } from '@mantine/core';
-import { IconPackage, IconDatabase, IconDeviceFloppy, IconRestore, IconChevronDown } from '@tabler/icons-react';
+import { Button, Menu } from '@mantine/core';
+import { IconPackage, IconDatabase, IconChevronDown } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 
 interface OakRunMenuProps {

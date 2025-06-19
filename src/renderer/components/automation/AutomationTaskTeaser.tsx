@@ -1,4 +1,4 @@
-import { Group, Paper, Button, Stack, Text } from "@mantine/core";
+import { Group, Paper, Button, Stack } from "@mantine/core";
 import { IconPackage } from "@tabler/icons-react";
 import { useState } from "react";
 import { Project } from '../../../types/Project';

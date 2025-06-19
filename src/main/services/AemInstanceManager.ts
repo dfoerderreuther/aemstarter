@@ -1,10 +1,8 @@
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess, spawn, exec } from 'child_process';
 import { Project } from '../../types/Project';
 import path from 'path';
 import fs from 'fs';
-import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
-import { ProjectSettingsService } from './ProjectSettingsService';
 import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
 import { BackupService } from './BackupService';
 
@@ -107,7 +105,7 @@ export class AemInstanceManager {
         cmd = `lsof -i :${port} -sTCP:LISTEN -t 2>/dev/null | head -1`;
       }
 
-      exec(cmd, (error, stdout, _stderr) => {
+      exec(cmd, (error, stdout) => {
         if (error || !stdout.trim()) {
           console.log(`[AemInstanceManager] No LISTENING process found on port ${port}: ${error?.message || 'No output'}`);
           resolve(null);
@@ -300,7 +298,7 @@ export class AemInstanceManager {
         this.sendLogData(instanceType, `Error tailing log file ${logFile}: ${error.message}`);
       });
 
-      tailProcess.on('exit', (code, _signal) => {
+      tailProcess.on('exit', (code) => {
         if (code !== 0 && !tailProcess.killed) {
           console.warn(`[AemInstanceManager] Tail process for ${logFile} exited unexpectedly, restarting...`);
           setTimeout(() => {
@@ -323,7 +321,7 @@ export class AemInstanceManager {
     if (!instance) return;
 
     // Stop all tail processes
-    for (const [_logFile, tailProcess] of instance.tailProcesses) {
+    for (const tailProcess of instance.tailProcesses.values()) {
       if (tailProcess && !tailProcess.killed) {
         tailProcess.kill();
       }
@@ -600,7 +598,7 @@ export class AemInstanceManager {
             resolve(undefined);
           }, 10000); // 10 second timeout
 
-          instance.process!.on('exit', () => {
+          instance.process?.on('exit', () => {
             console.log(`[AemInstanceManager] Original spawn process exited for ${instanceType}`);
             clearTimeout(timeout);
             resolve(undefined);
@@ -794,7 +792,7 @@ export class AemInstanceManager {
     let found = false;
     const triedVersions: string[] = [];
     let jarPath = '';
-    let lastError: any = null;
+    let lastError: Error | null = null;
     
     // Strategy 1: Try current and lower patch versions
     const currentMajor = major;
@@ -820,9 +818,9 @@ export class AemInstanceManager {
         } else {
           console.warn(`[AemInstanceManager] oak-run.jar not found for version ${tryVersion}: ${jarResponse.statusText}`);
         }
-      } catch (err) {
-        lastError = err;
-        console.warn(`[AemInstanceManager] Error downloading oak-run.jar for version ${tryVersion}: ${err}`);
+              } catch (err) {
+          lastError = err instanceof Error ? err : new Error(String(err));
+          console.warn(`[AemInstanceManager] Error downloading oak-run.jar for version ${tryVersion}: ${err}`);
       }
       
       // Decrement patch version
@@ -868,7 +866,7 @@ export class AemInstanceManager {
             console.warn(`[AemInstanceManager] oak-run.jar not found for version ${tryVersion}: ${jarResponse.statusText}`);
           }
         } catch (err) {
-          lastError = err;
+          lastError = err instanceof Error ? err : new Error(String(err));
           console.warn(`[AemInstanceManager] Error downloading oak-run.jar for version ${tryVersion}: ${err}`);
         }
       }

@@ -14,7 +14,6 @@ export const Screenshot = ({
   instance,
   isRunning
 }: ScreenshotProps) => {
-  const [latestScreenshot, setLatestScreenshot] = useState<string | null>(null);
   const [screenshotDataUrl, setScreenshotDataUrl] = useState<string | null>(null);
   const [isLoadingScreenshot, setIsLoadingScreenshot] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
@@ -53,7 +52,6 @@ export const Screenshot = ({
         
         // Auto-update screenshot if available
         if (data.status.screenshotPath) {
-          setLatestScreenshot(data.status.screenshotPath);
           setLastUpdateTime(new Date(data.status.timestamp));
           // Load the screenshot as data URL
           window.electronAPI.readScreenshot(data.status.screenshotPath)
@@ -78,7 +76,6 @@ export const Screenshot = ({
             setHealthStatus(existingStatus);
             
             if (existingStatus.screenshotPath) {
-              setLatestScreenshot(existingStatus.screenshotPath);
               setLastUpdateTime(new Date(existingStatus.timestamp));
               
               const dataUrl = await window.electronAPI.readScreenshot(existingStatus.screenshotPath);
@@ -108,7 +105,6 @@ export const Screenshot = ({
       if (isRunning) {
         try {
           const screenshotPath = await window.electronAPI.getLatestScreenshot(project, instance);
-          setLatestScreenshot(screenshotPath);
           
           // Load the screenshot as data URL
           if (screenshotPath) {
@@ -123,7 +119,6 @@ export const Screenshot = ({
           console.error('Error loading latest screenshot:', error);
         }
       } else {
-        setLatestScreenshot(null);
         setScreenshotDataUrl(null);
       }
     };
@@ -156,7 +151,6 @@ export const Screenshot = ({
     setIsLoadingScreenshot(true);
     try {
       const screenshotPath = await window.electronAPI.takeAemScreenshot(project, instance);
-      setLatestScreenshot(screenshotPath);
       setLastUpdateTime(new Date());
       
       // Load the screenshot as data URL

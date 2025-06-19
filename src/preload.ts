@@ -2,7 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { Project } from './types/Project';
+import { Project, ProjectSettings } from './types/Project';
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('load-project', id),
     getAllProjects: () => 
       ipcRenderer.invoke('get-all-projects'),
-    updateProject: (id: string, updates: any) => 
+    updateProject: (id: string, updates: Partial<Project>) => 
       ipcRenderer.invoke('update-project', { id, updates }),
     deleteProject: (id: string) => 
       ipcRenderer.invoke('delete-project', id),
@@ -37,7 +37,7 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('refresh-menu'),
     
     // Dialog
-    showOpenDialog: (options: any) => 
+    showOpenDialog: (options: Electron.OpenDialogOptions) => 
       ipcRenderer.invoke('show-open-dialog', options),
     
     // Browser
@@ -48,9 +48,6 @@ contextBridge.exposeInMainWorld(
     openInEditor: (folderPath: string, project?: Project) =>
       ipcRenderer.invoke('open-in-editor', folderPath, project),
     
-    // App info
-    getAppVersion: () =>
-      ipcRenderer.invoke('get-app-version'),
       
     // File system operations
     readDirectory: (dirPath: string, showHidden = false) =>
@@ -150,7 +147,7 @@ contextBridge.exposeInMainWorld(
 
     // Automation progress streaming
     onAutomationProgress: (callback: (data: { projectId: string; taskType: string; message: string; timestamp: string }) => void) => {
-      const handler = (_: any, data: { projectId: string; taskType: string; message: string; timestamp: string }) => callback(data);
+      const handler = (_: Electron.IpcRendererEvent, data: { projectId: string; taskType: string; message: string; timestamp: string }) => callback(data);
       ipcRenderer.on('automation-progress', handler);
       
       // Return cleanup function
@@ -164,7 +161,7 @@ contextBridge.exposeInMainWorld(
     // Project Settings
     getProjectSettings: (project: Project) =>
       ipcRenderer.invoke('get-project-settings', project),
-    saveProjectSettings: (project: Project, settings: any) =>
+    saveProjectSettings: (project: Project, settings: ProjectSettings) =>
       ipcRenderer.invoke('save-project-settings', project, settings),
     
     // Editor Availability Check
@@ -187,28 +184,28 @@ contextBridge.exposeInMainWorld(
     
     // Terminal event listeners
     onTerminalData: (callback: (terminalId: string, data: string) => void) => {
-      const handler = (_: any, terminalId: string, data: string) => callback(terminalId, data);
+      const handler = (_: Electron.IpcRendererEvent, terminalId: string, data: string) => callback(terminalId, data);
       ipcRenderer.on('terminal-data', handler);
       return () => ipcRenderer.removeListener('terminal-data', handler);
     },
     onTerminalExit: (callback: (terminalId: string, code: number | null, signal: string | null) => void) => {
-      const handler = (_: any, terminalId: string, code: number | null, signal: string | null) => callback(terminalId, code, signal);
+      const handler = (_: Electron.IpcRendererEvent, terminalId: string, code: number | null, signal: string | null) => callback(terminalId, code, signal);
       ipcRenderer.on('terminal-exit', handler);
       return () => ipcRenderer.removeListener('terminal-exit', handler);
     },
     onTerminalError: (callback: (terminalId: string, error: string) => void) => {
-      const handler = (_: any, terminalId: string, error: string) => callback(terminalId, error);
+      const handler = (_: Electron.IpcRendererEvent, terminalId: string, error: string) => callback(terminalId, error);
       ipcRenderer.on('terminal-error', handler);
       return () => ipcRenderer.removeListener('terminal-error', handler);
     },
 
     // Log streaming
     onAemLogData: (callback: (data: { projectId: string; instanceType: string; data: string }) => void) => {
-      const handler = (_: any, data: { projectId: string; instanceType: string; data: string }) => callback(data);
+      const handler = (_: Electron.IpcRendererEvent, data: { projectId: string; instanceType: string; data: string }) => callback(data);
       ipcRenderer.on('aem-log-data', handler);
       
       // Also handle batched data
-      const batchHandler = (_: any, batchData: { projectId: string; instanceType: string; lines: string[] }) => {
+      const batchHandler = (_: Electron.IpcRendererEvent, batchData: { projectId: string; instanceType: string; lines: string[] }) => {
         batchData.lines.forEach(line => {
           callback({
             projectId: batchData.projectId,
@@ -228,7 +225,7 @@ contextBridge.exposeInMainWorld(
 
     // PID status streaming
     onAemPidStatus: (callback: (data: { projectId: string; instanceType: string; pid: number | null; isRunning: boolean }) => void) => {
-      const handler = (_: any, data: { projectId: string; instanceType: string; pid: number | null; isRunning: boolean }) => callback(data);
+      const handler = (_: Electron.IpcRendererEvent, data: { projectId: string; instanceType: string; pid: number | null; isRunning: boolean }) => callback(data);
       ipcRenderer.on('aem-pid-status', handler);
       
       // Return cleanup function
@@ -238,8 +235,8 @@ contextBridge.exposeInMainWorld(
     },
 
     // Health status streaming
-    onAemHealthStatus: (callback: (data: { projectId: string; instanceType: string; status: any }) => void) => {
-      const handler = (_: any, data: { projectId: string; instanceType: string; status: any }) => callback(data);
+    onAemHealthStatus: (callback: (data: { projectId: string; instanceType: string; status: unknown }) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { projectId: string; instanceType: string; status: unknown }) => callback(data);
       ipcRenderer.on('aem-health-status', handler);
       
       // Return cleanup function
@@ -270,7 +267,7 @@ contextBridge.exposeInMainWorld(
     },
 
     onOpenProjectFolder: (callback: (folderPath: string) => void) => {
-      const handler = (_: any, folderPath: string) => callback(folderPath);
+      const handler = (_: Electron.IpcRendererEvent, folderPath: string) => callback(folderPath);
       ipcRenderer.on('open-project-folder', handler);
       
       // Return cleanup function
@@ -280,7 +277,7 @@ contextBridge.exposeInMainWorld(
     },
 
     onOpenRecentProject: (callback: (projectId: string) => void) => {
-      const handler = (_: any, projectId: string) => callback(projectId);
+      const handler = (_: Electron.IpcRendererEvent, projectId: string) => callback(projectId);
       ipcRenderer.on('open-recent-project', handler);
       
       // Return cleanup function
@@ -300,7 +297,7 @@ contextBridge.exposeInMainWorld(
     },
 
     // System Check
-    runSystemCheck: (settings: any) =>
+    runSystemCheck: (settings: ProjectSettings) =>
       ipcRenderer.invoke('run-system-check', settings),
 
     // Dispatcher Management
@@ -334,7 +331,7 @@ contextBridge.exposeInMainWorld(
 
     // Dispatcher log streaming
     onDispatcherLogData: (callback: (data: { projectId: string; data: string }) => void) => {
-      const handler = (_: any, data: { projectId: string; data: string }) => callback(data);
+      const handler = (_: Electron.IpcRendererEvent, data: { projectId: string; data: string }) => callback(data);
       ipcRenderer.on('dispatcher-log-data', handler);
       
       // Return cleanup function
@@ -345,7 +342,7 @@ contextBridge.exposeInMainWorld(
 
     // Dispatcher status streaming
     onDispatcherStatus: (callback: (data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => void) => {
-      const handler = (_: any, data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => callback(data);
+      const handler = (_: Electron.IpcRendererEvent, data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => callback(data);
       ipcRenderer.on('dispatcher-status', handler);
       
       // Return cleanup function

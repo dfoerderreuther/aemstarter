@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
 import { IconPlayerPlay, IconPlayerStop, IconSkull, IconSettings, IconBug, IconBrowser, IconDeviceFloppy, IconFolder, IconTerminal2, IconCode, IconRobot } from '@tabler/icons-react';
-import { Project, ProjectSettings } from '../../types/Project';
+import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
 import { AutomationModal } from './automation/AutomationModal';

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Group, Text, ActionIcon, Tooltip, Stack, Center } from '@mantine/core';
 import { IconDeviceFloppy, IconX, IconRefresh, IconFileTypography, IconPhoto } from '@tabler/icons-react';
-import Editor, { useMonaco, loader } from "@monaco-editor/react";
+import { Editor, useMonaco, loader } from "@monaco-editor/react";
 import { getFileName } from '../../utils/fileUtils';
 
 // Configure Monaco Editor to use local files

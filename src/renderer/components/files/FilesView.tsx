@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Grid, ScrollArea, Box, Text } from '@mantine/core';
+import { Grid } from '@mantine/core';
 import { FileTreeView, FileTreeViewRef } from './FileTreeView';
 import { EditorView } from './EditorView';
 import { isBinaryFileByExtension, isBinaryContent } from '../../utils/fileUtils';
