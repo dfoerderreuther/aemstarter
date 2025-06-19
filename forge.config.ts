@@ -7,6 +7,8 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -14,16 +16,22 @@ const config: ForgeConfig = {
     // Icon configuration
     icon: './icons/icon', // Path without extension - Electron Forge will choose the right format
     // macOS specific configuration
-    // osxSign: {
-    //   identity: 'Apple Development: dominik.foerderreuther@gmail.com (3ZHD6SW8R2)',
-    //   optionsForFile: () => {
-    //     // Return entitlements for the main app
-    //     return {
-    //       entitlements: 'entitlements.mac.plist',
-    //       hardenedRuntime: true,
-    //       // timestamp: undefined, // Disable timestamping to avoid network timeouts
-    //     };
-    //   }
+    osxSign: {
+      identity: 'Developer ID Application: eleon GmbH (3U35D35E29)',
+      optionsForFile: () => {
+        // Return entitlements for the main app
+        return {
+          entitlements: 'entitlements.mac.plist',
+          hardenedRuntime: true,
+        };
+      }
+    },
+    // macOS notarization - temporarily disabled due to hanging issue
+    // TODO: Investigate why notarization causes the build to hang
+    // osxNotarize: {
+    //   appleId: process.env.APPLE_ID || '',
+    //   appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
+    //   teamId: process.env.APPLE_TEAM_ID || '',
     // },
     // Increase memory limit for the app
     executableName: 'AEM-Starter',

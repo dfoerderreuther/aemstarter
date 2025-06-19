@@ -90,3 +90,12 @@ typings/
 
 # Electron-Forge
 out/
+
+# Environment variables (contains sensitive Apple ID credentials)
+.env
+
+# Code Signing Files
+DeveloperID.key
+DeveloperID_CSR.certSigningRequest
+*.cer
+*.p12
