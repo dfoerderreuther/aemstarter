@@ -142,6 +142,16 @@ declare global {
       runRestoreAll: (project: Project, tarName: string) => Promise<boolean>;
       deleteBackupAll: (project: Project, tarName: string) => Promise<boolean>;
       
+      // Project Settings
+      getProjectSettings: (project: Project) => Promise<ProjectSettings>;
+      saveProjectSettings: (project: Project, settings: ProjectSettings) => Promise<boolean>;
+      
+      // Editor Availability Check
+      checkEditorAvailability: () => Promise<EditorAvailableResults>;
+
+      // Dev project utilities
+      openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') => Promise<boolean>;
+      
       // Automation Tasks
       runAutomationTask: (project: Project, task: string) => Promise<boolean>;
       

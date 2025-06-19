@@ -24,6 +24,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
   const xtermRef = useRef<XTerm | null>(null);
   const [terminalId, setTerminalId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [shouldReinitialize, setShouldReinitialize] = useState(0);
   const cleanupFuncsRef = useRef<(() => void)[]>([]);
 
   // Expose methods to parent
@@ -221,7 +222,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
       setTerminalId(null);
       setIsConnected(false);
     };
-  }, [cwd]); // Re-create when cwd changes
+  }, [cwd, shouldReinitialize]); // Re-create when cwd changes or shouldReinitialize changes
 
   // Handle tab visibility changes
   useEffect(() => {
@@ -254,6 +255,9 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
       // Clean up event listeners
       cleanupFuncsRef.current.forEach(cleanupFunc => cleanupFunc());
       cleanupFuncsRef.current = [];
+      
+      // Trigger reinitialization after cleanup
+      setShouldReinitialize(prev => prev + 1);
     });
 
     return cleanup;

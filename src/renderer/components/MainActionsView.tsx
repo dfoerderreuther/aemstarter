@@ -407,7 +407,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
 
               <Tooltip label="Open author">
                   <Button
-                    color="green" 
+                    color="gray" 
                     variant="filled" 
                     size="xs"
                     styles={buttonStyles}
@@ -478,7 +478,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
               <Button.Group>
                 <Tooltip label="Open publisher">
                   <Button
-                    color="green" 
+                    color="gray" 
                     variant="filled" 
                     size="xs"
                     styles={buttonStyles}
@@ -535,7 +535,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
 
               <Tooltip label="Open dispatcher">
                 <Button
-                  color="green" 
+                  color="gray" 
                   variant="filled" 
                   size="xs"
                   styles={buttonStyles}
