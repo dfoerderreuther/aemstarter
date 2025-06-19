@@ -7,6 +7,7 @@ import { Project } from '../types/Project';
 import { IconPlus } from '@tabler/icons-react';
 import AemLogo from './assets/AEM.svg';
 import { SystemCheckView } from './components/SystemCheckView';
+import { AboutModal } from './components/AboutModal';
 
 const theme = createTheme({
   primaryColor: 'blue',
@@ -26,6 +27,7 @@ const App: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
 
   // Handle new project creation callback
   const handleProjectCreated = async (project: Project) => {
@@ -70,10 +72,15 @@ const App: React.FC = () => {
       await handleOpenProjectFolder(folderPath);
     });
 
+    const cleanupOpenAbout = window.electronAPI.onOpenAboutDialog(() => {
+      setAboutModalOpen(true);
+    });
+
     // Cleanup function
     return () => {
       cleanupNewProject();
       cleanupOpenProject();
+      cleanupOpenAbout();
     };
   }, []);
 
@@ -201,6 +208,11 @@ const App: React.FC = () => {
           opened={modalOpen}
           onClose={() => setModalOpen(false)}
           onProjectCreated={handleProjectCreated}
+        />
+
+        <AboutModal
+          opened={aboutModalOpen}
+          onClose={() => setAboutModalOpen(false)}
         />
 
         <AppShell.Main>

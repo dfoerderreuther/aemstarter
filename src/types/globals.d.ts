@@ -18,6 +18,9 @@ declare global {
       openInFinder: (folderPath: string) => Promise<boolean>;
       openInEditor: (folderPath: string, project?: Project) => Promise<boolean>;
       
+      // App info
+      getAppVersion: () => Promise<string>;
+      
       // Global settings
       getGlobalSettings: () => Promise<{ aemSdkPath?: string; licensePath?: string }>;
       setGlobalSettings: (settings: { aemSdkPath?: string; licensePath?: string }) => Promise<boolean>;
@@ -121,9 +124,10 @@ declare global {
       removeAemLogDataListener: (cleanup?: () => void) => void;
 
       // Menu event listeners
-      onOpenNewProjectDialog: (callback: () => void) => () => void;
-      onOpenProjectFolder: (callback: (folderPath: string) => void) => () => void;
-      onOpenRecentProject: (callback: (projectId: string) => void) => () => void;
+          onOpenNewProjectDialog: (callback: () => void) => () => void;
+    onOpenProjectFolder: (callback: (folderPath: string) => void) => () => void;
+    onOpenRecentProject: (callback: (projectId: string) => void) => () => void;
+    onOpenAboutDialog: (callback: () => void) => () => void;
 
       // Dispatcher Management
       startDispatcher: (project: Project) => Promise<boolean>;

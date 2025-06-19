@@ -18,6 +18,9 @@ import { Automation } from './main/services/automation/Automation';
 import { TerminalService } from './main/services/TerminalService';
 import { spawn } from 'child_process';
 
+// Get package.json for version info
+const packageJson = require('../../package.json');
+
 // Set the app name immediately (this affects dock/taskbar display)
 app.setName('AEM Starter');
 
@@ -192,6 +195,11 @@ ipcMain.handle('open-url', async (_, url) => {
     console.error('Error opening URL:', error);
     throw error;
   }
+});
+
+// Get app version
+ipcMain.handle('get-app-version', async () => {
+  return packageJson.version;
 });
 
 ipcMain.handle('open-in-finder', async (_, folderPath) => {
@@ -869,7 +877,14 @@ const createMenu = () => {
     template.unshift({
       label: app.getName(),
       submenu: [
-        { role: 'about' },
+        {
+          label: 'About AEM Starter',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('open-about-dialog');
+            }
+          }
+        },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },
@@ -917,6 +932,21 @@ const createMenu = () => {
       submenu: [
         { role: 'minimize' },
         { role: 'close' }
+      ]
+    });
+  } else {
+    // Add Help menu for non-macOS platforms
+    template.push({
+      label: 'Help',
+      submenu: [
+        {
+          label: 'About AEM Starter',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('open-about-dialog');
+            }
+          }
+        }
       ]
     });
   }

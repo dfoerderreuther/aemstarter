@@ -47,6 +47,10 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('open-in-finder', folderPath),
     openInEditor: (folderPath: string, project?: Project) =>
       ipcRenderer.invoke('open-in-editor', folderPath, project),
+    
+    // App info
+    getAppVersion: () =>
+      ipcRenderer.invoke('get-app-version'),
       
     // File system operations
     readDirectory: (dirPath: string, showHidden = false) =>
@@ -282,6 +286,16 @@ contextBridge.exposeInMainWorld(
       // Return cleanup function
       return () => {
         ipcRenderer.removeListener('open-recent-project', handler);
+      };
+    },
+
+    onOpenAboutDialog: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on('open-about-dialog', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('open-about-dialog', handler);
       };
     },
 
