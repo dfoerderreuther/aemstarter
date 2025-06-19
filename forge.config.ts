@@ -26,13 +26,12 @@ const config: ForgeConfig = {
         };
       }
     },
-    // macOS notarization - temporarily disabled due to hanging issue
-    // TODO: Investigate why notarization causes the build to hang
-    // osxNotarize: {
-    //   appleId: process.env.APPLE_ID || '',
-    //   appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
-    //   teamId: process.env.APPLE_TEAM_ID || '',
-    // },
+    // macOS notarization
+    osxNotarize: {
+      appleId: process.env.APPLE_ID || '',
+      appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
+      teamId: process.env.APPLE_TEAM_ID || '',
+    },
     // Increase memory limit for the app
     executableName: 'AEM-Starter',
     // Add extra resources if needed

@@ -24,6 +24,9 @@ npm run build
 # Build app with code signing (requires .env setup)
 npm run build:signed
 
+# Build app with full signing & notarization debug output
+npm run build:verbose
+
 # Test the built app
 npm run test:app
 
@@ -56,6 +59,9 @@ npm run make
 
 # Create distributable packages (signed) - requires signed build first
 npm run make:signed
+
+# Create distributables with full debug output
+npm run make:verbose
 ```
 
 ## Code Signing Setup
@@ -147,4 +153,24 @@ GITHUB_TOKEN=ghp_your_github_personal_access_token
 - The `prebuild` hooks automatically clean the `out/` directory
 - Code signing requires proper Apple Developer credentials
 - Notarization can take several minutes - be patient!
-- GitHub releases require the `gh` CLI tool 
+- GitHub releases require the `gh` CLI tool
+
+## 🏗️ **Build Scripts**
+
+### **Development Builds**
+- `npm run build` - Build unsigned app (fast, for testing)
+- `npm run build:signed` - Build signed app (with debug output)
+- `npm run build:verbose` - Build with full signing & notarization debug output
+
+### **Production Builds**  
+- `npm run make` - Create signed, notarized distributables
+- `npm run make:verbose` - Create distributables with full debug output
+
+### **Debug Output Explained**
+- `build:signed` - Shows Electron Forge progress
+- `build:verbose` - Shows detailed signing and notarization progress including:
+  - Upload progress to Apple's servers
+  - Notarization status updates
+  - Detailed error messages if issues occur
+
+**Note**: Notarization uploads your entire app (~355MB) to Apple's servers, which can take 5-15 minutes depending on your internet connection. 
