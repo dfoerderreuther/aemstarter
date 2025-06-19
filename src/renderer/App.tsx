@@ -129,7 +129,9 @@ const App: React.FC = () => {
       const hasDispatcher = entries.some(entry => entry.name === 'dispatcher' && entry.isDirectory);
       const hasInstall = entries.some(entry => entry.name === 'install' && entry.isDirectory);
       
-      if (hasSettings && hasAuthor && hasPublisher && hasDispatcher && hasInstall) {
+      // Determine if this folder constitutes a complete AEM-Starter installation. 
+      // The presence of settings.json is optional – it only exists when the user has customised defaults.
+      if (hasAuthor && hasPublisher && hasDispatcher && hasInstall) {
         // This is a complete AEM-Starter project installation
         // Try to read the settings to get the project name
         let projectName = 'Imported Project';
@@ -170,7 +172,6 @@ const App: React.FC = () => {
         console.log('Successfully imported existing AEM-Starter project:', projectName);
       } else {
         const missingComponents = [];
-        if (!hasSettings) missingComponents.push('settings.json');
         if (!hasAuthor) missingComponents.push('author/');
         if (!hasPublisher) missingComponents.push('publisher/');
         if (!hasDispatcher) missingComponents.push('dispatcher/');
