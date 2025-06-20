@@ -116,7 +116,19 @@ export class Installer {
             quickstartFile,
             `${instanceDir}/aem-sdk-quickstart.jar`
         );
-        await execAsync(`java -jar aem-sdk-quickstart.jar -unpack`, { cwd: instanceDir });
+        
+        // Force headless mode and terminal-like behavior
+        const javaCommand = `java -Djava.awt.headless=true -Dorg.apache.felix.webconsole.internal.servlet.OsgiManager.username=admin -jar aem-sdk-quickstart.jar -unpack -nobrowser -nointeractive`;
+        
+        await execAsync(javaCommand, { 
+            cwd: instanceDir,
+            env: {
+                ...process.env,
+                DISPLAY: '',  // Remove display access
+                TERM: 'xterm',  // Set terminal type
+                JAVA_TOOL_OPTIONS: '-Djava.awt.headless=true'  // Additional headless enforcement
+            }
+        });
     }
 
     private async installDispatcherLinux(installDir: string, dispatcherScript: string) {
