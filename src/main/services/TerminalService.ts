@@ -33,7 +33,16 @@ export class TerminalService {
       const shell = options.shell || this.getDefaultShell();
       const cwd = options.cwd || process.env.HOME || process.cwd();
             
-      // Create PTY process with proper terminal emulation
+      // Fix PATH for production builds - same issue as dispatcher
+      const enhancedPath = [
+        process.env.PATH || '',
+        '/usr/local/bin',      // Docker Desktop, Homebrew
+        '/opt/homebrew/bin',   // Apple Silicon Homebrew  
+        '/usr/bin',
+        '/bin'
+      ].filter(Boolean).join(':');
+
+      // Create PTY process with proper terminal emulation and enhanced PATH
       const ptyProcess = pty.spawn(shell, [], {
         name: 'xterm-color',
         cols: 80,
@@ -43,6 +52,7 @@ export class TerminalService {
           ...process.env,
           TERM: 'xterm-256color',
           COLORTERM: 'truecolor',
+          PATH: enhancedPath, // This is the key fix!
         }
       });
 

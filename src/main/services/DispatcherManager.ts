@@ -68,13 +68,37 @@ export class DispatcherManager {
         }
 
         // Prepare environment variables and command
+        // Fix PATH for production builds - this is the key issue!
+        // In dev mode, we inherit the full PATH from terminal
+        // In production, we only get a minimal PATH from macOS
+        const enhancedPath = [
+            process.env.PATH || '',
+            '/usr/local/bin',      // Docker Desktop, Homebrew
+            '/opt/homebrew/bin',   // Apple Silicon Homebrew  
+            '/usr/bin',
+            '/bin'
+        ].filter(Boolean).join(':');
+
         const env = {
             ...process.env,
             DISP_LOG_LEVEL: 'Debug',
             REWRITE_LOG_LEVEL: 'Debug',
-            PATH: process.env.PATH || '/usr/local/bin:/usr/bin:/bin', // Ensure PATH is available in production
-            HOME: process.env.HOME || require('os').homedir() // Ensure HOME is set
+            PATH: enhancedPath,
+            HOME: process.env.HOME || require('os').homedir()
         };
+
+        console.log(`[DispatcherManager] Using PATH: ${enhancedPath}`);
+        console.log(`[DispatcherManager] Checking Docker availability...`);
+        
+        // Quick Docker check before starting
+        try {
+            const { execSync } = require('child_process');
+            const dockerVersion = execSync('docker --version', { env, timeout: 5000 }).toString();
+            console.log(`[DispatcherManager] Docker found: ${dockerVersion.trim()}`);
+        } catch (error) {
+            console.warn(`[DispatcherManager] Docker check failed:`, error);
+            // Don't fail here, let the dispatcher script handle it
+        }
 
         const args = [
             dockerRunScript,

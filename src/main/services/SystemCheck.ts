@@ -49,7 +49,21 @@ export class SystemCheck {
 
     private async checkAvailability(command: string): Promise<boolean> {
         try {
-            await execAsync(command);
+            // Fix PATH for production builds - same issue as DispatcherManager/TerminalService
+            const enhancedPath = [
+                process.env.PATH || '',
+                '/usr/local/bin',      // Docker Desktop, Homebrew
+                '/opt/homebrew/bin',   // Apple Silicon Homebrew  
+                '/usr/bin',
+                '/bin'
+            ].filter(Boolean).join(':');
+
+            await execAsync(command, {
+                env: {
+                    ...process.env,
+                    PATH: enhancedPath
+                }
+            });
             return true;
         } catch (error) {
             return false;
@@ -84,7 +98,21 @@ export class SystemCheck {
 
     private async checkDockerVersion(): Promise<string> {
         try {
-            const { stdout } = await execAsync('docker --version');
+            // Fix PATH for production builds
+            const enhancedPath = [
+                process.env.PATH || '',
+                '/usr/local/bin',      // Docker Desktop, Homebrew
+                '/opt/homebrew/bin',   // Apple Silicon Homebrew  
+                '/usr/bin',
+                '/bin'
+            ].filter(Boolean).join(':');
+
+            const { stdout } = await execAsync('docker --version', {
+                env: {
+                    ...process.env,
+                    PATH: enhancedPath
+                }
+            });
             // Extract version from "Docker version X.X.X, build ..."
             const versionMatch = stdout.match(/Docker version ([^,]+)/);
             if (versionMatch) {
