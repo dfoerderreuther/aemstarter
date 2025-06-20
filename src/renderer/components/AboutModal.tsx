@@ -22,7 +22,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ opened, onClose }) => {
         
         <Stack gap="sm" align="center">
           <Text size="xl" fw={600}>AEM-Starter</Text>
-          <Text size="lg" c="dimmed">Version 1.0.0</Text>
+          <Text size="lg" c="dimmed">Version 1.0.1</Text>
         </Stack>
         
         <Text size="md" ta="center" maw={400}>
