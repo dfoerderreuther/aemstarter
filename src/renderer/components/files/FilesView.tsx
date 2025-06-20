@@ -18,32 +18,45 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project }) => {
 
   const readFileContent = async (filePath: string) => {
     try {
+      console.log('📁 Reading file:', filePath); // Debug log
+      
       // First check if it's a binary file by extension
       if (isBinaryFileByExtension(filePath)) {
+        console.log('🔢 File detected as binary by extension:', filePath); // Debug log
         setIsBinaryFile(true);
         setFileContent(null);
         return;
       }
 
       const result = await window.electronAPI.readFile(filePath);
+      console.log('📄 File read result:', { 
+        hasError: !!result.error, 
+        contentLength: result.content?.length,
+        error: result.error 
+      }); // Debug log
+      
       if (result.error) {
+        console.error('❌ Error reading file:', result.error);
         setIsBinaryFile(false);
         setFileContent(`Error reading file: ${result.error}`);
       } else if (result.content) {
         // Check if the content is binary
         if (isBinaryContent(result.content)) {
+          console.log('🔢 File detected as binary by content analysis:', filePath); // Debug log
           setIsBinaryFile(true);
           setFileContent(null);
         } else {
+          console.log('✅ File loaded successfully:', filePath, 'Content length:', result.content.length); // Debug log
           setIsBinaryFile(false);
           setFileContent(result.content);
         }
       } else {
+        console.log('⚠️ File read returned no content:', filePath); // Debug log
         setIsBinaryFile(false);
         setFileContent(null);
       }
     } catch (error) {
-      console.error('Error reading file:', error);
+      console.error('💥 Exception reading file:', error);
       setIsBinaryFile(false);
       setFileContent(`Error reading file: ${error instanceof Error ? error.message : String(error)}`);
     }

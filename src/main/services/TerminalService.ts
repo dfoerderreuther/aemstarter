@@ -207,6 +207,20 @@ export class TerminalService {
     
     if (platform === 'win32') {
       return process.env.COMSPEC || 'cmd.exe';
+    } else if (platform === 'darwin') {
+      // For production builds, ensure we have fallback paths
+      const shell = process.env.SHELL || '/bin/zsh';
+      // Verify shell exists, fallback to known good shells
+      const fs = require('fs');
+      if (fs.existsSync(shell)) {
+        return shell;
+      } else if (fs.existsSync('/bin/zsh')) {
+        return '/bin/zsh';
+      } else if (fs.existsSync('/bin/bash')) {
+        return '/bin/bash';
+      } else {
+        return '/bin/sh'; // Last resort
+      }
     } else {
       return process.env.SHELL || '/bin/bash';
     }

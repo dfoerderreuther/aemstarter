@@ -4,10 +4,12 @@ import { IconDeviceFloppy, IconX, IconRefresh, IconFileTypography, IconPhoto } f
 import { Editor, useMonaco, loader } from "@monaco-editor/react";
 import { getFileName } from '../../utils/fileUtils';
 
-// Configure Monaco Editor to use local files
+// Configure Monaco Editor for both dev and production
 loader.config({
   paths: {
-    vs: '/monaco-editor/vs'
+    vs: window.location.protocol === 'file:' 
+      ? './monaco-editor/vs'  // Production (file:// protocol)
+      : '/monaco-editor/vs'   // Development (http:// protocol)
   }
 });
 

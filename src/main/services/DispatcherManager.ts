@@ -71,7 +71,9 @@ export class DispatcherManager {
         const env = {
             ...process.env,
             DISP_LOG_LEVEL: 'Debug',
-            REWRITE_LOG_LEVEL: 'Debug'
+            REWRITE_LOG_LEVEL: 'Debug',
+            PATH: process.env.PATH || '/usr/local/bin:/usr/bin:/bin', // Ensure PATH is available in production
+            HOME: process.env.HOME || require('os').homedir() // Ensure HOME is set
         };
 
         const args = [
@@ -85,12 +87,13 @@ export class DispatcherManager {
         console.log(`[DispatcherManager] Working directory: ${dispatcherDir}`);
 
         try {
-            // Start the dispatcher process
+            // Start the dispatcher process with improved options for macOS
             const dispatcherProcess = spawn('bash', args, {
                 cwd: dispatcherDir,
                 env: env,
                 stdio: ['pipe', 'pipe', 'pipe'],
-                detached: true
+                detached: true,
+                shell: false // Prevent shell interpretation issues
             });
 
             // Immediately check if process started successfully

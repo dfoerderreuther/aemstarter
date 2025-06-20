@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
     rollupOptions: {
-      external: ['node-pty']
+      external: ['node-pty'] // Keep external for Electron - native modules should not be bundled
     }
   }
 });

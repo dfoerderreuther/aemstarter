@@ -13,7 +13,9 @@ dotenv.config();
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
+    asar: {
+      unpack: "**/{node_modules/node-pty,node_modules/@serialport,node_modules/bindings}/**" // Unpack native modules from ASAR
+    },
     // Icon configuration
     icon: './icons/icon', // Path without extension - Electron Forge will choose the right format
     // macOS specific configuration
