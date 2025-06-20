@@ -1,11 +1,10 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
+
 import * as net from 'net';
 import { SystemCheckResults } from '../../types/SystemCheckResults';
 import { EditorAvailableResults } from '../../types/EditorAvailableResults';
 import { ProjectSettings } from '../../types/Project';
+import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 
-const execAsync = promisify(exec);
 
 export class SystemCheck {
 
@@ -49,21 +48,7 @@ export class SystemCheck {
 
     private async checkAvailability(command: string): Promise<boolean> {
         try {
-            // Fix PATH for production builds - same issue as DispatcherManager/TerminalService
-            const enhancedPath = [
-                process.env.PATH || '',
-                '/usr/local/bin',      // Docker Desktop, Homebrew
-                '/opt/homebrew/bin',   // Apple Silicon Homebrew  
-                '/usr/bin',
-                '/bin'
-            ].filter(Boolean).join(':');
-
-            await execAsync(command, {
-                env: {
-                    ...process.env,
-                    PATH: enhancedPath
-                }
-            });
+            await execAsync(command);
             return true;
         } catch (error) {
             return false;
@@ -98,21 +83,7 @@ export class SystemCheck {
 
     private async checkDockerVersion(): Promise<string> {
         try {
-            // Fix PATH for production builds
-            const enhancedPath = [
-                process.env.PATH || '',
-                '/usr/local/bin',      // Docker Desktop, Homebrew
-                '/opt/homebrew/bin',   // Apple Silicon Homebrew  
-                '/usr/bin',
-                '/bin'
-            ].filter(Boolean).join(':');
-
-            const { stdout } = await execAsync('docker --version', {
-                env: {
-                    ...process.env,
-                    PATH: enhancedPath
-                }
-            });
+            const { stdout } = await execAsync('docker --version');
             // Extract version from "Docker version X.X.X, build ..."
             const versionMatch = stdout.match(/Docker version ([^,]+)/);
             if (versionMatch) {

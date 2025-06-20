@@ -4,10 +4,7 @@ import fs from 'fs';
 import extract from 'extract-zip';
 import process from 'process';
 import { ProjectSettingsService } from "./ProjectSettingsService";
-import { exec } from "child_process";
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 
 
 const README_TEMPLATE = `
@@ -153,8 +150,7 @@ export class Installer {
     }
 
     private createSettings() {
-        const settingsContent = ProjectSettingsService.SETTINGS_TEMPLATE
-            .replace('{{PROJECT_NAME}}', this.project.name)
+        const settingsContent = JSON.stringify(ProjectSettingsService.getDefaultSettings(this.project), null, 2);
         fs.writeFileSync(`${this.project.folderPath}/settings.json`, settingsContent);
     }
 

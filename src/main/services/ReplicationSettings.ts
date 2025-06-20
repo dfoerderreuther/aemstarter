@@ -1,11 +1,8 @@
 import { Project } from "../../types/Project";
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { ProjectSettingsService } from "./ProjectSettingsService";
 import path from "path";
 import fs from 'fs';
-
-const execAsync = promisify(exec);
+import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 
 export class ReplicationSettings {
     private static instance: ReplicationSettings;

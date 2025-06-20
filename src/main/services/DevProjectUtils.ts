@@ -46,11 +46,24 @@ export class DevProjectUtils {
             const cmd = parts[0];
             const args = [...parts.slice(1), path];
 
+            // Create enhanced PATH like enhancedExecAsync
+            const enhancedPath = [
+                process.env.PATH || '',
+                '/usr/local/bin', 
+                '/opt/homebrew/bin', 
+                '/usr/bin',
+                '/bin'
+            ].filter(Boolean).join(':');
+
             // Spawn detached process that runs independently of the app
             const child = spawn(cmd, args, {
                 detached: true,
                 stdio: 'ignore',
-                cwd: process.cwd()
+                cwd: process.cwd(),
+                env: {
+                    ...process.env,
+                    PATH: enhancedPath
+                }
             });
 
             // Unreference the child process so parent can exit independently

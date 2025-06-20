@@ -1,12 +1,10 @@
-import { ChildProcess, spawn, exec } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import { Project } from '../../types/Project';
 import path from 'path';
 import fs from 'fs';
 import { BrowserWindow } from 'electron';
 import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 
 interface DispatcherInstance {
   process: ChildProcess | null;

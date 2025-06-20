@@ -1,11 +1,8 @@
 import { Project } from "../../types/Project";
 import path from 'node:path';
 import fs from 'fs';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { BackupInfo } from "../../types/BackupInfo";
-
-const execAsync = promisify(exec);
+import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 
 export class BackupService {
     private project: Project;
