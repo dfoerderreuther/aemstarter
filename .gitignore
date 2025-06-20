@@ -95,7 +95,8 @@ out/
 .env
 
 # Code Signing Files
-DeveloperID.key
+*.key
+*.csr
 DeveloperID_CSR.certSigningRequest
 *.cer
 *.p12

@@ -54,14 +54,14 @@ The distribution pipeline performs these steps:
 ## Manual Distribution Steps
 
 ```bash
-# Create distributable packages (unsigned)
+# Create PKG installer (the solution for Terminal & Editor issues)
 npm run make
 
-# Create distributable packages (signed) - requires signed build first
-npm run make:signed
-
-# Create distributables with full debug output
+# Create PKG installer with full debug output
 npm run make:verbose
+
+# Test PKG installer creation
+npm run test:pkg
 ```
 
 ## Code Signing Setup
@@ -163,8 +163,8 @@ GITHUB_TOKEN=ghp_your_github_personal_access_token
 - `npm run build:verbose` - Build with full signing & notarization debug output
 
 ### **Production Builds**  
-- `npm run make` - Create signed, notarized distributables
-- `npm run make:verbose` - Create distributables with full debug output
+- `npm run make` - Create signed, notarized PKG installer
+- `npm run make:verbose` - Create PKG installer with full debug output
 
 ### **Debug Output Explained**
 - `build:signed` - Shows Electron Forge progress
@@ -173,4 +173,63 @@ GITHUB_TOKEN=ghp_your_github_personal_access_token
   - Notarization status updates
   - Detailed error messages if issues occur
 
-**Note**: Notarization uploads your entire app (~355MB) to Apple's servers, which can take 5-15 minutes depending on your internet connection. 
+**Note**: Notarization uploads your entire app (~355MB) to Apple's servers, which can take 5-15 minutes depending on your internet connection.
+
+## 📦 **PKG Installers - The Solution for Terminal & File Access**
+
+### **Why PKG Installers?**
+
+The Terminal component and Monaco Editor file operations require special permissions that can only be granted through proper macOS installation:
+
+- **Terminal Component** (`node-pty`) needs permission to spawn shell processes
+- **File Editor** needs advanced file system access beyond basic read/write
+- **PKG installers** request these permissions during installation
+- **Proper installation to `/Applications`** resolves security restrictions
+
+### **Why PKG is Now the Default**
+
+| Format | Installation | Permissions | Terminal/Editor |
+|--------|-------------|-------------|-----------------|
+| **PKG** | Guided installer | ✅ Full system integration | ✅ **Works perfectly** |
+| **ZIP** | Manual extraction | ❌ No permissions | ❌ Terminal/Editor blocked |
+
+**PKG is now the default `make` target** because it's the only format that solves the Terminal and Editor permission issues.
+
+### **PKG Installer Features**
+
+```bash
+# Create PKG installer (now the default!)
+npm run make
+```
+
+The PKG installer:
+1. **Installs to `/Applications`** (proper system location)
+2. **Requests permissions** during installation
+3. **Runs post-install script** to set proper file permissions
+4. **Creates CLI symlink** at `/usr/local/bin/aem-starter`
+5. **Integrates with macOS** (Spotlight, Launchpad, etc.)
+
+### **Post-Install Script**
+
+The PKG installer includes a post-install script (`scripts/pkg-scripts/postinstall`) that:
+- Sets executable permissions for the app
+- Configures native module permissions (node-pty)
+- Creates optional CLI symlink
+- Ensures proper file system access
+
+### **Installation Instructions for Users**
+
+1. **Download** the `.pkg` file from releases
+2. **Double-click** to start installer
+3. **Follow** the guided installation
+4. **Grant permissions** when prompted
+5. **Launch** from Applications or run `aem-starter` in terminal
+
+### **Expected Permission Prompts**
+
+During first launch after PKG installation, macOS may ask for:
+- ✅ **Terminal access** (for interactive shells)
+- ✅ **File system access** (for project files)
+- ✅ **Network access** (for AEM connections)
+
+**These prompts are normal and required for full functionality!** 

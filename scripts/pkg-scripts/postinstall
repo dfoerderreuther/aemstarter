@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# Post-install script for AEM-Starter PKG installer
+# This script sets proper permissions and system integration for all functionality
+
+echo "AEM-Starter: Setting up comprehensive permissions..."
+
+APP_PATH="/Applications/AEM-Starter.app"
+CONTENTS_PATH="$APP_PATH/Contents"
+RESOURCES_PATH="$CONTENTS_PATH/Resources"
+MACOS_PATH="$CONTENTS_PATH/MacOS"
+
+# Set executable permissions for the main app
+chmod +x "$MACOS_PATH/AEM-Starter"
+
+# Set permissions for Resources directory
+chmod -R 755 "$RESOURCES_PATH"
+
+# Set permissions for native modules if they exist
+if [ -d "$RESOURCES_PATH/app.asar.unpacked" ]; then
+    echo "Setting permissions for native modules..."
+    chmod -R 755 "$RESOURCES_PATH/app.asar.unpacked"
+    
+    # Specifically set permissions for node-pty binaries
+    if [ -d "$RESOURCES_PATH/app.asar.unpacked/node_modules/node-pty" ]; then
+        echo "Configuring node-pty permissions..."
+        chmod -R 755 "$RESOURCES_PATH/app.asar.unpacked/node_modules/node-pty"
+        find "$RESOURCES_PATH/app.asar.unpacked/node_modules/node-pty" -name "*.node" -exec chmod 755 {} \;
+        find "$RESOURCES_PATH/app.asar.unpacked/node_modules/node-pty" -name "pty" -exec chmod 755 {} \;
+    fi
+    
+    # Set permissions for other native modules
+    find "$RESOURCES_PATH/app.asar.unpacked/node_modules" -name "*.node" -exec chmod 755 {} \; 2>/dev/null || true
+fi
+
+# Create symlink in /usr/local/bin for CLI access
+if [ ! -L "/usr/local/bin/aem-starter" ]; then
+    echo "Creating CLI symlink..."
+    mkdir -p "/usr/local/bin" 2>/dev/null || true
+    ln -sf "$MACOS_PATH/AEM-Starter" "/usr/local/bin/aem-starter" 2>/dev/null || true
+fi
+
+# Set up Docker socket permissions (if Docker is installed)
+if [ -S "/var/run/docker.sock" ]; then
+    echo "Configuring Docker socket access..."
+    # Add user to docker group if it exists
+    if dscl . -read /Groups/docker > /dev/null 2>&1; then
+        USER_ID=$(id -u)
+        USERNAME=$(id -un $USER_ID)
+        dseditgroup -o edit -a "$USERNAME" -t user docker 2>/dev/null || true
+    fi
+fi
+
+# Set up system integration for external app launching
+echo "Configuring system integration..."
+
+# Register URL scheme handlers (if needed)
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP_PATH" 2>/dev/null || true
+
+# Set up accessibility permissions request
+cat > "/tmp/aem_starter_permissions.sh" << 'EOF'
+#!/bin/bash
+osascript -e 'tell application "System Events" to display dialog "AEM-Starter needs accessibility permissions to function properly. Please grant permissions in System Preferences > Security & Privacy > Privacy > Accessibility." buttons {"OK"} default button "OK"'
+EOF
+chmod +x "/tmp/aem_starter_permissions.sh"
+
+# Set up launch agent for first-run permissions (optional)
+LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
+LAUNCH_AGENT_PLIST="$LAUNCH_AGENT_DIR/com.eleon.aemstarter.permissions.plist"
+
+mkdir -p "$LAUNCH_AGENT_DIR" 2>/dev/null || true
+
+cat > "$LAUNCH_AGENT_PLIST" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.eleon.aemstarter.permissions</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>sleep 5; rm -f /tmp/aem_starter_permissions.sh "$LAUNCH_AGENT_PLIST"</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>LaunchOnlyOnce</key>
+    <true/>
+</dict>
+</plist>
+EOF
+
+# Set proper ownership
+chown -R root:wheel "$APP_PATH" 2>/dev/null || true
+chmod 755 "$APP_PATH"
+
+echo "AEM-Starter: Installation completed successfully!"
+echo ""
+echo "IMPORTANT: On first launch, macOS will ask for permissions:"
+echo "  ✓ Terminal access (for interactive shells)"
+echo "  ✓ File system access (for project files)" 
+echo "  ✓ Network access (for AEM/Docker connections)"
+echo "  ✓ Accessibility access (for external app launching)"
+echo ""
+echo "Please ALLOW these permissions for full functionality!"
+echo ""
+echo "You can now:"
+echo "  • Launch AEM-Starter from Applications"
+echo "  • Run 'aem-starter' in terminal"
+echo "  • Use Terminal, Docker, and external editors"
+
+exit 0 

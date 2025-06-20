@@ -69,5 +69,34 @@
     <!-- Allow inheritance of parent process capabilities -->
     <key>com.apple.security.inherit</key>
     <true/>
+    
+    <!-- CRITICAL: Allow task for debugging (needed for node-pty) -->
+    <key>com.apple.security.get-task-allow</key>
+    <true/>
+    
+    <!-- CRITICAL: Allow temporary file exceptions for node-pty -->
+    <key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+    <array>
+        <string>/private/tmp/</string>
+        <string>/tmp/</string>
+        <string>/var/tmp/</string>
+        <string>/usr/bin/</string>
+        <string>/bin/</string>
+        <string>/usr/local/bin/</string>
+    </array>
+    
+    <!-- CRITICAL: Allow temporary exception for mach lookup -->
+    <key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+    <array>
+        <string>com.apple.system.logger</string>
+        <string>com.apple.system.notification_center</string>
+    </array>
+    
+    <!-- CRITICAL: Allow temporary exception for shared memory -->
+    <key>com.apple.security.temporary-exception.shared-preference.read-write</key>
+    <array>
+        <string>com.apple.Terminal</string>
+        <string>com.apple.security</string>
+    </array>
 </dict>
 </plist> 
