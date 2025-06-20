@@ -10,15 +10,22 @@ Lint:
 
     npm run lint
 
+
+
 Prod:
 
-    npm run make
+    npm run clean
+    npm run make:verbose
 
-Prod publish:
+Insall: 
 
-    npm run publish
+    open out/make/AEM-Starter-1.0.0-arm64.pkg 
 
 
+## Uninstall
+
+    sudo rm -rf /Applications/AEM-Starter.app
+    sudo rm -f /usr/local/bin/aem-starter
 
 ## Clean local app data to cause a fresh start
 

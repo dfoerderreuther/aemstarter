@@ -3,7 +3,7 @@ import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
-import { MakerPKG } from '@electron-forge/maker-pkg';
+import { MakerDMG } from '@electron-forge/maker-dmg';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
@@ -52,12 +52,12 @@ const config: ForgeConfig = {
       setupIcon: './icons/icon.ico',
       // loadingGif: './icons/icon.gif', // Optional: custom loading animation
     }),
-    new MakerZIP({}, ['darwin']),
-    // CRITICAL: PKG installer for proper macOS installation and permissions
-    new MakerPKG({
-      name: 'AEM-Starter',
-      identity: 'Developer ID Installer: eleon GmbH (3U35D35E29)',
+    // DMG is the standard macOS distribution format - provides drag & drop to Applications
+    new MakerDMG({
+      //background: './icons/icon.png',
+      icon: './icons/icon.icns'
     }, ['darwin']),
+    new MakerZIP({}, ['darwin']),
     new MakerRpm({
       options: {
         icon: './icons/icon.png'
