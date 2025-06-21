@@ -197,7 +197,8 @@ export const TerminalTab = ({
                     'cd author',
                     'cd publisher', 
                     'tail -f crx-quickstart/logs/*',
-                    'java -Xss16m -Xmx8g -jar oak-run.jar compact crx-quickstart/repository/segmentstore'
+                    'java -Xss16m -Xmx8g -jar oak-run.jar compact crx-quickstart/repository/segmentstore', 
+                    'tail -f ~/Library/Application\\ Support/AEM-Starter/logs/main.log'
                   ];
                   
                   const devCommands = [

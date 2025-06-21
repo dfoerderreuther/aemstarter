@@ -55,8 +55,7 @@ export class AutomatedReinstall implements AutoTask {
     
     private async reinstall() {
         const installer = new Installer(this.project);
-        await installer.delete();
-        await installer.install();
+        await installer.reinstall();
     }
     
     protected async start() {

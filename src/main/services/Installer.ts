@@ -44,14 +44,43 @@ export class Installer {
         this.installDir = `${this.workDir}/install`;
     }
 
-    async delete() {
+    async reinstall() {
+        for (const folder of ['author', 'publisher', 'dispatcher']) {
+            const folderPath = `${this.project.folderPath}/${folder}`;
+            fs.rmSync(folderPath, { force: true, recursive: true });
+            fs.mkdirSync(folderPath, { recursive: true });
+        }
+        // Find and copy the AEM SDK quickstart file
+        const files = fs.readdirSync(this.installDir);
+        const quickstartFile = files.find(file => file.startsWith('aem-sdk-quickstart'));
+        const dispatcherScript = files.find(file => file.match(/aem-sdk-dispatcher-.*.sh/));
+        const oakRunFile = files.find(file => file.match(/oak-run-.*\.jar$/));
+        //const windowsDispatcherZip = files.find(file => file.match(/aem-sdk-dispatcher-.*.zip/));
+
+        await this.installAemInstance(`${this.project.folderPath}/author`, this.installDir + '/' + quickstartFile, 'author');
+        await this.installAemInstance(`${this.project.folderPath}/publisher`, this.installDir + '/' + quickstartFile, 'publisher');
+
+        await this.installDispatcherLinux(`${this.project.folderPath}/dispatcher`, this.installDir + '/' + dispatcherScript);
+
+        this.createReadme();
+        this.createSettings();
+        
+        if (oakRunFile) {
+            const oakRunPath = `${this.installDir}/${oakRunFile}`;
+            
+            fs.symlinkSync(oakRunPath, `${this.workDir}/author/oak-run.jar`);
+            fs.symlinkSync(oakRunPath, `${this.workDir}/publisher/oak-run.jar`);
+        }
+
+        console.log('Installation complete');
+    }
+
+    private async delete() {
         console.log('Deleting AEM for project:', this.project);
         for (const folder of this.folders) {
             const folderPath = `${this.project.folderPath}/${folder}`;
             fs.rmSync(folderPath, { force: true, recursive: true });
         }
-        fs.rmSync(`${this.project.folderPath}/README.md`, { force: true });
-        fs.rmSync(`${this.project.folderPath}/settings.json`, { force: true });
         fs.rmSync(`${this.project.folderPath}/screenshots`, { force: true, recursive: true });
         console.log('Deletion complete');
     }
@@ -78,6 +107,7 @@ export class Installer {
 
         this.createReadme();
         this.createSettings();
+
 
         console.log('Installation complete');
     }
@@ -157,13 +187,20 @@ export class Installer {
     }
 
     private createReadme() {
+        if (fs.existsSync(`${this.project.folderPath}/README.md`)) {
+            return;
+        }
         const readmeContent = README_TEMPLATE.replace('{{PROJECT_NAME}}', this.project.name);
         fs.writeFileSync(`${this.project.folderPath}/README.md`, readmeContent);
     }
 
     private createSettings() {
+        if (fs.existsSync(`${this.project.folderPath}/settings.json`)) {
+            return;
+        }
         const settingsContent = JSON.stringify(ProjectSettingsService.getDefaultSettings(this.project), null, 2);
         fs.writeFileSync(`${this.project.folderPath}/settings.json`, settingsContent);
     }
+
 
 }
