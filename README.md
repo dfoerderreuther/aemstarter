@@ -21,37 +21,21 @@ AEM-Starter is a comprehensive desktop application designed to streamline the se
 
 ## Installation
 
+**[Download the latest release](https://github.com/dfoerderreuther/aemstarter/releases/latest)**
+
+### Option A: Download DMG
+1. Go to the latest release page and download the `.dmg` file
+2. Open the DMG file
+3. Drag AEM-Starter to your Applications folder
+4. Launch AEM-Starter from Applications
+
+### Option B: Download ZIP Archive
+1. Go to the latest release page and download the `.zip` file
+2. Extract the ZIP file
+3. Move the extracted AEM-Starter app to your Applications folder
+4. Launch AEM-Starter from Applications
+
 ### Prerequisites
-- Node.js (version 18 or higher)
-- npm or yarn package manager
 - Apple Silicon Mac (currently required)
-
-### Quick Build and run
-1. **Build local app**
-   ```bash
-   git clone git@github.com:dfoerderreuther/aemstarter.git
-   cd aemstarter
-   
-   ./build.sh
-   ```
-
-2. **Run local app**
-   ```bash
-   ./run.sh
-   ```
-   The helper script simply launches the locally-built `.app` bundle.
-
-### Development Setup
-For live-reload development you can still run:
-```bash
-npm run dev
-```
-
-### Troubleshooting
-macOS may still warn that the application is from an “unidentified developer”.
-If that happens:
-1. Locate `AEM-Starter.app` inside the `out/…` folder in Finder.
-2. Right-click ➜ Open ➜ Open to launch it the first time.
-
-After the first successful launch macOS will remember the choice.
+- Access to https://experience.adobe.com and download permission for AEM-SDK
 
