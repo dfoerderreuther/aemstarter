@@ -35,7 +35,3 @@ AEM-Starter is a comprehensive desktop application designed to streamline the se
 3. Move the extracted AEM-Starter app to your Applications folder
 4. Launch AEM-Starter from Applications
 
-### Prerequisites
-- Apple Silicon Mac (currently required)
-- Access to https://experience.adobe.com and download permission for AEM-SDK
-
