@@ -137,7 +137,7 @@ export const TerminalTab = ({
         }}>
           {/* Collapsible Column - Left in tabs mode, Top in columns mode */}
           <Box style={{
-            width: viewMode === 'columns' ? '100%' : (isCollapsed ? '40px' : '160px'),
+            width: viewMode === 'columns' ? '100%' : (isCollapsed ? '40px' : '260px'),
             height: viewMode === 'columns' ? (isCollapsed ? '40px' : '170px') : '100%',
             transition: viewMode === 'columns' ? 'height 0.3s ease' : 'width 0.3s ease',
             borderRight: viewMode === 'columns' ? 'none' : '1px solid #2C2E33',

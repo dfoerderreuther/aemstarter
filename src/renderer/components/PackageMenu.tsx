@@ -18,7 +18,6 @@ export const PackageMenu = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [packageUrl, setPackageUrl] = useState('');
 
-  // https://github.com/adobe/aem-cif-guides-venia/releases/download/venia-2025.04.11/aem-cif-guides-venia.all-2025.04.11.zip
 
   const handleInstall = async (url: string) => {
     setIsLoading(true);

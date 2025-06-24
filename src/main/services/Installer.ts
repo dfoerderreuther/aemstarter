@@ -75,16 +75,6 @@ export class Installer {
         console.log('Installation complete');
     }
 
-    private async delete() {
-        console.log('Deleting AEM for project:', this.project);
-        for (const folder of this.folders) {
-            const folderPath = `${this.project.folderPath}/${folder}`;
-            fs.rmSync(folderPath, { force: true, recursive: true });
-        }
-        fs.rmSync(`${this.project.folderPath}/screenshots`, { force: true, recursive: true });
-        console.log('Deletion complete');
-    }
-
     async install() {
         this.validate();
         
@@ -110,6 +100,16 @@ export class Installer {
 
 
         console.log('Installation complete');
+    }
+
+    private async delete() {
+        console.log('Deleting AEM for project:', this.project);
+        for (const folder of this.folders) {
+            const folderPath = `${this.project.folderPath}/${folder}`;
+            fs.rmSync(folderPath, { force: true, recursive: true });
+        }
+        fs.rmSync(`${this.project.folderPath}/screenshots`, { force: true, recursive: true });
+        console.log('Deletion complete');
     }
 
     private validate() {
