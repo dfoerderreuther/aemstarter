@@ -52,6 +52,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const handleCreateProject = async () => {
     if (!newProjectName.trim() || !aemSdkPath) return;
     setCreating(true);
+    
     try {
       const result = await window.electronAPI.showOpenDialog({
         properties: ['openDirectory', 'createDirectory'],

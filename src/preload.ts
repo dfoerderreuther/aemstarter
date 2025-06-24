@@ -9,6 +9,8 @@ import { Project, ProjectSettings } from './types/Project';
 contextBridge.exposeInMainWorld(
   'electronAPI', {
     // Project management
+    checkRunningInstances: (project: Project) => 
+      ipcRenderer.invoke('check-running-instances', project),
     createProject: (name: string, folderPath: string, aemSdkPath: string, licensePath: string) => 
       ipcRenderer.invoke('create-project', { name, folderPath, aemSdkPath, licensePath }),
     importProject: (name: string, folderPath: string) => 

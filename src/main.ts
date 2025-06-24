@@ -133,6 +133,67 @@ const createWindow = () => {
 };
 
 // Project management IPC handlers
+ipcMain.handle('check-running-instances', async (_, project: Project) => {
+  console.log('[check-running-instances] Checking project:', project?.name);
+  
+  if (!project) {
+    console.log('[check-running-instances] No project provided');
+    return { hasRunning: false, runningInstances: [] };
+  }
+
+  const runningInstances: Array<{
+    instanceType: 'author' | 'publisher' | 'dispatcher';
+    port: number;
+  }> = [];
+
+  try {
+    // Check AEM instances
+    const aemManager = AemInstanceManagerRegister.getInstanceManager(project);
+    
+    const authorRunning = aemManager.isInstanceRunning('author');
+    const publisherRunning = aemManager.isInstanceRunning('publisher');
+    
+    console.log('[check-running-instances] Author running:', authorRunning);
+    console.log('[check-running-instances] Publisher running:', publisherRunning);
+    
+    if (authorRunning) {
+      runningInstances.push({
+        instanceType: 'author',
+        port: project.settings?.author?.port || 4502
+      });
+    }
+    
+    if (publisherRunning) {
+      runningInstances.push({
+        instanceType: 'publisher',
+        port: project.settings?.publisher?.port || 4503
+      });
+    }
+
+    // Check dispatcher
+    const dispatcherManager = DispatcherManagerRegister.getManager(project);
+    const dispatcherRunning = dispatcherManager.isDispatcherRunning();
+    console.log('[check-running-instances] Dispatcher running:', dispatcherRunning);
+    
+    if (dispatcherRunning) {
+      runningInstances.push({
+        instanceType: 'dispatcher',
+        port: project.settings?.dispatcher?.port || 80
+      });
+    }
+  } catch (error) {
+    console.warn(`Error checking instances for project ${project.name}:`, error);
+  }
+
+  const result = {
+    hasRunning: runningInstances.length > 0,
+    runningInstances
+  };
+  
+  console.log('[check-running-instances] Final result:', result);
+  return result;
+});
+
 ipcMain.handle('create-project', async (_, { name, folderPath, aemSdkPath, licensePath }) => {
   return ProjectManagerRegister.getManager().createProject(name, folderPath, aemSdkPath, licensePath);
 });
@@ -858,6 +919,70 @@ ipcMain.handle('clear-all-terminals', async () => {
   return false;
 });
 
+// Helper function to get current project ID from storage
+const getCurrentProject = async (): Promise<Project | null> => {
+  try {
+    const projectManager = ProjectManagerRegister.getManager();
+    const lastProjectId = projectManager.getLastProjectId();
+    if (lastProjectId) {
+      const project = projectManager.getProject(lastProjectId);
+      return project || null;
+    }
+  } catch (error) {
+    console.warn('Error getting current project:', error);
+  }
+  return null;
+};
+
+// Helper function to check running instances for a project
+const checkRunningInstancesForProject = async (project: Project): Promise<{
+  hasRunning: boolean;
+  runningInstances: Array<{
+    instanceType: 'author' | 'publisher' | 'dispatcher';
+    port: number;
+  }>;
+}> => {
+  const runningInstances: Array<{
+    instanceType: 'author' | 'publisher' | 'dispatcher';
+    port: number;
+  }> = [];
+
+  try {
+    // Check AEM instances
+    const aemManager = AemInstanceManagerRegister.getInstanceManager(project);
+    
+    if (aemManager.isInstanceRunning('author')) {
+      runningInstances.push({
+        instanceType: 'author',
+        port: project.settings?.author?.port || 4502
+      });
+    }
+    
+    if (aemManager.isInstanceRunning('publisher')) {
+      runningInstances.push({
+        instanceType: 'publisher',
+        port: project.settings?.publisher?.port || 4503
+      });
+    }
+
+    // Check dispatcher
+    const dispatcherManager = DispatcherManagerRegister.getManager(project);
+    if (dispatcherManager.isDispatcherRunning()) {
+      runningInstances.push({
+        instanceType: 'dispatcher',
+        port: project.settings?.dispatcher?.port || 80
+      });
+    }
+  } catch (error) {
+    console.warn(`Error checking instances for project ${project.name}:`, error);
+  }
+
+  return {
+    hasRunning: runningInstances.length > 0,
+    runningInstances
+  };
+};
+
 // Create application menu
 const createMenu = () => {
   // Helper function to create recent projects submenu
@@ -883,10 +1008,30 @@ const createMenu = () => {
     
     return recentProjects.map(project => ({
       label: project.name,
-      click: () => {
-        if (mainWindow) {
-          mainWindow.webContents.send('open-recent-project', project.id);
+      click: async () => {
+        if (!mainWindow) return;
+        
+        // Get the current project from the main window
+        const currentProject = await getCurrentProject();
+        if (currentProject) {
+          const runningCheck = await checkRunningInstancesForProject(currentProject);
+          if (runningCheck.hasRunning) {
+            const instanceList = runningCheck.runningInstances
+              .map(instance => `• ${instance.instanceType} (port ${instance.port})`)
+              .join('\n');
+            
+            dialog.showMessageBox(mainWindow, {
+              type: 'warning',
+              title: 'Cannot Switch Project',
+              message: `Cannot switch to "${project.name}" because instances are currently running in "${currentProject.name}".`,
+              detail: `Running instances:\n${instanceList}\n\nPlease stop all instances before switching projects.`,
+              buttons: ['OK']
+            });
+            return;
+          }
         }
+        
+        mainWindow.webContents.send('open-recent-project', project.id);
       }
     }));
   };
@@ -898,10 +1043,30 @@ const createMenu = () => {
         {
           label: 'New Project...',
           accelerator: 'CmdOrCtrl+N',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('open-new-project-dialog');
+          click: async () => {
+            if (!mainWindow) return;
+            
+            // Get the current project from the main window
+            const currentProject = await getCurrentProject();
+            if (currentProject) {
+              const runningCheck = await checkRunningInstancesForProject(currentProject);
+              if (runningCheck.hasRunning) {
+                const instanceList = runningCheck.runningInstances
+                  .map(instance => `• ${instance.instanceType} (port ${instance.port})`)
+                  .join('\n');
+                
+                dialog.showMessageBox(mainWindow, {
+                  type: 'warning',
+                  title: 'Cannot Create New Project',
+                  message: `Cannot create a new project because instances are currently running in "${currentProject.name}".`,
+                  detail: `Running instances:\n${instanceList}\n\nPlease stop all instances before creating a new project.`,
+                  buttons: ['OK']
+                });
+                return;
+              }
             }
+            
+            mainWindow.webContents.send('open-new-project-dialog');
           }
         },
         {
@@ -910,6 +1075,27 @@ const createMenu = () => {
           click: async () => {
             if (!mainWindow) return;
             
+            // Get the current project from the main window
+            const currentProject = await getCurrentProject();
+            if (currentProject) {
+              const runningCheck = await checkRunningInstancesForProject(currentProject);
+              if (runningCheck.hasRunning) {
+                const instanceList = runningCheck.runningInstances
+                  .map(instance => `• ${instance.instanceType} (port ${instance.port})`)
+                  .join('\n');
+                
+                dialog.showMessageBox(mainWindow, {
+                  type: 'warning',
+                  title: 'Cannot Open Project',
+                  message: `Cannot open a project because instances are currently running in "${currentProject.name}".`,
+                  detail: `Running instances:\n${instanceList}\n\nPlease stop all instances before opening a project.`,
+                  buttons: ['OK']
+                });
+                return;
+              }
+            }
+            
+            // Show the file dialog
             const result = await dialog.showOpenDialog(mainWindow, {
               properties: ['openDirectory'],
               title: 'Open AEM-Starter Project',

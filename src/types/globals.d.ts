@@ -6,6 +6,13 @@ import { EditorAvailableResults } from './EditorAvailableResults';
 declare global {
   interface Window {
     electronAPI: {
+      checkRunningInstances: (project: Project) => Promise<{
+        hasRunning: boolean;
+        runningInstances: Array<{
+          instanceType: 'author' | 'publisher' | 'dispatcher';
+          port: number;
+        }>;
+      }>;
       getAllProjects: () => Promise<Project[]>;
       createProject: (name: string, folderPath: string, aemSdkPath: string, licensePath: string) => Promise<Project>;
       importProject: (name: string, folderPath: string) => Promise<Project>;
@@ -109,11 +116,11 @@ declare global {
       
       removeAemLogDataListener: (cleanup?: () => void) => void;
 
-      // Menu event listeners
-          onOpenNewProjectDialog: (callback: () => void) => () => void;
-    onOpenProjectFolder: (callback: (folderPath: string) => void) => () => void;
-    onOpenRecentProject: (callback: (projectId: string) => void) => () => void;
-    onOpenAboutDialog: (callback: () => void) => () => void;
+            // Menu event listeners
+      onOpenNewProjectDialog: (callback: () => void) => () => void;
+      onOpenProjectFolder: (callback: (folderPath: string) => void) => () => void;
+      onOpenRecentProject: (callback: (projectId: string) => void) => () => void;
+      onOpenAboutDialog: (callback: () => void) => () => void;
 
       // Dispatcher Management
       startDispatcher: (project: Project) => Promise<boolean>;

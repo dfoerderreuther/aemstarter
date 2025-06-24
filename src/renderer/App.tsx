@@ -103,13 +103,17 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Set up recent project event listener separately to have access to current projects
+    // Set up recent project event listener separately to have access to current projects
   useEffect(() => {
     const cleanupRecentProject = window.electronAPI.onOpenRecentProject(async (projectId: string) => {
-      const project = projects.find(p => p.id === projectId);
-      if (project) {
-        setSelectedProject(project);
-        await window.electronAPI.setLastProjectId(project.id);
+      try {
+        const project = projects.find(p => p.id === projectId);
+        if (project) {
+          setSelectedProject(project);
+          await window.electronAPI.setLastProjectId(project.id);
+        }
+      } catch (error) {
+        console.error('Error opening recent project:', error);
       }
     });
 
@@ -117,6 +121,24 @@ const App: React.FC = () => {
       cleanupRecentProject();
     };
   }, [projects]);
+
+  // Handle check and open new project
+  const handleCheckAndOpenNewProject = async () => {
+    // Check for running instances in current project first
+    if (selectedProject) {
+      const runningCheck = await window.electronAPI.checkRunningInstances(selectedProject);
+      if (runningCheck.hasRunning) {
+        const instanceList = runningCheck.runningInstances
+          .map(instance => `• ${instance.instanceType} (port ${instance.port})`)
+          .join('\n');
+        
+        alert(`Cannot create a new project because instances are currently running in "${selectedProject.name}".\n\nRunning instances:\n${instanceList}\n\nPlease stop all instances before creating a new project.`);
+        return;
+      }
+    }
+    
+    setModalOpen(true);
+  };
 
   // Handle opening an existing project folder
   const handleOpenProjectFolder = async (folderPath: string) => {
@@ -216,7 +238,7 @@ const App: React.FC = () => {
               <SystemCheckView project={selectedProject || undefined} />
               <Button
                 leftSection={<IconPlus size={16} />}
-                onClick={() => setModalOpen(true)}
+                onClick={handleCheckAndOpenNewProject}
               >
                 New Project
               </Button>
@@ -257,7 +279,7 @@ const App: React.FC = () => {
                 </Text>
                 <Button
                   leftSection={<IconPlus size={16} />}
-                  onClick={() => setModalOpen(true)}
+                  onClick={handleCheckAndOpenNewProject}
                   size="lg"
                 >
                   Create New Project
