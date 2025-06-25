@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Group, Stack, Text, Box, ActionIcon, Select } from '@mantine/core';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { Terminal, TerminalRef } from './Terminal';
+import { TerminalTabQuickCommands } from './TerminalTabQuickCommands';
 import { IconChevronLeft, IconChevronRight, IconTextSize, IconEraser } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 
@@ -181,60 +182,13 @@ export const TerminalTab = ({
 
             {/* Column Content */}
             {!isCollapsed && (
-              <Box p="sm" style={{ 
-                flex: 1, 
-                overflow: 'auto',
-                display: 'flex',
-                flexDirection: viewMode === 'columns' ? 'row' : 'column',
-                gap: '12px',
-                alignItems: viewMode === 'columns' ? 'flex-start' : 'stretch'
-              }}>
-                {/* Command shortcuts */}
-                {(() => {
-                  const projectCommands = [
-                    `cd ${rootPath}`,
-                    'ls -la',
-                    'cd author',
-                    'cd publisher', 
-                    'tail -f crx-quickstart/logs/*',
-                    'java -Xss16m -Xmx8g -jar oak-run.jar compact crx-quickstart/repository/segmentstore', 
-                    'tail -f ~/Library/Application\\ Support/AEM-Starter/logs/main.log'
-                  ];
-                  
-                  const devCommands = [
-                    `cd ${rootPath}`,
-                    'ls -la',
-                    'mvn clean install -PautoInstallSinglePackage',
-                    'mvn clean install -PautoInstallSinglePackagePublish',
-                    `mvn clean install -PautoInstallSinglePackage -Daem.port=${project.settings?.author?.port}`,
-                    `mvn clean install -PautoInstallSinglePackage -Daem.port=${project.settings?.publisher?.port}`,
-                    'cd ui.frontend',
-                    'npm install & npm run start'
-                  ];
-                  
-                  const commands = type === 'project' ? projectCommands : devCommands;
-                  
-                  return (
-                    <Stack gap="xs">
-                      {commands.map((command, index) => (
-                        <Text 
-                          key={index}
-                          size="xs" 
-                          fw={500} 
-                          c="dimmed" 
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => handleCommandClick(command)}
-                          title="Click to insert into terminal"
-                        >
-                          {command}
-                        </Text>
-                      ))}
-                    </Stack>
-                  );
-                })()}
-
-                  
-              </Box>
+              <TerminalTabQuickCommands
+                rootPath={rootPath}
+                project={project}
+                type={type}
+                viewMode={viewMode}
+                onCommandClick={handleCommandClick}
+              />
             )}
           </Box>
 
