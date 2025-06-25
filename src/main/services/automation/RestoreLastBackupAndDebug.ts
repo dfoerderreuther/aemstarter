@@ -1,7 +1,7 @@
-import { AutomatedLastBackupAndRun } from "./AutomatedLastBackupAndRun";
+import { RestoreLastBackupAndRun } from "./RestoreLastBackupAndRun";
 
 
-export class AutomatedLastBackupAndDebug extends AutomatedLastBackupAndRun {
+export class RestoreLastBackupAndDebug extends RestoreLastBackupAndRun {
 
     protected async start() {
         const startPromises: Promise<void>[] = [];

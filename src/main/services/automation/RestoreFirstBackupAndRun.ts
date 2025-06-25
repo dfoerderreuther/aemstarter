@@ -1,8 +1,8 @@
 import { BackupInfo } from "../../../types/BackupInfo";
-import { AutomatedLastBackupAndRun } from "./AutomatedLastBackupAndRun";
+import { RestoreLastBackupAndRun } from "./RestoreLastBackupAndRun";
 
 
-export class AutomatedFirstBackupAndRun extends AutomatedLastBackupAndRun {
+export class RestoreFirstBackupAndRun extends RestoreLastBackupAndRun {
 
     protected async findBackup(): Promise<BackupInfo> {
         const backups = await this.backupService.listBackups();

@@ -1,9 +1,9 @@
 import { Project } from '../../../types/Project';
-import { AutomatedCreateBackupAndRun } from './AutomatedCreateBackupAndRun';
-import { AutomatedFirstBackupAndRun } from './AutomatedFirstBackupAndRun';
-import { AutomatedLastBackupAndDebug } from './AutomatedLastBackupAndDebug';
-import { AutomatedLastBackupAndRun } from './AutomatedLastBackupAndRun';
-import { AutomatedReinstall } from './AutomatedReinstall';
+import { CreateBackupAndRun } from './CreateBackupAndRun';
+import { RestoreFirstBackupAndRun } from './RestoreFirstBackupAndRun';
+import { RestoreLastBackupAndDebug } from './RestoreLastBackupAndDebug';
+import { RestoreLastBackupAndRun } from './RestoreLastBackupAndRun';
+import { ReinstallAndRun } from './ReinstallAndRun';
 import { BrowserWindow } from 'electron';
 
 export interface AutoTask {
@@ -18,11 +18,11 @@ export class Automation {
     private project: Project;
 
     private static taskRegistry: Map<string, AutoTaskConstructor> = new Map<string, AutoTaskConstructor>([
-        ['create-backup-and-run', AutomatedCreateBackupAndRun],
-        ['last-backup-and-run', AutomatedLastBackupAndRun],
-        ['last-backup-and-debug', AutomatedLastBackupAndDebug],
-        ['first-backup-and-run', AutomatedFirstBackupAndRun],
-        ['reinstall', AutomatedReinstall]   
+        ['create-backup-and-run', CreateBackupAndRun],
+        ['last-backup-and-run', RestoreLastBackupAndRun],
+        ['last-backup-and-debug', RestoreLastBackupAndDebug],
+        ['first-backup-and-run', RestoreFirstBackupAndRun],
+        ['reinstall', ReinstallAndRun]   
     ]);
 
     private constructor(project: Project) {

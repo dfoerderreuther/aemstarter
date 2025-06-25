@@ -7,7 +7,7 @@ import { AemInstanceManagerRegister } from "../../AemInstanceManagerRegister";
 import { DispatcherManagerRegister } from "../../DispatcherManagerRegister";
 import { Installer } from "../Installer";
 
-export class AutomatedReinstall implements AutoTask {
+export class ReinstallAndRun implements AutoTask {
 
     public project: Project;
     protected aemInstanceManager: AemInstanceManager;

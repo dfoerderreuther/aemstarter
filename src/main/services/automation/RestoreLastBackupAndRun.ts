@@ -7,7 +7,7 @@ import { AutoTask } from "./Automation";
 import { AemInstanceManager } from "../AemInstanceManager";
 import { DispatcherManager } from "../DispatcherManager";
 
-export class AutomatedCreateBackupAndRun implements AutoTask {
+export class RestoreLastBackupAndRun implements AutoTask {
 
     public project: Project;
     protected aemInstanceManager: AemInstanceManager;
@@ -25,15 +25,19 @@ export class AutomatedCreateBackupAndRun implements AutoTask {
     public async run(progressCallback?: (message: string) => void) : Promise<void> {
         const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
         
-
+        const lastBackup = await this.findBackup();
+        if (lastBackup) {
+            progress(`Found backup: "${lastBackup.name}"`);
+        } else {
+            progress('No backups available to restore');
+            return;
+        }
         
         progress('Stopping any currently running AEM and Dispatcher instances...');
         await this.stopWhenRunning();
         
-
-        let backupName = 'backup ' + new Date().toISOString().replace(/[:.]/g, '-');
-        progress(`Create backup "${backupName}" - this may take some time...`);
-        await this.backupService.backup(backupName);
+        progress(`Restoring backup "${lastBackup.name}" - this may take some time...`);
+        await this.restore(lastBackup);
         
         progress('Starting AEM Author, Publisher, and Dispatcher instances...');
         await this.start();
@@ -64,6 +68,9 @@ export class AutomatedCreateBackupAndRun implements AutoTask {
         return backups[0];
     }
 
+    private async restore(backup: BackupInfo) {
+        await this.backupService.restore(backup.name);
+    }
 
     protected async start() {
         const startPromises: Promise<void>[] = [];
