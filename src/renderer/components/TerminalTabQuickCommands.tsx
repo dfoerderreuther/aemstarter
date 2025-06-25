@@ -47,7 +47,7 @@ export const TerminalTabQuickCommands = ({
       { command: `cd ${rootPath}`, name: 'Go to Project Root' },
       { command: 'ls -la', name: 'List Files' }
     ],
-    'Logging': [
+    'AEM Starter Logging': [
       { command: 'tail -f ~/Library/Application\\ Support/AEM-Starter/logs/main.log', name: 'Watch AEM Starter Logs' }
     ],
     'RDE (Rapid Development Environment)': [
@@ -68,13 +68,13 @@ export const TerminalTabQuickCommands = ({
   };
 
   return (
-    <Box p="sm" style={{ 
+    <Box style={{ 
       flex: 1, 
       overflow: 'auto',
       display: 'flex',
       flexDirection: 'column'
     }}>
-      <Accordion defaultValue={defaultOpenSection} variant="separated">
+      <Accordion defaultValue={defaultOpenSection}>
         {Object.entries(commands).map(([sectionName, items]) => (
           <Accordion.Item key={sectionName} value={sectionName}>
             <Accordion.Control>
