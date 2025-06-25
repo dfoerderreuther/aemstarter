@@ -1,4 +1,5 @@
 import { Project } from '../../../types/Project';
+import { AutomatedCreateBackupAndRun } from './AutomatedCreateBackupAndRun';
 import { AutomatedFirstBackupAndRun } from './AutomatedFirstBackupAndRun';
 import { AutomatedLastBackupAndDebug } from './AutomatedLastBackupAndDebug';
 import { AutomatedLastBackupAndRun } from './AutomatedLastBackupAndRun';
@@ -17,6 +18,7 @@ export class Automation {
     private project: Project;
 
     private static taskRegistry: Map<string, AutoTaskConstructor> = new Map<string, AutoTaskConstructor>([
+        ['create-backup-and-run', AutomatedCreateBackupAndRun],
         ['last-backup-and-run', AutomatedLastBackupAndRun],
         ['last-backup-and-debug', AutomatedLastBackupAndDebug],
         ['first-backup-and-run', AutomatedFirstBackupAndRun],

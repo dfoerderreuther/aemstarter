@@ -1,5 +1,5 @@
 import { Project } from "../../types/Project";
-import { Button, Menu, Box, Modal, TextInput } from '@mantine/core';
+import { Button, Menu, Box, Modal, TextInput, Divider } from '@mantine/core';
 import { IconPackage, IconDownload, IconWorld, IconChevronDown, IconFolder } from '@tabler/icons-react';
 import { useState } from 'react';
 
@@ -37,7 +37,7 @@ export const PackageMenu = ({
   };
 
   const handleInstallWKND = async () => {
-    const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip";
+    const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-4.0.2/aem-guides-wknd.all-4.0.2.zip";
     handleInstall(wkndUrl);
   };
 
@@ -161,7 +161,7 @@ export const PackageMenu = ({
             disabled={!isRunning || isLoading}
             onClick={handleInstallWKND}
           >
-            Install WKND
+            Install WKND 4.0.2
           </Menu.Item>
 
           <Menu.Item 
@@ -169,7 +169,7 @@ export const PackageMenu = ({
             disabled={!isRunning || isLoading}
             onClick={handleInstallVenia}
           >
-            Install Venia (AEM CIF Add-on required)
+            Install Venia 2025.04.11(AEM CIF Add-on required)
           </Menu.Item>
           
           <Menu.Item 
@@ -177,8 +177,10 @@ export const PackageMenu = ({
             disabled={!isRunning || isLoading}
             onClick={handleInstallACSCommons}
           >
-            Install ACS AEM Commons
+            Install ACS AEM Commons 6.12.0
           </Menu.Item>
+
+          <Divider />
           
           <Menu.Item 
             leftSection={<IconWorld size={14} />}

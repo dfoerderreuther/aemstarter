@@ -234,6 +234,21 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
           <ScrollArea style={{ height: '400px' }}>
             <Stack gap={0}>
               <AutomationTaskTeaser 
+                task="create-backup-and-run" 
+                project={project} 
+                icon={IconPlayerPlay}
+                taskTitle="Create backup and start"
+                onTaskStart={handleTaskStart}
+              >
+                <div>
+                  <Text fw={500} size="sm" mb={4}>Create backup and start</Text>
+                  <Text size="xs" c="dimmed" mb={8}>
+                    This will shut down all instances, create a backup and start again.
+                  </Text>
+                </div>
+              </AutomationTaskTeaser>
+              <Divider />
+              <AutomationTaskTeaser 
                 task="last-backup-and-run" 
                 project={project} 
                 icon={IconPlayerPlay}
