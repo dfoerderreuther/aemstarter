@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  const [shouldRunAutomation, setShouldRunAutomation] = useState(false);
 
   // Clear terminals when project switches
   useEffect(() => {
@@ -49,10 +50,13 @@ const App: React.FC = () => {
   }, [selectedProject?.id]); // Only trigger when project ID changes, not on other project updates
 
   // Handle new project creation callback
-  const handleProjectCreated = async (project: Project) => {
+  const handleProjectCreated = async (project: Project, shouldRunAutomation?: boolean) => {
+    console.log('[App] Project created, shouldRunAutomation:', shouldRunAutomation);
     const allProjects = await window.electronAPI.getAllProjects();
     setProjects(allProjects);
     setSelectedProject(project);
+    setShouldRunAutomation(shouldRunAutomation || false);
+    console.log('[App] Set shouldRunAutomation state to:', shouldRunAutomation || false);
     await window.electronAPI.setLastProjectId(project.id);
     await window.electronAPI.refreshMenu();
   };
@@ -261,6 +265,11 @@ const App: React.FC = () => {
           {selectedProject ? (
             <ProjectView 
             project={selectedProject} 
+            shouldRunAutomation={shouldRunAutomation}
+            onAutomationStarted={() => {
+              console.log('[App] Automation started, clearing shouldRunAutomation flag');
+              setShouldRunAutomation(false);
+            }}
             onProjectUpdated={(updatedProject) => {
               // Update the selected project with the new settings
               setSelectedProject(updatedProject);

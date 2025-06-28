@@ -10,10 +10,12 @@ import { AutomationModal } from './automation/AutomationModal';
 
 interface MainActionsViewProps {
   project: Project;
+  shouldRunAutomation?: boolean;
+  onAutomationStarted?: () => void;
   onProjectUpdated?: (updatedProject: Project) => void;
 }
 
-export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onProjectUpdated }) => {
+export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shouldRunAutomation, onAutomationStarted, onProjectUpdated }) => {
   const [showKillAllConfirm, setShowKillAllConfirm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
@@ -25,6 +27,43 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
   const [isDispatcherRunning, setIsDispatcherRunning] = useState(false);
   const [authorPid, setAuthorPid] = useState<number | null>(null);
   const [publisherPid, setPublisherPid] = useState<number | null>(null);
+  const [autoStartTask, setAutoStartTask] = useState<string | undefined>();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[MainActionsView] Props updated:', { 
+      projectId: project.id, 
+      shouldRunAutomation, 
+      onAutomationStarted: !!onAutomationStarted,
+      showAutomation
+    });
+  }, [project.id, shouldRunAutomation, onAutomationStarted, showAutomation]);
+
+  // Handle automation trigger for new projects
+  useEffect(() => {
+    console.log('[MainActionsView] useEffect triggered:', { shouldRunAutomation, onAutomationStarted: !!onAutomationStarted, projectId: project.id });
+    if (shouldRunAutomation && onAutomationStarted) {
+      console.log('[MainActionsView] Triggering automation for new project:', project.id);
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        console.log('[MainActionsView] Opening automation modal with auto-start task');
+        setAutoStartTask('first-start-and-initial-setup');
+        setShowAutomation(true);
+        // Don't clear the flag immediately - let the modal handle it
+      }, 1000); // Reduced delay since installation is already complete
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shouldRunAutomation, onAutomationStarted, project.id]); // Changed project to project.id to be more specific
+
+  const handleAutoTaskStarted = () => {
+    console.log('[MainActionsView] Auto task started, clearing auto-start task and automation flag');
+    setAutoStartTask(undefined);
+    // Clear the automation flag now that the modal has taken over
+    if (onAutomationStarted) {
+      onAutomationStarted();
+    }
+  };
 
   // Check instance status on mount and periodically
   useEffect(() => {
@@ -713,6 +752,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, onPro
         isAuthorRunning={isAuthorRunning}
         isPublisherRunning={isPublisherRunning}
         isDispatcherRunning={isDispatcherRunning}
+        autoStartTask={autoStartTask}
+        onAutoTaskStarted={handleAutoTaskStarted}
       />
     </>
   );

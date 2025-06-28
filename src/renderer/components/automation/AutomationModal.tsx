@@ -11,6 +11,8 @@ interface AutomationModalProps {
   isAuthorRunning: boolean;
   isPublisherRunning: boolean;
   isDispatcherRunning: boolean;
+  autoStartTask?: string;
+  onAutoTaskStarted?: () => void;
 }
 
 export const AutomationModal: React.FC<AutomationModalProps> = ({ 
@@ -19,7 +21,9 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
   project, 
   isAuthorRunning,
   isPublisherRunning,
-  isDispatcherRunning 
+  isDispatcherRunning,
+  autoStartTask,
+  onAutoTaskStarted
 }) => {
   const [isSettingUpReplication, setIsSettingUpReplication] = useState(false);
   const [runningTask, setRunningTask] = useState<{type: string; title: string} | null>(null);
@@ -75,6 +79,46 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
     setIsTaskCompleted(false);
     setTaskStartTime(Date.now());
   };
+
+  // Handle auto-starting a task when the modal opens
+  useEffect(() => {
+    
+    if (opened && autoStartTask && !runningTask && onAutoTaskStarted) {
+      console.log(`[AutomationModal] Auto-starting task: ${autoStartTask}`);
+      
+      // Find the task title for the auto-start task
+      const taskTitles: { [key: string]: string } = {
+        'first-start-and-initial-setup': 'First start and initial setup',
+        'create-backup-and-run': 'Create backup and start',
+        'last-backup-and-run': 'Restore last backup and start',
+        'last-backup-and-debug': 'Restore last backup and start in debug mode',
+        'first-backup-and-run': 'Restore first backup and start',
+        'reinstall': 'Reinstall AEM'
+      };
+
+      const taskTitle = taskTitles[autoStartTask] || 'Automation Task';
+      
+      // Start the task tracking
+      handleTaskStart(autoStartTask, taskTitle);
+      
+      // Start the actual task
+      const startTask = async () => {
+        try {
+          console.log(`[AutomationModal] Running automation task: ${autoStartTask}`);
+          await window.electronAPI.runAutomationTask(project, autoStartTask);
+        } catch (error) {
+          console.error(`[AutomationModal] Failed to auto-start task ${autoStartTask}:`, error);
+        }
+      };
+      
+      // Small delay to ensure modal is fully rendered
+      setTimeout(() => {
+        startTask();
+        // Notify that auto task has been started (after the task actually starts)
+        onAutoTaskStarted();
+      }, 100);
+    }
+  }, [opened, autoStartTask, runningTask, onAutoTaskStarted, project]);
 
   const handleTaskComplete = () => {
     setRunningTask(null);

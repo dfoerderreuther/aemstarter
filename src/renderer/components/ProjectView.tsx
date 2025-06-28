@@ -16,10 +16,12 @@ import { TerminalTab } from './TerminalTab';
 
 interface ProjectViewProps {
   project: Project;
+  shouldRunAutomation?: boolean;
+  onAutomationStarted?: () => void;
   onProjectUpdated?: (updatedProject: Project) => void;
 }
 
-export const ProjectView: React.FC<ProjectViewProps> = ({ project, onProjectUpdated }) => {
+export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAutomation, onAutomationStarted, onProjectUpdated }) => {
   const [activeTab, setActiveTab] = useState<string | null>('author');
   const [viewMode, setViewMode] = useState<'tabs' | 'columns'>('columns');
   const [isColumnsCollapsed, setIsColumnsCollapsed] = useState(false);
@@ -51,6 +53,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, onProjectUpda
     >
       <MainActionsView 
         project={project} 
+        shouldRunAutomation={shouldRunAutomation}
+        onAutomationStarted={onAutomationStarted}
         onProjectUpdated={onProjectUpdated}
       />
 

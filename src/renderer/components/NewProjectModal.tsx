@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Stack, TextInput, Group, Button, Anchor } from '@mantine/core';
+import { Modal, Stack, TextInput, Group, Button, Anchor, Checkbox } from '@mantine/core';
 import { Project } from '../../types/Project';
 import { SystemCheckView } from './SystemCheckView';
 
 interface NewProjectModalProps {
   opened: boolean;
   onClose: () => void;
-  onProjectCreated: (project: Project) => void;
+  onProjectCreated: (project: Project, shouldRunAutomation?: boolean) => void;
 }
 
 export const NewProjectModal: React.FC<NewProjectModalProps> = ({
@@ -18,6 +18,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [creating, setCreating] = useState(false);
   const [aemSdkPath, setAemSdkPath] = useState('');
   const [licensePath, setLicensePath] = useState('');
+  const [runFirstStartSetup, setRunFirstStartSetup] = useState(true);
 
   // Helper function to extract filename from path
   const getFileName = (path: string) => {
@@ -46,6 +47,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     setNewProjectName('');
     setAemSdkPath('');
     setLicensePath('');
+    setRunFirstStartSetup(true);
     onClose();
   };
 
@@ -68,15 +70,22 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           licensePath
         );
         
-        onProjectCreated(project);
-        handleClose();
-
-        // Start the installation procedure
+        // Start the installation procedure and wait for it to complete
         try {
+          console.log('[NewProjectModal] Starting AEM installation...');
           await window.electronAPI.installAEM(project);
+          console.log('[NewProjectModal] AEM installation completed');
         } catch (error) {
           console.error('Failed to install AEM:', error);
+          // Don't proceed with automation if installation failed
+          onProjectCreated(project, false);
+          handleClose();
+          return;
         }
+
+        console.log('[NewProjectModal] Project created, shouldRunAutomation:', runFirstStartSetup);
+        onProjectCreated(project, runFirstStartSetup);
+        handleClose();
       }
     } catch (error) {
       // Show error message to user
@@ -194,6 +203,14 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               ✕
             </Button>
           )}
+        </Group>
+        <Group>
+          <Checkbox
+            label="Run first start and initial setup"
+            checked={runFirstStartSetup}
+            onChange={(e) => setRunFirstStartSetup(e.target.checked)}
+            description="This will start all instances, configure replication between Author, Publisher, and Dispatcher instances, load matching oak-run.jar and install the WKND packages."
+          />
         </Group>
         <Group justify="flex-end">
           <Button 
