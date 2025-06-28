@@ -2,26 +2,28 @@
 
 ## Build
 
-Dev:
+### Dev:
 
     npm start
 
-Lint:
+### Lint:
 
     npm run lint
 
 
-Prod:
+### Prod:
 
     npm run clean
     npm run make:verbose
 
-Make and Publish to GitHub: 
+### Make and Publish to GitHub: 
 
     npm run clean
     npm run publish
 
-Install: 
+Then go to https://github.com/dfoerderreuther/aemstarter/releases and download / test / delete / approve.
+
+### Install: 
 
     open out/make/AEM-Starter-1.0.0-arm64.dmg
 
