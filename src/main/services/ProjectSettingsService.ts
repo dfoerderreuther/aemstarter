@@ -15,14 +15,14 @@ export class ProjectSettingsService {
                 port: 4502,
                 runmode: "author,default",
                 jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
-                debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5005,suspend=n,server=y",
+                debugJvmOpts: " -server -agentlib:jdwp=transport=dt_socket,address=0.0.0.0:5005,suspend=n,server=y",
                 healthCheckPath: ""
             },
             publisher: {
                 port: 4503,
                 runmode: "publish,default",
                 jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
-                debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5006,suspend=n,server=y",
+                debugJvmOpts: " -server -agentlib:jdwp=transport=dt_socket,address=0.0.0.0:5006,suspend=n,server=y",
                 healthCheckPath: ""
             },
             dispatcher: {

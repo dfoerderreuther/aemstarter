@@ -381,7 +381,7 @@ export class AemInstanceManager {
 
     // Handle debug mode
     if (startType === 'debug') {
-      jvmOpts += instanceSettings.debugJvmOpts;
+      jvmOpts += ' ' + instanceSettings.debugJvmOpts;
     }
 
     let aemProcess: ChildProcess;
@@ -399,6 +399,10 @@ export class AemInstanceManager {
           CQ_RUNMODE: runmode,
           CQ_JVM_OPTS: jvmOpts,
         };
+
+        console.log('[AemInstanceManager] Starting AEM instance with start script:', startScriptPath);
+        console.log('[AemInstanceManager] Environment variables:', env);
+        console.log('[AemInstanceManager] Java options:', jvmOpts);
 
         aemProcess = spawn(startScriptPath, [], {
           cwd: instanceDir,

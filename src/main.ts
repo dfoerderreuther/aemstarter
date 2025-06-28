@@ -134,7 +134,7 @@ const createWindow = () => {
 
 // Project management IPC handlers
 ipcMain.handle('check-running-instances', async (_, project: Project) => {
-  console.log('[check-running-instances] Checking project:', project?.name);
+  console.log('[main, check-running-instances] Checking project:', project?.name);
   
   if (!project) {
     console.log('[check-running-instances] No project provided');
@@ -153,8 +153,6 @@ ipcMain.handle('check-running-instances', async (_, project: Project) => {
     const authorRunning = aemManager.isInstanceRunning('author');
     const publisherRunning = aemManager.isInstanceRunning('publisher');
     
-    console.log('[check-running-instances] Author running:', authorRunning);
-    console.log('[check-running-instances] Publisher running:', publisherRunning);
     
     if (authorRunning) {
       runningInstances.push({
@@ -173,7 +171,6 @@ ipcMain.handle('check-running-instances', async (_, project: Project) => {
     // Check dispatcher
     const dispatcherManager = DispatcherManagerRegister.getManager(project);
     const dispatcherRunning = dispatcherManager.isDispatcherRunning();
-    console.log('[check-running-instances] Dispatcher running:', dispatcherRunning);
     
     if (dispatcherRunning) {
       runningInstances.push({
@@ -385,16 +382,6 @@ ipcMain.handle('install-aem', async (_, project: Project) => {
   }
 });
 
-ipcMain.handle('delete-aem', async (_, project: Project) => {
-  try {
-    const installer = new Installer(project);
-    await installer.delete();
-    return true;
-  } catch (error) {
-    console.error('Error deleting AEM:', error);
-    throw error;
-  }
-});
 
 // AEM Instance Management
 ipcMain.handle('start-aem-instance', async (_, project: Project, instanceType: 'author' | 'publisher', options?: { debug?: boolean }) => {

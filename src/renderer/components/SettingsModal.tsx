@@ -52,7 +52,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
       
       // Notify parent component about the updated project
       if (onProjectUpdated && updated) {
-        onProjectUpdated(project);
+        onProjectUpdated(updated);
       }
       
       onClose();

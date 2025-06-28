@@ -97,25 +97,37 @@ export class SystemCheck {
 
     private async checkPortAvailable(port: number): Promise<[number, boolean]> {
         return new Promise((resolve) => {
-            const server = net.createServer();
+            const socket = new net.Socket();
             
-            server.listen(port, () => {
-                server.once('close', () => {
-                    resolve([port, true]);
-                });
-                server.close();
-            });
+            // Set a timeout for the connection attempt
+            socket.setTimeout(1000);
             
-            server.on('error', () => {
+            socket.on('connect', () => {
+                // Connection succeeded, port is occupied (not available)
+                socket.destroy();
                 resolve([port, false]);
             });
+            
+            socket.on('error', () => {
+                // Connection failed, port is available
+                resolve([port, true]);
+            });
+            
+            socket.on('timeout', () => {
+                // Connection timed out, assume port is available
+                socket.destroy();
+                resolve([port, true]);
+            });
+            
+            // Try to connect to the port
+            socket.connect(port, '127.0.0.1');
         });
     }
 
     private parseDebugPortFromJvmOpts(debugJvmOpts: string, defaultPort: number): number {
         // Parse the debug port from JVM options like:
-        // " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5005,suspend=n,server=y"
-        const addressMatch = debugJvmOpts.match(/address=(\d+)/);
+        // " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=0.0.0.0:5005,suspend=n,server=y"
+        const addressMatch = debugJvmOpts.match(/address=[\d\.]+:(\d+)/);
         if (addressMatch) {
             return parseInt(addressMatch[1], 10);
         }

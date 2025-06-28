@@ -49,7 +49,6 @@ declare global {
 
       // AEM Installation
       installAEM: (project: Project) => Promise<boolean>;
-      deleteAEM: (project: Project) => Promise<boolean>;
 
       // AEM Instance Management
       startAemInstance: (
@@ -159,7 +158,7 @@ declare global {
       
       // Project Settings
       getProjectSettings: (project: Project) => Promise<ProjectSettings>;
-      saveProjectSettings: (project: Project, settings: ProjectSettings) => Promise<boolean>;
+      saveProjectSettings: (project: Project, settings: ProjectSettings) => Promise<Project>;
       
       // Editor Availability Check
       checkEditorAvailability: () => Promise<EditorAvailableResults>;
