@@ -82,7 +82,7 @@ The Settings allow you to:
 
 A key feature of AEM-Starter is the ability to quickly restore and restart from a backup. This is often necessary when developing functionality that requires a specific content scenario (e.g., a fresh translation project, content before rollout, or a specific workflow state). 
 
-There are several tasks to create backups or restore and run/debug from the first or last backup. Create uncompressed backups for faster performance.
+There are several tasks to create backups or restore and run/debug from the first or last backup. Create uncompressed backups for faster restore performance.
 
 ### AEM Files / Dev Files
 
@@ -96,4 +96,4 @@ AEM-Starter Logging lets you follow the logs of this application, which might be
 
 ## Thank you for using AEM-Starter
 
-This is a holiday project with the goal of creating a GUI for my AEM shell scripts. I hope it's useful! Please reach out if you want to contribute (Windows support?) or have ideas for new functionality. 
+This is a holiday project with the goal of creating a GUI for my AEM shell scripts, grown over the years. I hope it's useful! Please reach out if you want to contribute (Windows support?) or have ideas for new functionality. 
