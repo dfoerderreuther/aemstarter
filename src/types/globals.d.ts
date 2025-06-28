@@ -144,6 +144,11 @@ declare global {
       // Dispatcher status streaming
       onDispatcherStatus: (callback: (data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => void) => () => void;
 
+      // Oak-run.jar functionality
+      isOakJarAvailable: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
+      loadOakJar: (project: Project) => Promise<boolean>;
+      runOakCompaction: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
+
       // Backup Management
       listBackupsAll: (project: Project) => Promise<BackupInfo[]>;
       restoreBackupAll: (project: Project, name: string) => Promise<boolean>;
