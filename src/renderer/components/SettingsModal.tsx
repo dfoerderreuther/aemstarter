@@ -48,11 +48,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
     
     try {
       setSaving(true);
-      const updatedProject = await window.electronAPI.saveProjectSettings(project, settings);
+      const updated = await window.electronAPI.saveProjectSettings(project, settings);
       
       // Notify parent component about the updated project
-      if (onProjectUpdated) {
-        onProjectUpdated(updatedProject);
+      if (onProjectUpdated && updated) {
+        onProjectUpdated(project);
       }
       
       onClose();
@@ -173,6 +173,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
             />
             <Checkbox
               label="Health Check"
+              description="Turn off if health check interferes with debugging or log output."
               checked={settings.general.healthCheck}
               onChange={(event) => updateGeneralSettings('healthCheck', event.currentTarget.checked)}
             />
@@ -213,7 +214,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
             
             <TextInput
               label="Health Check Path"
-              description="Path to health check service"
+              description="Path to the document the sytem should check for health and take screenshot of. Default is /."
               value={settings.author.healthCheckPath}
               onChange={(event) => updateAuthorSettings('healthCheckPath', event.currentTarget.value)}
             />
@@ -254,7 +255,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
             
             <TextInput
               label="Health Check Path"
-              description="Path to health check service"
+              description="Path to the document the sytem should check for health and take screenshot of. Default is /."
               value={settings.publisher.healthCheckPath}
               onChange={(event) => updatePublisherSettings('healthCheckPath', event.currentTarget.value)}
             />
@@ -300,7 +301,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
             </Group>
             <TextInput
               label="Health Check Path"
-              description="Path to health check service"
+              description="Path to the document the sytem should check for health and take screenshot of. Default is /."
               value={settings.dispatcher.healthCheckPath}
               onChange={(event) => updateDispatcherSettings('healthCheckPath', event.currentTarget.value)}
             />
@@ -312,7 +313,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
             <Group gap="xs" align="end">
               <TextInput
                 label="Development Path"
-                description="Path to development folder"
+                description="Path to development folder. This is usually the root folder of your AEM Maven project."
                 value={settings.dev?.path || ''}
                 onChange={(event) => updateDevSettings('path', event.currentTarget.value)}
                 style={{ flex: 1 }}
@@ -328,7 +329,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
             
             <Select
               label="Editor"
-              description="Select your preferred code editor"
+              description="Select your preferred code editor. Available editors are marked with a checkmark (✓)."
               value={settings.dev?.editor || ''}
               onChange={(value) => updateDevSettings('editor', value)}
               data={[

@@ -285,11 +285,18 @@ export class DispatcherManager {
     }
 
     public async getContainerId(): Promise<string | null> {
-        const { stdout: portOutput } = await execAsync(`docker ps --format "{{.ID}} {{.Ports}}" | grep ":${this.instance.port}->"`, { timeout: 10000 });
-        if (portOutput.trim()) {
-            return portOutput.trim().split('\n').map((line: string) => line.split(' ')[0])[0];
+        try {
+            const { stdout: portOutput } = await execAsync(`docker ps --format "{{.ID}} {{.Ports}}" | grep ":${this.instance.port}->"`, { timeout: 10000 });
+            if (portOutput.trim()) {
+                return portOutput.trim().split('\n').map((line: string) => line.split(' ')[0])[0];
+            }
+            return null;
+        } catch (error) {
+            if (error instanceof Error && (error.message.includes('Command failed') || error.message.includes('grep'))) {
+                return null;
+            }
+            throw error;
         }
-        return null;
     }
 
     async killDispatcher(): Promise<void> {
