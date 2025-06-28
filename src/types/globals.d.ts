@@ -134,6 +134,9 @@ declare global {
       takeDispatcherScreenshot: (project: Project) => Promise<string>;
       getDispatcherHealthStatus: (project: Project) => Promise<unknown>;
       checkDispatcherHealth: (project: Project) => Promise<unknown>;
+      
+      // Dispatcher Container ID
+      getDispatcherContainerId: (project: Project) => Promise<string | null>;
 
       // Dispatcher log streaming
       onDispatcherLogData: (callback: (data: { projectId: string; data: string }) => void) => () => void;

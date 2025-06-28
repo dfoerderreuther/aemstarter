@@ -339,6 +339,9 @@ contextBridge.exposeInMainWorld(
     
     checkDispatcherHealth: (project: Project) =>
       ipcRenderer.invoke('check-dispatcher-health', project),
+    
+    getDispatcherContainerId: (project: Project) =>
+      ipcRenderer.invoke('get-dispatcher-container-id', project),
 
     // Dispatcher log streaming
     onDispatcherLogData: (callback: (data: { projectId: string; data: string }) => void) => {

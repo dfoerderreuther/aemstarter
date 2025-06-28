@@ -853,6 +853,16 @@ ipcMain.handle('check-dispatcher-health', async (_, project: Project) => {
   }
 });
 
+ipcMain.handle('get-dispatcher-container-id', async (_, project: Project) => {
+  try {
+    const manager = DispatcherManagerRegister.getManager(project);
+    return await manager.getContainerId();
+  } catch (error) {
+    console.error('Error getting dispatcher container ID:', error);
+    throw error;
+  }
+});
+
 // System check IPC handler
 ipcMain.handle('run-system-check', async (_, settings: ProjectSettings) => {
   try {

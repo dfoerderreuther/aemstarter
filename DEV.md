@@ -18,6 +18,7 @@ Prod:
 
 Make and Publish to GitHub: 
 
+    npm run clean
     npm run publish
 
 Install: 

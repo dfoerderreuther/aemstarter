@@ -1,10 +1,12 @@
 import { Box, Stack, Text, Accordion } from '@mantine/core';
 import { Project } from '../../types/Project';
+import { useState, useEffect } from 'react';
 
 interface CommandItem {
   command?: string;
   url?: string;
   name?: string;
+  active?: boolean;
 }
 
 interface CommandSection {
@@ -29,6 +31,37 @@ export const TerminalTabQuickCommands = ({
   viewMode, 
   onCommandClick 
 }: TerminalTabQuickCommandsProps) => {
+  const [containerId, setContainerId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const fetchContainerId = async () => {
+      try {
+        const id = await window.electronAPI.getDispatcherContainerId(project);
+        setContainerId(id);
+      } catch (error) {
+        console.error('Error fetching dispatcher container ID:', error);
+        setContainerId(null);
+      }
+    };
+    
+    // Fetch container ID initially
+    fetchContainerId();
+    
+    // Listen for dispatcher status changes
+    const cleanup = window.electronAPI.onDispatcherStatus((data) => {
+      if (data.projectId === project.id) {
+        if (data.isRunning) {
+          // Dispatcher started, fetch new container ID
+          fetchContainerId();
+        } else {
+          // Dispatcher stopped, clear container ID
+          setContainerId(null);
+        }
+      }
+    });
+    
+    return cleanup;
+  }, [project]);
   const commands: CommandSection = {
     'Basic': {
       items: [
@@ -37,13 +70,23 @@ export const TerminalTabQuickCommands = ({
         { command: 'ls -la' }
       ]
     },
-    'Instance Management': {
+    'AEM Instance Management': {
       type: 'project',
       items: [
         { command: `cd ${rootPath}/author`, name: 'Navigate to Author' },
         { command: `cd ${rootPath}/publisher`, name: 'Navigate to Publisher' },
         { command: 'tail -f crx-quickstart/logs/*', name: 'Watch Instance Logs' },
         { command: 'java -Xss16m -Xmx8g -jar oak-run.jar compact crx-quickstart/repository/segmentstore', name: 'Compact Repository' }
+      ]
+    },
+    'Dispatcher Management': {
+      type: 'project',
+      items: [
+        { url: 'https://docs.docker.com/reference/cli/docker/', name: 'Docker CLI Reference' },
+        { command: `cd ${rootPath}/dispatcher`, name: 'Navigate to Dispatcher' },
+        { command: `docker ps`, name: 'Docker Processes' },
+        { command: `docker logs  --follow ${containerId || 'dispatcher'}`, active: containerId !== null, name: 'Dispatcher Logs' },
+        { command: `docker exec -it ${containerId || 'dispatcher'} /bin/bash`, active: containerId !== null, name: 'Shell into Dispatcher' }
       ]
     },
     'Maven': {
@@ -93,6 +136,10 @@ export const TerminalTabQuickCommands = ({
   const defaultOpenSection = filteredCommands.length > 0 ? filteredCommands[0][0] : '';
   
   const handleItemClick = (item: CommandItem) => {
+    // Don't handle clicks for inactive items
+    const isActive = item.active !== false; // Default to true if not specified
+    if (!isActive) return;
+    
     if (item.command) {
       onCommandClick(item.command);
     } else if (item.url) {
@@ -115,22 +162,26 @@ export const TerminalTabQuickCommands = ({
             </Accordion.Control>
             <Accordion.Panel>
               <Stack gap="xs">
-                {section.items.map((item, index) => (
-                  <Text 
-                    key={index}
-                    size="xs" 
-                    fw={400} 
-                    c={item.url ? "blue" : "dimmed"}
-                    style={{ 
-                      cursor: 'pointer',
-                      textDecoration: item.url ? 'underline' : 'none'
-                    }}
-                    onClick={() => handleItemClick(item)}
-                    title={item.command || item.url || ''}
-                  >
-                    {item.name || item.command || item.url}
-                  </Text>
-                ))}
+                {section.items.map((item, index) => {
+                  const isActive = item.active !== false; // Default to true if not specified
+                  return (
+                    <Text 
+                      key={index}
+                      size="xs" 
+                      fw={400} 
+                      c={!isActive ? "gray.5" : (item.url ? "blue" : "dimmed")}
+                      style={{ 
+                        cursor: isActive ? 'pointer' : 'not-allowed',
+                        textDecoration: item.url ? 'underline' : 'none',
+                        opacity: isActive ? 1 : 0.5
+                      }}
+                      onClick={() => handleItemClick(item)}
+                      title={item.command || item.url || ''}
+                    >
+                      {item.name || item.command || item.url}
+                    </Text>
+                  );
+                })}
               </Stack>
             </Accordion.Panel>
           </Accordion.Item>
