@@ -48,7 +48,7 @@ export class PackageInstaller {
         const originalFileName = path.basename(packageUrl);
         const fileExtension = path.extname(originalFileName);
         const baseName = path.basename(originalFileName, fileExtension);
-        const fileName = `${baseName}-${instance}${fileExtension}`;
+        const fileName = `${baseName}${fileExtension}`;
         const filePath = path.join(installDir, fileName);
 
         if (packageUrl.startsWith('http')) {
