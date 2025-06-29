@@ -96,4 +96,4 @@ AEM-Starter Logging lets you follow the logs of this application, which might be
 
 ## Thank you for using AEM-Starter
 
-This is a holiday project with the goal of creating a GUI for my AEM shell scripts, grown over the years. I hope it's useful! Please reach out if you want to contribute (Windows support?) or have ideas for new functionality. 
+This is a holiday project with the goal of creating a GUI for my collection of shell scripts that has grown over the years. I hope it's useful! Please reach out in case of any issues, if you want to contribute (Windows support?) or have ideas for new functionality. 
