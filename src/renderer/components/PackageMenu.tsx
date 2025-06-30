@@ -37,7 +37,7 @@ export const PackageMenu = ({
   };
 
   const handleInstallWKND = async () => {
-    const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-4.0.2/aem-guides-wknd.all-4.0.2.zip";
+    const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip";
     handleInstall(wkndUrl);
   };
 

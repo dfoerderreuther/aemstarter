@@ -17,8 +17,8 @@ AEM-Starter is a comprehensive desktop application designed to streamline the se
 ## Requirements
 
 - This app currently only runs on Apple Silicon Macs. Please reach out if you want to help with supporting other environments!
-- AEM-SDK (Available for Adobe AEM customers at https://experience.adobe.com -> Software Distribution -> AEM as Cloud Service)
-- Oracle JDK (Availalbe for Adobe AEM customers at https://experience.adobe.com -> Software Distribution -> General)
+- AEM-SDK (Available for Adobe AEM customers at [experience.adobe.com](https://experience.adobe.com/#/downloads/content/software-distribution/en/aemcloud.html) -> Software Distribution -> AEM as Cloud Service)
+- Oracle JDK (Availalbe for Adobe AEM customers at [experience.adobe.com](https://experience.adobe.com/#/downloads/content/software-distribution/en/general.html) -> Software Distribution -> General)
 - Docker
 
 ## Installation
