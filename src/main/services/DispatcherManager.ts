@@ -5,6 +5,8 @@ import fs from 'fs';
 import { BrowserWindow } from 'electron';
 import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
 import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
+import os from 'os';
+import { execSync } from 'child_process';
 
 interface DispatcherInstance {
   process: ChildProcess | null;
@@ -82,7 +84,7 @@ export class DispatcherManager {
             DISP_LOG_LEVEL: 'Debug',
             REWRITE_LOG_LEVEL: 'Debug',
             PATH: enhancedPath,
-            HOME: process.env.HOME || require('os').homedir()
+            HOME: process.env.HOME || os.homedir()
         };
 
         //console.log(`[DispatcherManager] Using PATH: ${enhancedPath}`);
@@ -90,7 +92,6 @@ export class DispatcherManager {
         
         // Quick Docker check before starting
         try {
-            const { execSync } = require('child_process');
             const dockerVersion = execSync('docker --version', { env, timeout: 5000 }).toString();
             console.log(`[DispatcherManager] Docker found: ${dockerVersion.trim()}`);
         } catch (error) {

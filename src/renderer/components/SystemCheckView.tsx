@@ -20,11 +20,29 @@ interface SystemCheckItemProps {
   secondaryLabel?: string;
   status: boolean | string;
   isVersion?: boolean;
+  strict?: boolean;
 }
 
-const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, secondaryLabel, status, isVersion = false }) => {
+const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, secondaryLabel, status, isVersion = false, strict = false }) => {
   const isHealthy = isVersion ? status !== 'Not available' : status;
   const statusValue = isVersion ? (typeof status === 'string' ? status : 'Unknown') : (status ? 'Available' : 'Not Available');
+  
+  // Automatically detect port checks and use different colors based on strict mode
+  const isPortCheck = label.startsWith('Port ');
+  let badgeColor = 'green';
+  let iconColor = 'var(--mantine-color-green-6)';
+  
+  if (!isHealthy) {
+    if (isPortCheck && !strict) {
+      // Non-strict mode: blocked ports show as yellow/warning
+      badgeColor = 'yellow';
+      iconColor = 'var(--mantine-color-yellow-6)';
+    } else {
+      // Strict mode or non-port checks: show as red/critical
+      badgeColor = 'red';
+      iconColor = 'var(--mantine-color-red-6)';
+    }
+  }
   
   return (
     <Group justify="space-between" p="sm" style={{ backgroundColor: 'var(--mantine-color-dark-6)', borderRadius: 'var(--mantine-radius-sm)' }}>
@@ -32,7 +50,7 @@ const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, secondaryLabel
         {isHealthy ? (
           <IconCheck size={16} color="var(--mantine-color-green-6)" />
         ) : (
-          <IconX size={16} color="var(--mantine-color-red-6)" />
+          <IconX size={16} color={iconColor} />
         )}
         <div>
           <Text fw={500}>{label}</Text>
@@ -42,7 +60,7 @@ const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, secondaryLabel
         </div>
       </Group>
       <Badge 
-        color={isHealthy ? 'green' : 'red'} 
+        color={badgeColor} 
         variant="light"
       >
         {statusValue}
@@ -53,9 +71,10 @@ const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, secondaryLabel
 
 interface SystemCheckViewProps {
   project?: Project;
+  strict?: boolean;
 }
 
-export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => {
+export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, strict = false }) => {
   const [modalOpened, setModalOpened] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SystemCheckResults | null>(null);
@@ -132,6 +151,15 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
       results.dockerAvailable,
       results.dockerDaemonRunning
     ];
+    
+    // In strict mode, also consider port availability as critical
+    if (strict) {
+      criticalChecks.push(
+        results.portDispatcherAvailable[1],
+        results.portAuthorAvailable[1],
+        results.portPublisherAvailable[1]
+      );
+    }
     
     return criticalChecks.every(check => check) ? 'healthy' : 'issues';
   };
@@ -268,11 +296,11 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
                 <div>
                   <Text size="sm" fw={600} c="dimmed" mb="xs">Port Availability</Text>
                   <Stack gap="xs">
-                    <SystemCheckItem label={`Port ${results.portDispatcherAvailable[0]}`} secondaryLabel="Dispatcher" status={results.portDispatcherAvailable[1]} />
-                    <SystemCheckItem label={`Port ${results.portAuthorAvailable[0]}`} secondaryLabel="AEM Author" status={results.portAuthorAvailable[1]} />
-                    <SystemCheckItem label={`Port ${results.portPublisherAvailable[0]}`} secondaryLabel="AEM Publisher" status={results.portPublisherAvailable[1]} />
-                    <SystemCheckItem label={`Port ${results.portAuthorDebugAvailable[0]}`} secondaryLabel="AEM Author Debug" status={results.portAuthorDebugAvailable[1]} />
-                    <SystemCheckItem label={`Port ${results.portPublisherDebugAvailable[0]}`} secondaryLabel="AEM Publisher Debug" status={results.portPublisherDebugAvailable[1]} />
+                    <SystemCheckItem label={`Port ${results.portDispatcherAvailable[0]}`} secondaryLabel="Dispatcher" status={results.portDispatcherAvailable[1]} strict={strict} />
+                    <SystemCheckItem label={`Port ${results.portAuthorAvailable[0]}`} secondaryLabel="AEM Author" status={results.portAuthorAvailable[1]} strict={strict} />
+                    <SystemCheckItem label={`Port ${results.portPublisherAvailable[0]}`} secondaryLabel="AEM Publisher" status={results.portPublisherAvailable[1]} strict={strict} />
+                    <SystemCheckItem label={`Port ${results.portAuthorDebugAvailable[0]}`} secondaryLabel="AEM Author Debug" status={results.portAuthorDebugAvailable[1]} strict={strict} />
+                    <SystemCheckItem label={`Port ${results.portPublisherDebugAvailable[0]}`} secondaryLabel="AEM Publisher Debug" status={results.portPublisherDebugAvailable[1]} strict={strict} />
                   </Stack>
                 </div>  
               </Grid.Col>

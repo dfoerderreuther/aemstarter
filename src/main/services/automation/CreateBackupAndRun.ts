@@ -29,9 +29,8 @@ export class CreateBackupAndRun implements AutoTask {
         
         progress('Stopping any currently running AEM and Dispatcher instances...');
         await this.stopWhenRunning();
-        
 
-        let backupName = 'backup ' + new Date().toISOString().replace(/[:.]/g, '-');
+        const backupName = 'backup ' + new Date().toISOString().replace(/[:.]/g, '-');
         progress(`Create backup "${backupName}" - this may take some time...`);
         await this.backupService.backup(backupName);
         

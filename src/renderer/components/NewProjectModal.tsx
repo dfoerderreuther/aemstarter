@@ -140,7 +140,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
       overlayProps={{ opacity: 0.55, blur: 3 }}
     >
       <Stack gap="md">
-        <SystemCheckView />
+        <SystemCheckView strict={true} />
         <TextInput
           label="Project Name"
           placeholder="Enter project name"

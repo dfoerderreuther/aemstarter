@@ -127,7 +127,7 @@ export class SystemCheck {
     private parseDebugPortFromJvmOpts(debugJvmOpts: string, defaultPort: number): number {
         // Parse the debug port from JVM options like:
         // " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=0.0.0.0:5005,suspend=n,server=y"
-        const addressMatch = debugJvmOpts.match(/address=[\d\.]+:(\d+)/);
+        const addressMatch = debugJvmOpts.match(/address=[\d.]+:(\d+)/);
         if (addressMatch) {
             return parseInt(addressMatch[1], 10);
         }

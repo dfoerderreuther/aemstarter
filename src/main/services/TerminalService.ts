@@ -1,6 +1,7 @@
 import * as pty from 'node-pty';
 import { BrowserWindow } from 'electron';
 import os from 'os';
+import fs from 'fs';
 
 export interface TerminalOptions {
   cwd?: string;
@@ -221,7 +222,6 @@ export class TerminalService {
       // For production builds, ensure we have fallback paths
       const shell = process.env.SHELL || '/bin/zsh';
       // Verify shell exists, fallback to known good shells
-      const fs = require('fs');
       if (fs.existsSync(shell)) {
         return shell;
       } else if (fs.existsSync('/bin/zsh')) {
