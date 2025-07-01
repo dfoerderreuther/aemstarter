@@ -35,8 +35,7 @@ const config: ForgeConfig = {
       appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
       teamId: process.env.APPLE_TEAM_ID || '',
     },
-    // Increase memory limit for the app
-    executableName: 'AEM-Starter',
+    executableName: 'aem-starter',
     // Add extra resources if needed
     extraResource: [],
     // Ensure native modules are properly handled
