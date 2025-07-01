@@ -119,7 +119,6 @@ export class FirstStartAndInitialSetup implements AutoTask {
     private async isAEMRunning(instanceType: 'author' | 'publisher') {
         if (!this.aemInstanceManager.isInstanceRunning(instanceType)) return false;
 
-        // curl on /libs/granite/core/content/login.html and check if it returns 200
         const port = instanceType === 'author' ? this.project.settings.author.port : this.project.settings.publisher.port;
         const response = await fetch(`http://localhost:${port}/libs/granite/core/content/login.html`);
         return response.status === 200;

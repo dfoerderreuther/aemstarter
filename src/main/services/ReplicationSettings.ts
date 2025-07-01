@@ -2,7 +2,6 @@ import { Project } from "../../types/Project";
 import { ProjectSettingsService } from "./ProjectSettingsService";
 import path from "path";
 import fs from 'fs';
-import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 
 export class ReplicationSettings {
     private static instance: ReplicationSettings;
@@ -174,14 +173,28 @@ export class ReplicationSettings {
         './queueBatchMaxSize=';
         
         const dataRaw = encodeURI(data);
-        const command = "curl -u admin:admin 'http://localhost:" + project.settings.publisher.port + "/etc/replication/agents.publish/flush/jcr:content' " + 
-                    "-H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' " + 
-                    "--data-raw '." + dataRaw + "'"
-
+        const url = `http://localhost:${project.settings.publisher.port}/etc/replication/agents.publish/flush/jcr:content`;
+        
+        // Create Basic Auth header
+        const credentials = Buffer.from('admin:admin').toString('base64');
+        
         try {
-            const { stdout } = await execAsync(command);
-            console.log('Replication agent configured successfully:', stdout);
-            return { success: true, output: stdout };
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Authorization': `Basic ${credentials}`
+                },
+                body: '.' + dataRaw
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const responseText = await response.text();
+            console.log('Replication agent configured successfully:', responseText);
+            return { success: true, output: responseText };
         } catch (error) {
             console.error('Error configuring replication agent:', error);
             return { success: false, error: error };
@@ -236,14 +249,28 @@ export class ReplicationSettings {
         './queueBatchMaxSize=';
         
         const dataRaw = encodeURI(data);
-        const command = "curl -u admin:admin 'http://localhost:" + project.settings.author.port + "/etc/replication/agents.author/publish/jcr:content' " + 
-                    "-H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' " + 
-                    "--data-raw '." + dataRaw + "'"
-
+        const url = `http://localhost:${project.settings.author.port}/etc/replication/agents.author/publish/jcr:content`;
+        
+        // Create Basic Auth header
+        const credentials = Buffer.from('admin:admin').toString('base64');
+        
         try {
-            const { stdout } = await execAsync(command);
-            console.log('Replication agent configured successfully:', stdout);
-            return { success: true, output: stdout };
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Authorization': `Basic ${credentials}`
+                },
+                body: '.' + dataRaw
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const responseText = await response.text();
+            console.log('Replication agent configured successfully:', responseText);
+            return { success: true, output: responseText };
         } catch (error) {
             console.error('Error configuring replication agent:', error);
             return { success: false, error: error };

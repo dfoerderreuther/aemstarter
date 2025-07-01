@@ -16,6 +16,7 @@ import { DispatcherManagerRegister } from './main/DispatcherManagerRegister';
 import { ProjectManagerRegister } from './main/ProjectManagerRegister';
 import { Automation } from './main/services/automation/Automation';
 import { TerminalService } from './main/services/TerminalService';
+import { AemProcessManager } from './main/services/AemProcessManager';
 import { spawn } from 'child_process';
 
 // Set the app name immediately (this affects dock/taskbar display)
@@ -875,12 +876,22 @@ ipcMain.handle('open-dev-project', async (_, project: Project, type: 'files' | '
 
 // Terminal management
 let terminalService: TerminalService;
+let aemProcessManager: AemProcessManager;
 
 function initializeTerminalService() {
   if (!terminalService) {
     terminalService = new TerminalService();
     if (mainWindow) {
       terminalService.setMainWindow(mainWindow);
+    }
+  }
+}
+
+function initializeAemProcessManager() {
+  if (!aemProcessManager) {
+    aemProcessManager = new AemProcessManager();
+    if (mainWindow) {
+      aemProcessManager.setMainWindow(mainWindow);
     }
   }
 }
@@ -904,6 +915,17 @@ ipcMain.handle('resize-terminal', async (_, terminalId: string, cols: number, ro
 ipcMain.handle('kill-terminal', async (_, terminalId: string) => {
   initializeTerminalService();
   return terminalService.killTerminal(terminalId);
+});
+
+// AEM Process Manager IPC handlers
+ipcMain.handle('start-aem-process', async (_, project: Project, options: any) => {
+  initializeAemProcessManager();
+  return aemProcessManager.startAemProcess(project, options);
+});
+
+ipcMain.handle('stop-aem-process', async (_, processId: string) => {
+  initializeAemProcessManager();
+  return aemProcessManager.stopAemProcess(processId);
 });
 
 // Clear all terminals (used when switching projects)

@@ -128,6 +128,12 @@ contextBridge.exposeInMainWorld(
     killTerminal: (terminalId: string) =>
       ipcRenderer.invoke('kill-terminal', terminalId),
     
+    // AEM Process Manager
+    startAemProcess: (project: Project, options: any) =>
+      ipcRenderer.invoke('start-aem-process', project, options),
+    stopAemProcess: (processId: string) =>
+      ipcRenderer.invoke('stop-aem-process', processId),
+    
     // Clear all terminals (used when switching projects)
     clearAllTerminals: () =>
       ipcRenderer.invoke('clear-all-terminals'),

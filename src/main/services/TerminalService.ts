@@ -6,6 +6,7 @@ import fs from 'fs';
 export interface TerminalOptions {
   cwd?: string;
   shell?: string;
+  env?: NodeJS.ProcessEnv;
 }
 
 export interface TerminalSession {
@@ -33,28 +34,23 @@ export class TerminalService {
     try {
       const shell = options.shell || this.getDefaultShell();
       const cwd = options.cwd || process.env.HOME || process.cwd();
+      
+      // Platform-specific environment setup
+      const env = this.getPlatformEnvironment(options.env);
             
-      // Fix PATH for production builds - same issue as dispatcher
-      const enhancedPath = [
-        process.env.PATH || '',
-        '/usr/local/bin',      // Docker Desktop, Homebrew
-        '/opt/homebrew/bin',   // Apple Silicon Homebrew  
-        '/usr/bin',
-        '/bin'
-      ].filter(Boolean).join(':');
-
       // Create PTY process with proper terminal emulation and enhanced PATH
       const ptyProcess = pty.spawn(shell, [], {
         name: 'xterm-color',
         cols: 80,
         rows: 24,
         cwd: cwd,
-        env: {
-          ...process.env,
-          TERM: 'xterm-256color',
-          COLORTERM: 'truecolor',
-          PATH: enhancedPath, // This is the key fix!
-        }
+        env: env,
+        // Windows-specific options
+        ...(process.platform === 'win32' && {
+          handleFlowControl: true,
+          flowControlPause: '\x13', // XOFF
+          flowControlResume: '\x11', // XON
+        })
       });
 
       const session: TerminalSession = {
@@ -213,26 +209,128 @@ export class TerminalService {
     return `term_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   }
 
+  private getPlatformEnvironment(customEnv?: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+    const baseEnv = {
+      ...process.env,
+      ...customEnv,
+    };
+
+    if (process.platform === 'win32') {
+      // Windows-specific environment setup
+      return {
+        ...baseEnv,
+        TERM: 'xterm-256color',
+        COLORTERM: 'truecolor',
+        // Ensure proper Windows console environment
+        CONEMUANSI: 'ON',
+        // Add common Windows development tools to PATH
+        PATH: this.getWindowsPath(baseEnv.PATH),
+      };
+    } else {
+      // Unix-like systems (macOS, Linux)
+      return {
+        ...baseEnv,
+        TERM: 'xterm-256color',
+        COLORTERM: 'truecolor',
+        PATH: this.getUnixPath(baseEnv.PATH),
+      };
+    }
+  }
+
+  private getWindowsPath(existingPath?: string): string {
+    const paths = [
+      existingPath || '',
+      // Common Windows development tools
+      'C:\\Program Files\\Git\\bin',
+      'C:\\Program Files\\Git\\cmd',
+      'C:\\Program Files\\Git\\usr\\bin',
+      'C:\\Program Files\\nodejs',
+      'C:\\Program Files\\Java\\jdk-17\\bin',
+      'C:\\Program Files\\Java\\jdk-11\\bin',
+      'C:\\Program Files\\Java\\jdk-8\\bin',
+      'C:\\Program Files\\Java\\jre1.8.0_291\\bin',
+      // WSL paths if available
+      'C:\\Windows\\System32\\wsl.exe',
+      // Common user paths
+      process.env.USERPROFILE + '\\AppData\\Local\\Programs\\Microsoft VS Code\\bin',
+      process.env.USERPROFILE + '\\AppData\\Roaming\\npm',
+      process.env.USERPROFILE + '\\AppData\\Local\\Microsoft\\WindowsApps',
+    ].filter(Boolean);
+
+    return paths.join(';');
+  }
+
+  private getUnixPath(existingPath?: string): string {
+    const paths = [
+      existingPath || '',
+      '/usr/local/bin',      // Docker Desktop, Homebrew
+      '/opt/homebrew/bin',   // Apple Silicon Homebrew  
+      '/usr/bin',
+      '/bin'
+    ].filter(Boolean);
+
+    return paths.join(':');
+  }
+
   private getDefaultShell(): string {
     const platform = os.platform();
     
     if (platform === 'win32') {
-      return process.env.COMSPEC || 'cmd.exe';
-    } else if (platform === 'darwin') {
-      // For production builds, ensure we have fallback paths
-      const shell = process.env.SHELL || '/bin/zsh';
-      // Verify shell exists, fallback to known good shells
-      if (fs.existsSync(shell)) {
-        return shell;
-      } else if (fs.existsSync('/bin/zsh')) {
-        return '/bin/zsh';
-      } else if (fs.existsSync('/bin/bash')) {
-        return '/bin/bash';
-      } else {
-        return '/bin/sh'; // Last resort
+      // Enhanced Windows shell detection
+      const shells = [
+        process.env.COMSPEC, // cmd.exe
+        'powershell.exe',
+        'pwsh.exe', // PowerShell Core
+        'C:\\Windows\\System32\\cmd.exe',
+        'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+        'C:\\Program Files\\PowerShell\\7\\pwsh.exe',
+      ].filter(Boolean);
+
+      for (const shell of shells) {
+        if (shell && fs.existsSync(shell)) {
+          console.log(`[TerminalService] Using Windows shell: ${shell}`);
+          return shell;
+        }
       }
+
+      // Fallback to cmd.exe
+      console.log('[TerminalService] Using fallback Windows shell: cmd.exe');
+      return 'cmd.exe';
+    } else if (platform === 'darwin') {
+      // Enhanced macOS shell detection
+      const shells = [
+        process.env.SHELL,
+        '/bin/zsh',
+        '/bin/bash',
+        '/bin/sh'
+      ].filter(Boolean);
+
+      for (const shell of shells) {
+        if (shell && fs.existsSync(shell)) {
+          console.log(`[TerminalService] Using macOS shell: ${shell}`);
+          return shell;
+        }
+      }
+
+      console.log('[TerminalService] Using fallback macOS shell: /bin/zsh');
+      return '/bin/zsh';
     } else {
-      return process.env.SHELL || '/bin/bash';
+      // Linux and other Unix-like systems
+      const shells = [
+        process.env.SHELL,
+        '/bin/bash',
+        '/bin/sh'
+      ].filter(Boolean);
+
+      for (const shell of shells) {
+        if (shell && fs.existsSync(shell)) {
+          console.log(`[TerminalService] Using Unix shell: ${shell}`);
+          return shell;
+        }
+      }
+
+      console.log('[TerminalService] Using fallback Unix shell: /bin/bash');
+      return '/bin/bash';
     }
   }
 } 
