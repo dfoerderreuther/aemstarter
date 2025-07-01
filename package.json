@@ -5,10 +5,11 @@
   "description": "AEM-Starter - Development environment for Adobe Experience Manager",
   "main": ".vite/build/main.js",
   "scripts": {
-    "start": "NODE_NO_WARNINGS=1 electron-forge start",
+    "start": "electron-forge start",
     "dev:electron": "NODE_NO_WARNINGS=1 nodemon",
     "dev": "concurrently \"vite\" \"wait-on tcp:5173 && sleep 2 && npm run dev:electron\"",
     "clean": "rm -rf out/",
+    "clean:windows": "if exist out rmdir /s /q out",
     "prebuild": "npm run clean",
     "build": "NODE_NO_WARNINGS=1 electron-forge package",
     "prebuild:signed": "npm run clean",

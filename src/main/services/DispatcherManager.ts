@@ -60,24 +60,45 @@ export class DispatcherManager {
         }
 
         const dispatcherDir = path.join(this.project.folderPath, 'dispatcher');
-        const dockerRunScript = path.join(dispatcherDir, 'dispatcher-sdk/bin/docker_run_hot_reload.sh');
+        
+        // Use platform-specific script names
+        const scriptName = process.platform === 'win32' ? 'docker_run.cmd' : 'docker_run_hot_reload.sh';
+        const dockerRunScript = path.join(dispatcherDir, 'dispatcher-sdk/bin', scriptName);
 
         // Check if dispatcher SDK is installed
         if (!fs.existsSync(dockerRunScript)) {
-            throw new Error('Dispatcher SDK not found. Please ensure the dispatcher is properly installed.');
+            throw new Error(`Dispatcher SDK script not found: ${dockerRunScript}. Please ensure the dispatcher is properly installed.`);
         }
 
         // Prepare environment variables and command
-        // Fix PATH for production builds - this is the key issue!
-        // In dev mode, we inherit the full PATH from terminal
-        // In production, we only get a minimal PATH from macOS
-        const enhancedPath = [
-            process.env.PATH || '',
-            '/usr/local/bin',      // Docker Desktop, Homebrew
-            '/opt/homebrew/bin',   // Apple Silicon Homebrew  
-            '/usr/bin',
-            '/bin'
-        ].filter(Boolean).join(':');
+        // Use platform-specific PATH handling
+        function getEnhancedPath(existingPath?: string): string {
+            if (process.platform === 'win32') {
+                const paths = [
+                    existingPath || '',
+                    'C:\\Program Files\\Git\\bin',
+                    'C:\\Program Files\\Git\\cmd',
+                    'C:\\Program Files\\nodejs',
+                    'C:\\Program Files\\Java\\jdk-17\\bin',
+                    'C:\\Program Files\\Java\\jdk-11\\bin',
+                    'C:\\Program Files\\Java\\jdk-8\\bin',
+                    'C:\\Program Files\\Java\\jre1.8.0_291\\bin',
+                    process.env.USERPROFILE ? process.env.USERPROFILE + '\\AppData\\Local\\Microsoft\\WindowsApps' : undefined,
+                ].filter(Boolean);
+                return paths.join(';');
+            } else {
+                const paths = [
+                    existingPath || '',
+                    '/usr/local/bin',      // Docker Desktop, Homebrew
+                    '/opt/homebrew/bin',   // Apple Silicon Homebrew  
+                    '/usr/bin',
+                    '/bin'
+                ].filter(Boolean);
+                return paths.join(':');
+            }
+        }
+
+        const enhancedPath = getEnhancedPath(process.env.PATH);
 
         const env = {
             ...process.env,
@@ -110,8 +131,17 @@ export class DispatcherManager {
         console.log(`[DispatcherManager] Working directory: ${dispatcherDir}`);
 
         try {
-            // Start the dispatcher process with improved options for macOS
-            const dispatcherProcess = spawn('bash', args, {
+            // Use appropriate shell for the platform
+            const shell = process.platform === 'win32' ? 'cmd.exe' : 'bash';
+            const shellArgs = process.platform === 'win32' 
+                ? ['/c', dockerRunScript, dispatcherSettings.config, `host.docker.internal:${settings.publisher.port}`, dispatcherSettings.port.toString()]
+                : args;
+            
+            console.log(`[DispatcherManager] Using shell: ${shell}`);
+            console.log(`[DispatcherManager] Shell args:`, shellArgs);
+            
+            // Start the dispatcher process with platform-appropriate options
+            const dispatcherProcess = spawn(shell, shellArgs, {
                 cwd: dispatcherDir,
                 env: env,
                 stdio: ['pipe', 'pipe', 'pipe'],
