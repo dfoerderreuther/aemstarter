@@ -257,10 +257,17 @@ export class AemInstanceManager {
       // Use different tail command based on platform
       let tailProcess: ChildProcess;
       if (process.platform === 'win32') {
+        // Enhanced Windows tailing with better error handling and performance
+        const tailCommand = `Get-Content -Path "${logPath}" -Wait -Tail 100 -ErrorAction SilentlyContinue`;
         tailProcess = spawn('powershell.exe', [
+          '-NoProfile',
+          '-NonInteractive',
           '-Command',
-          `Get-Content -Path "${logPath}" -Wait -Tail 100`
-        ]);
+          tailCommand
+        ], {
+          windowsHide: true, // Hide the PowerShell window
+          stdio: ['pipe', 'pipe', 'pipe']
+        });
       } else {
         tailProcess = spawn('tail', ['-f', '-n', '100', logPath]);
       }

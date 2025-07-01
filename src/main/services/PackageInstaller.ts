@@ -1,7 +1,6 @@
 import { Project } from "../../types/Project";
 import path from 'path';
 import fs from 'fs';
-import { exec } from 'child_process';
 import { randomUUID } from 'crypto';
 
 export class PackageInstaller {
@@ -107,30 +106,75 @@ export class PackageInstaller {
         const port = instanceSettings.port;
         const host = 'localhost'; // Default host
 
-        // Install the package using curl
         console.log(`[PackageInstaller] Installing package on ${instance} instance (${host}:${port})`);
         
-        return new Promise((resolve, reject) => {
-            const curlCommand = `curl -u admin:admin -F file=@"${filePath}" -F name="${fileName}" -F force=true -F install=true http://${host}:${port}/crx/packmgr/service.jsp --progress-bar`;
+        try {
+            // Read the file as a buffer
+            const fileBuffer = fs.readFileSync(filePath);
             
-            console.log(`[PackageInstaller] Executing: ${curlCommand}`);
-            
-            exec(curlCommand, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`[PackageInstaller] Error installing package:`, error);
-                    reject(error);
-                    return;
-                }
-                
-                if (stderr) {
-                    console.log(`[PackageInstaller] curl stderr:`, stderr);
-                }
-                
-                console.log(`[PackageInstaller] curl stdout:`, stdout);
-                console.log(`[PackageInstaller] Successfully installed package on ${instance} instance`);
-                resolve();
+            // Create FormData-like structure manually since Node.js doesn't have FormData
+            const boundary = `----WebKitFormBoundary${randomUUID()}`;
+            const formData = this.createMultipartFormData(boundary, {
+                file: { buffer: fileBuffer, filename: fileName },
+                name: fileName,
+                force: 'true',
+                install: 'true'
             });
-        });
+
+            const url = `http://${host}:${port}/crx/packmgr/service.jsp`;
+            console.log(`[PackageInstaller] Installing package to: ${url}`);
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64'),
+                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                    'Content-Length': formData.length.toString()
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const responseText = await response.text();
+                throw new Error(`Failed to install package: ${response.status} ${response.statusText}. Response: ${responseText}`);
+            }
+
+            const responseText = await response.text();
+            console.log(`[PackageInstaller] Installation response:`, responseText);
+            console.log(`[PackageInstaller] Successfully installed package on ${instance} instance`);
+            
+        } catch (error) {
+            console.error(`[PackageInstaller] Error installing package:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Creates multipart form data manually for cross-platform compatibility
+     */
+    private createMultipartFormData(boundary: string, fields: Record<string, any>): Buffer {
+        const parts: Buffer[] = [];
+        
+        for (const [name, value] of Object.entries(fields)) {
+            parts.push(Buffer.from(`--${boundary}\r\n`));
+            
+            if (value.buffer && value.filename) {
+                // File field
+                parts.push(Buffer.from(`Content-Disposition: form-data; name="${name}"; filename="${value.filename}"\r\n`));
+                parts.push(Buffer.from('Content-Type: application/octet-stream\r\n\r\n'));
+                parts.push(value.buffer);
+            } else {
+                // Text field
+                parts.push(Buffer.from(`Content-Disposition: form-data; name="${name}"\r\n\r\n`));
+                parts.push(Buffer.from(String(value)));
+            }
+            
+            parts.push(Buffer.from('\r\n'));
+        }
+        
+        parts.push(Buffer.from(`--${boundary}--\r\n`));
+        
+        return Buffer.concat(parts);
     }
 
 }

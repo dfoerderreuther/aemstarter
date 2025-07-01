@@ -21,6 +21,7 @@
     "test:app": "npm run build && npm run run:app",
     "test:signed": "npm run build:signed && npm run run:app",
     "test:pkg": "npm run make && echo 'PKG installer created! Install from out/make/'",
+    "test:windows": "node scripts/test-windows-compatibility.js",
     "release": "npm run make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
