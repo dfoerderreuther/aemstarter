@@ -2,7 +2,8 @@ name: Build and Release
 
 on:
   push:
-    branches: [ main, windows2 ]
+    branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
 
@@ -88,4 +89,34 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: linux-build
-        path: out/make/**/* 
+        path: out/make/**/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Get tag name
+      id: tag-name
+      run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag-name.outputs.tag }}
+        name: Release ${{ steps.tag-name.outputs.tag }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        files: |
+          artifacts/**/* 
