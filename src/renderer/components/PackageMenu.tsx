@@ -161,7 +161,7 @@ export const PackageMenu = ({
             disabled={!isRunning || isLoading}
             onClick={handleInstallWKND}
           >
-            Install WKND 4.0.2
+            Install WKND 3.2.0
           </Menu.Item>
 
           <Menu.Item 

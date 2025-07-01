@@ -11,7 +11,7 @@ import {
   Modal,
   Grid
 } from '@mantine/core';
-import { IconRefresh, IconCheck, IconX, IconAlertCircle, IconSettings } from '@tabler/icons-react';
+import { IconRefresh, IconCheck, IconX, IconAlertCircle, IconSettings, IconSkull } from '@tabler/icons-react';
 import { SystemCheckResults } from '../../types/SystemCheckResults';
 import { Project, ProjectSettings } from '../../types/Project';
 
@@ -60,6 +60,7 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SystemCheckResults | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [killButtonState, setKillButtonState] = useState<'initial' | 'confirm'>('initial');
 
   // Get project settings directly from project object or use defaults
   const getProjectSettings = (): ProjectSettings => {
@@ -153,6 +154,31 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
     }
   };
 
+  const handleKillAll = async () => {
+    if (killButtonState === 'initial') {
+      // First click - show confirmation
+      setKillButtonState('confirm');
+      // Reset to initial state after 3 seconds if not clicked again
+      setTimeout(() => {
+        setKillButtonState('initial');
+
+      }, 3000);
+    } else {
+      // Second click - actually kill
+      try {
+        if (project) {
+          await window.electronAPI.killAllAemInstances(project);
+          await window.electronAPI.killDispatcher(project);
+          await runSystemCheck();
+        }
+        setKillButtonState('initial');
+      } catch (error) {
+        console.error('Failed to kill all instances:', error);
+        setKillButtonState('initial');
+      }
+    }
+  };
+
   return (
     <>
       <Button
@@ -184,6 +210,16 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project }) => 
       >
         <Stack gap="md">
           <Group justify="flex-end">
+            <Button
+              size="sm"
+              leftSection={<IconSkull size={14} />}
+              onClick={handleKillAll}
+              disabled={isLoading}
+              variant="light"
+              color={killButtonState === 'confirm' ? 'red' : 'orange'}
+            >
+              {killButtonState === 'confirm' ? 'Do you really want to do this?' : 'Kill All'}
+            </Button>
             <Button
               size="sm"
               leftSection={isLoading ? <Loader size={14} /> : <IconRefresh size={14} />}
