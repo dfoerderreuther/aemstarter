@@ -2,7 +2,6 @@ import * as pty from 'node-pty';
 import { BrowserWindow } from 'electron';
 import os from 'os';
 import fs from 'fs';
-import path from 'path';
 
 export interface TerminalOptions {
   cwd?: string;
