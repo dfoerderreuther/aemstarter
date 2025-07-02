@@ -399,6 +399,7 @@ export class AemInstanceManager {
     const startScript = process.platform === 'win32' ? 'start.bat' : 'start';
     const startScriptPath = path.join(crxQuickstartDir, 'bin', startScript);
 
+    // can't use start script on windows as it goes crazy with opening multiple cmd windows
     if (hasCrxQuickstart && fs.existsSync(startScriptPath) && process.platform !== 'win32') {
       console.log('[AemInstanceManager] ### Starting AEM instance with crx-quickstart ###');
       const env = {

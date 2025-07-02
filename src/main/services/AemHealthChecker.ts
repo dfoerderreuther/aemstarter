@@ -119,7 +119,7 @@ export class AemHealthChecker {
         timestamp: Date.now()
       };
 
-      console.log(`[AemHealthChecker] Health check error for ${instanceType}:`, error);
+      console.log(`[AemHealthChecker] Health check error for ${instanceType}`);
 
       this.lastHealthStatus.set(instanceType, status);
       this.sendHealthUpdate(instanceType, status);
