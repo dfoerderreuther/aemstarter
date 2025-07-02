@@ -370,6 +370,7 @@ export class AemInstanceManager {
     instanceType: 'author' | 'publisher',
     startType: 'start' | 'debug'
   ): Promise<void> {
+    console.log(`[AemInstanceManager] ### Starting ${instanceType} instance ###`);
     // Load settings from project object
     const settings = this.project.settings;
     const instanceSettings = settings[instanceType];
@@ -381,6 +382,7 @@ export class AemInstanceManager {
     const instanceDir = path.join(this.project.folderPath, instanceType);
     const crxQuickstartDir = path.join(instanceDir, 'crx-quickstart');
     const hasCrxQuickstart = fs.existsSync(crxQuickstartDir);
+    console.log(`[AemInstanceManager] ### hasCrxQuickstart: ${hasCrxQuickstart} ###`);
 
     const port = instanceSettings.port;
     const runmode = instanceSettings.runmode;
@@ -393,67 +395,64 @@ export class AemInstanceManager {
 
     let aemProcess: ChildProcess;
 
-    if (hasCrxQuickstart) {
+    // Use crx-quickstart/bin/start script
+    const startScript = process.platform === 'win32' ? 'start.bat' : 'start';
+    const startScriptPath = path.join(crxQuickstartDir, 'bin', startScript);
+
+    if (hasCrxQuickstart && fs.existsSync(startScriptPath) && process.platform !== 'win32') {
       console.log('[AemInstanceManager] ### Starting AEM instance with crx-quickstart ###');
-      // Use crx-quickstart/bin/start script
-      const startScript = process.platform === 'win32' ? 'start.bat' : 'start';
-      const startScriptPath = path.join(crxQuickstartDir, 'bin', startScript);
+      const env = {
+        ...process.env,
+        CQ_PORT: port.toString(),
+        CQ_RUNMODE: runmode,
+        CQ_JVM_OPTS: jvmOpts,
+      };
 
-      if (fs.existsSync(startScriptPath)) {
-        const env = {
-          ...process.env,
-          CQ_PORT: port.toString(),
-          CQ_RUNMODE: runmode,
-          CQ_JVM_OPTS: jvmOpts,
-        };
+      console.log('[AemInstanceManager] Starting AEM instance with start script:', startScriptPath);
+      console.log('[AemInstanceManager] Environment variables:', env);
+      console.log('[AemInstanceManager] Java options:', jvmOpts);
 
-        console.log('[AemInstanceManager] Starting AEM instance with start script:', startScriptPath);
-        console.log('[AemInstanceManager] Environment variables:', env);
-        console.log('[AemInstanceManager] Java options:', jvmOpts);
+      aemProcess = spawn(startScriptPath, [], {
+        cwd: instanceDir,
+        env,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: true
 
-        aemProcess = spawn(startScriptPath, [], {
-          cwd: instanceDir,
-          env,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          detached: true,
-          shell: process.platform === 'win32'
-        });
-      } else {
-        console.log(`[AemInstanceManager] Start script not found at ${startScriptPath}, falling back to quickstart.jar`);
-        // Fall back to quickstart.jar method
-        const jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
-
-        if (!fs.existsSync(jarPath)) {
-          throw new Error(`Neither start script nor AEM jar found. Start script: ${startScriptPath}, Jar: ${jarPath}`);
-        }
-
-        const env = {
-          ...process.env,
-          CQ_PORT: port.toString(),
-          CQ_RUNMODE: runmode,
-          CQ_JVM_OPTS: jvmOpts,
-        };
-
-        const javaArgs = [
-          '-jar',
-          'aem-sdk-quickstart.jar',
-          '-port',
-          port.toString(),
-          '-r',
-          runmode,
-          'start',
-        ];
-
-        aemProcess = spawn('java', javaArgs, {
-          cwd: instanceDir,
-          env,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          detached: true
-        });
-      }
+      });
     } else {
-      throw new Error(`AEM instance not found at ${instanceDir}`);
+      console.log(`[AemInstanceManager] Start script not found at ${startScriptPath} or win32, falling back to quickstart.jar`);
+      // Fall back to quickstart.jar method
+      const jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
+
+      if (!fs.existsSync(jarPath)) {
+        throw new Error(`Neither start script nor AEM jar found. Start script: ${startScriptPath}, Jar: ${jarPath}`);
+      }
+
+      const env = {
+        ...process.env,
+        CQ_PORT: port.toString(),
+        CQ_RUNMODE: runmode,
+        CQ_JVM_OPTS: jvmOpts,
+      };
+
+      const javaArgs = [
+        '-jar',
+        'aem-sdk-quickstart.jar',
+        '-port',
+        port.toString(),
+        '-r',
+        runmode,
+        'start',
+      ];
+
+      aemProcess = spawn('java', javaArgs, {
+        cwd: instanceDir,
+        env,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: true
+      });
     }
+
 
     const instance: AemInstance = {
       process: aemProcess,
@@ -643,7 +642,7 @@ export class AemInstanceManager {
 
     // Kill all processes using pkill
     const cmd = process.platform === 'win32'
-      ? `pkill -9 -f quickstart`
+      ? `taskkill /F /IM java.exe`
       : `pkill -9 -f quickstart`;
 
     exec(cmd, (error) => {

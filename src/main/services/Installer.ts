@@ -53,14 +53,18 @@ export class Installer {
         // Find and copy the AEM SDK quickstart file
         const files = fs.readdirSync(this.installDir);
         const quickstartFile = files.find(file => file.startsWith('aem-sdk-quickstart'));
-        const dispatcherScript = files.find(file => file.match(/aem-sdk-dispatcher-.*.sh/));
         const oakRunFile = files.find(file => file.match(/oak-run-.*\.jar$/));
-        //const windowsDispatcherZip = files.find(file => file.match(/aem-sdk-dispatcher-.*.zip/));
 
         await this.installAemInstance(`${this.project.folderPath}/author`, this.installDir + '/' + quickstartFile, 'author');
         await this.installAemInstance(`${this.project.folderPath}/publisher`, this.installDir + '/' + quickstartFile, 'publisher');
 
-        await this.installDispatcherLinux(`${this.project.folderPath}/dispatcher`, this.installDir + '/' + dispatcherScript);
+        if (process.platform === 'win32') {
+            const windowsDispatcherZip = files.find(file => file.match(/aem-sdk-dispatcher-.*.zip/));
+            await this.installDispatcherWindows(`${this.project.folderPath}/dispatcher`, this.installDir + '/' + windowsDispatcherZip);
+        } else {
+            const dispatcherScript = files.find(file => file.match(/aem-sdk-dispatcher-.*.sh/));
+            await this.installDispatcherLinux(`${this.project.folderPath}/dispatcher`, this.installDir + '/' + dispatcherScript);
+        }
 
         this.createReadme();
         this.createSettings();
@@ -68,8 +72,13 @@ export class Installer {
         if (oakRunFile) {
             const oakRunPath = `${this.installDir}/${oakRunFile}`;
             
-            fs.symlinkSync(oakRunPath, `${this.workDir}/author/oak-run.jar`);
-            fs.symlinkSync(oakRunPath, `${this.workDir}/publisher/oak-run.jar`);
+            if (process.platform === 'win32') {
+                fs.copyFileSync(oakRunPath, `${this.workDir}/author/oak-run.jar`);
+                fs.copyFileSync(oakRunPath, `${this.workDir}/publisher/oak-run.jar`);
+            } else {
+                fs.symlinkSync(oakRunPath, `${this.workDir}/author/oak-run.jar`);
+                fs.symlinkSync(oakRunPath, `${this.workDir}/publisher/oak-run.jar`);
+            }
         }
 
         console.log('Installation complete');
@@ -138,14 +147,16 @@ export class Installer {
     }
 
     private async installAemInstance(instanceDir: string, quickstartFile: string, type: string) {
-        console.log('installing aem instance for linux', type, instanceDir, quickstartFile);
+        console.log('installing aem instance for', process.platform, type, instanceDir, quickstartFile);
         if (fs.existsSync(this.licensePropertiesPath)) {
             fs.copyFileSync(this.licensePropertiesPath, `${instanceDir}/license.properties`);
         }
-        fs.symlinkSync(
-            quickstartFile,
-            `${instanceDir}/aem-sdk-quickstart.jar`
-        );
+        
+        if (process.platform === 'win32') {
+            fs.copyFileSync(quickstartFile, `${instanceDir}/aem-sdk-quickstart.jar`);
+        } else {
+            fs.symlinkSync(quickstartFile, `${instanceDir}/aem-sdk-quickstart.jar`);
+        }
         
         // Force headless mode and terminal-like behavior
         const javaCommand = `java -Djava.awt.headless=true -Dorg.apache.felix.webconsole.internal.servlet.OsgiManager.username=admin -jar aem-sdk-quickstart.jar -unpack -nobrowser -nointeractive`;
@@ -159,6 +170,16 @@ export class Installer {
                 JAVA_TOOL_OPTIONS: '-Djava.awt.headless=true'  // Additional headless enforcement
             }
         });
+    }
+
+
+    private async installDispatcherWindows(installDir: string, dispatcherZip: string) {
+        console.log('installing dispatcher for windows', installDir, dispatcherZip);
+        process.chdir(installDir);
+        await execAsync(`unzip ${dispatcherZip} -d dispatcher-sdk`, { cwd: installDir });
+        
+        // Copy dispatcher-sdk/src to config
+        await execAsync(`xcopy "${installDir}\\dispatcher-sdk\\src" "${installDir}\\config" /E /I /Y`, { cwd: installDir });
     }
 
     private async installDispatcherLinux(installDir: string, dispatcherScript: string) {

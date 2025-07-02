@@ -63,3 +63,12 @@ You can use online converters or ImageMagick:
     convert icons/icon-256.png icons/icon-48.png icons/icon-32.png icons/icon-16.png icons/icon.ico
 
     magick icons/icon-256.png icons/icon.ico
+
+
+## github actions
+
+### releae: 
+
+1. Regular commits → Only builds (no release)
+2. Create tag (git tag v1.0.4 && git push --tags) → Builds + Creates Release
+3. Pull requests → Only builds (no release)
