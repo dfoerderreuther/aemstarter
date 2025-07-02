@@ -22,6 +22,11 @@ export class AemHealthChecker {
     this.project = project;
   }
 
+  // Add method to update project reference when settings change
+  updateProject(project: Project): void {
+    this.project = project;
+  }
+
   async checkHealth(instanceType: 'author' | 'publisher' | 'dispatcher', port: number): Promise<HealthStatus> {
     // Use cached settings from project object
     const settings = this.project.settings;

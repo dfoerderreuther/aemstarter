@@ -14,4 +14,11 @@ export class AemInstanceManagerRegister {
         }
         return manager;
     }
+
+    static updateProjectReference(project: Project): void {
+        const manager = this.instanceManagers.get(project.id);
+        if (manager) {
+            manager.updateProject(project);
+        }
+    }
 }

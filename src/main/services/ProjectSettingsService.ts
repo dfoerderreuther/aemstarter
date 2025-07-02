@@ -39,6 +39,7 @@ export class ProjectSettingsService {
     }
 
     static getSettings(project: Project): ProjectSettings {
+        console.log('[ProjectSettingsService] Loading settings for project:', project.name);
         const settingsPath = path.join(project.folderPath, 'settings.json');
         
         if (fs.existsSync(settingsPath)) {
@@ -60,6 +61,7 @@ export class ProjectSettingsService {
     }
 
     static saveSettings(project: Project, settings: ProjectSettings): void {
+        console.log('[ProjectSettingsService] Saving settings for project:', project.name);
         const settingsPath = path.join(project.folderPath, 'settings.json');
         
         try {

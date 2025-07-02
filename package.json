@@ -1,7 +1,7 @@
 {
   "name": "aem-starter",
   "productName": "AEM-Starter",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "AEM-Starter - Development environment for Adobe Experience Manager",
   "main": ".vite/build/main.js",
   "scripts": {

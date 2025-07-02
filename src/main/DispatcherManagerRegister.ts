@@ -13,4 +13,11 @@ export class DispatcherManagerRegister {
         }
         return manager;
     }
+
+    static updateProjectReference(project: Project): void {
+        const manager = this.managers.get(project.id);
+        if (manager) {
+            manager.updateProject(project);
+        }
+    }
 }

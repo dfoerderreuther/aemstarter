@@ -921,4 +921,11 @@ export class AemInstanceManager {
     const instance = this.instances.get(instanceType);
     return instance?.isDebugMode || false;
   }
+
+  // Add method to update project reference when settings change
+  updateProject(project: Project): void {
+    this.project = project;
+    // Also update the health checker with the new project
+    this.healthChecker.updateProject(project);
+  }
 } 

@@ -92,8 +92,8 @@ const createWindow = () => {
   console.log('Icon file exists:', fs.existsSync(iconPath));
     
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1600,
+    height: 1000,
     title: 'AEM-Starter',
     icon: iconPath,
     webPreferences: {
@@ -587,6 +587,10 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: Pr
     if (!updatedProject) {
       throw new Error('Project not found');
     }
+    
+    // Update project references in existing managers to use the new settings
+    AemInstanceManagerRegister.updateProjectReference(updatedProject);
+    DispatcherManagerRegister.updateProjectReference(updatedProject);
     
     // Check if health checking was enabled for running instances and start it
     const manager = AemInstanceManagerRegister.getInstanceManager(updatedProject);
