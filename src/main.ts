@@ -142,6 +142,13 @@ ipcMain.handle('check-running-instances', async (_, project: Project) => {
     return { hasRunning: false, runningInstances: [] };
   }
 
+  // Check if project folder still exists
+  if (!fs.existsSync(project.folderPath)) {
+    console.log(`[check-running-instances] Project folder not found, removing from database: ${project.name} (${project.folderPath})`);
+    ProjectManagerRegister.getManager().deleteProject(project.id);
+    return { hasRunning: false, runningInstances: [] };
+  }
+
   const runningInstances: Array<{
     instanceType: 'author' | 'publisher' | 'dispatcher';
     port: number;
@@ -237,6 +244,17 @@ ipcMain.handle('set-global-settings', async (_, settings) => {
 ipcMain.handle('refresh-menu', async () => {
   createMenu();
   return true;
+});
+
+// Clean up orphaned projects
+ipcMain.handle('cleanup-orphaned-projects', async () => {
+  try {
+    cleanupOrphanedProjects();
+    return true;
+  } catch (error) {
+    console.error('Error cleaning up orphaned projects:', error);
+    throw error;
+  }
 });
 
 ipcMain.handle('show-open-dialog', async (_, options) => {
@@ -949,7 +967,15 @@ const getCurrentProject = async (): Promise<Project | null> => {
     const lastProjectId = projectManager.getLastProjectId();
     if (lastProjectId) {
       const project = projectManager.getProject(lastProjectId);
-      return project || null;
+      if (project) {
+        // Check if the project folder still exists
+        if (!fs.existsSync(project.folderPath)) {
+          console.log(`[getCurrentProject] Last project folder not found, removing from database: ${project.name} (${project.folderPath})`);
+          projectManager.deleteProject(project.id);
+          return null;
+        }
+        return project;
+      }
     }
   } catch (error) {
     console.warn('Error getting current project:', error);
@@ -971,6 +997,15 @@ const checkRunningInstancesForProject = async (project: Project): Promise<{
   }> = [];
 
   try {
+    // First check if the project folder still exists
+    if (!fs.existsSync(project.folderPath)) {
+      console.log(`[checkRunningInstancesForProject] Project folder not found: ${project.name} (${project.folderPath})`);
+      return {
+        hasRunning: false,
+        runningInstances: []
+      };
+    }
+
     // Check AEM instances
     const aemManager = AemInstanceManagerRegister.getInstanceManager(project);
     
@@ -1010,9 +1045,21 @@ const checkRunningInstancesForProject = async (project: Project): Promise<{
 const createMenu = () => {
   // Helper function to create recent projects submenu
   const createRecentProjectsSubmenu = (): Electron.MenuItemConstructorOptions[] => {
-    const projects = ProjectManagerRegister.getManager().getAllProjects();
+    const projectManager = ProjectManagerRegister.getManager();
+    const allProjects = projectManager.getAllProjects();
     
-    if (projects.length === 0) {
+    // Filter out projects whose folders no longer exist
+    const validProjects = allProjects.filter(project => {
+      const folderExists = fs.existsSync(project.folderPath);
+      if (!folderExists) {
+        console.log(`[createMenu] Project folder not found, removing from menu: ${project.name} (${project.folderPath})`);
+        // Remove the project from the database since the folder is gone
+        projectManager.deleteProject(project.id);
+      }
+      return folderExists;
+    });
+    
+    if (validProjects.length === 0) {
       return [
         {
           label: 'No recent projects',
@@ -1022,7 +1069,7 @@ const createMenu = () => {
     }
     
     // Sort projects by lastModified date (most recent first)
-    const sortedProjects = projects.sort((a, b) => 
+    const sortedProjects = validProjects.sort((a, b) => 
       new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
     );
     
@@ -1230,12 +1277,35 @@ const createMenu = () => {
   Menu.setApplicationMenu(menu);
 };
 
+// Helper function to clean up orphaned projects (projects whose folders no longer exist)
+const cleanupOrphanedProjects = () => {
+  try {
+    const projectManager = ProjectManagerRegister.getManager();
+    const allProjects = projectManager.getAllProjects();
+    const orphanedProjects = allProjects.filter(project => !fs.existsSync(project.folderPath));
+    
+    if (orphanedProjects.length > 0) {
+      console.log(`[cleanupOrphanedProjects] Found ${orphanedProjects.length} orphaned projects to clean up`);
+      orphanedProjects.forEach(project => {
+        console.log(`[cleanupOrphanedProjects] Removing orphaned project: ${project.name} (${project.folderPath})`);
+        projectManager.deleteProject(project.id);
+      });
+      console.log(`[cleanupOrphanedProjects] Cleanup completed`);
+    }
+  } catch (error) {
+    console.error('Error cleaning up orphaned projects:', error);
+  }
+};
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   // Set app name again when ready
   app.setName('AEM-Starter');
+  
+  // Clean up orphaned projects on startup
+  cleanupOrphanedProjects();
   
   // Register the custom protocol handler
   protocol.handle('local-file', async (request) => {

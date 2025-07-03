@@ -305,6 +305,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             checked={runFirstStartSetup}
             onChange={(e) => setRunFirstStartSetup(e.target.checked)}
             description="This will start all instances, configure replication between Author, Publisher, and Dispatcher instances, load matching oak-run.jar and install the WKND packages."
+            disabled={classic}
           />
         </Group>
         <Group justify="flex-end">

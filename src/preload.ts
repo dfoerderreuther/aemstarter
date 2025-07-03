@@ -37,6 +37,8 @@ contextBridge.exposeInMainWorld(
     // Menu
     refreshMenu: () =>
       ipcRenderer.invoke('refresh-menu'),
+    cleanupOrphanedProjects: () =>
+      ipcRenderer.invoke('cleanup-orphaned-projects'),
     
     // Dialog
     showOpenDialog: (options: Electron.OpenDialogOptions) => 
