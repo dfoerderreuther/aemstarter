@@ -414,7 +414,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
                         <Group gap="xs">
                           <Badge variant="outline" color="blue" size="xs">Configuration</Badge>
                           <Badge variant="outline" color="gray" size="xs">Requires All Running</Badge>
-                          <Badge variant="outline" color="red" size="xs">CS optimized</Badge>  
+                          <Badge variant="outline" color="orange" size="xs">CS optimized</Badge>  
                           {!allInstancesRunning && (
                             <Badge variant="outline" color="red" size="xs" leftSection={<IconAlertCircle size={10} />}>
                               Instances Stopped
