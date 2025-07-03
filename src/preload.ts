@@ -11,8 +11,8 @@ contextBridge.exposeInMainWorld(
     // Project management
     checkRunningInstances: (project: Project) => 
       ipcRenderer.invoke('check-running-instances', project),
-    createProject: (name: string, folderPath: string, aemSdkPath: string, licensePath: string) => 
-      ipcRenderer.invoke('create-project', { name, folderPath, aemSdkPath, licensePath }),
+    createProject: (name: string, folderPath: string, aemSdkPath: string, licensePath: string, classic?: boolean, classicQuickstartPath?: string) => 
+      ipcRenderer.invoke('create-project', { name, folderPath, aemSdkPath, licensePath, classic, classicQuickstartPath }),
     importProject: (name: string, folderPath: string) => 
       ipcRenderer.invoke('import-project', { name, folderPath }),
     loadProject: (id: string) => 

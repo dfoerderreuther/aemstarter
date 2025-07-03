@@ -1,6 +1,7 @@
 import { Project } from "../../types/Project";
 
 import fs from 'fs';
+import path from 'path';
 import extract from 'extract-zip';
 import process from 'process';
 import { ProjectSettingsService } from "./ProjectSettingsService";
@@ -31,6 +32,7 @@ export class Installer {
     private folders = ['author', 'publisher', 'dispatcher', 'install'];
     private licensePropertiesPath: string;
     private sdkPath: string;
+    private classicQuickstartPath: string;
     private workDir: string;
     private installDir: string;
 
@@ -39,6 +41,7 @@ export class Installer {
 
         this.licensePropertiesPath = this.project.licensePath;
         this.sdkPath = this.project.aemSdkPath;
+        this.classicQuickstartPath = this.project.classicQuickstartPath;
         this.workDir = this.project.folderPath;
 
         this.installDir = `${this.workDir}/install`;
@@ -52,7 +55,13 @@ export class Installer {
         }
         // Find and copy the AEM SDK quickstart file
         const files = fs.readdirSync(this.installDir);
-        const quickstartFile = files.find(file => file.startsWith('aem-sdk-quickstart'));
+        let quickstartFile = files.find(file => file.startsWith('aem-sdk-quickstart'));
+        
+        // Use classic quickstart JAR if in classic mode
+        if (this.project.classic && this.classicQuickstartPath) {
+            quickstartFile = path.basename(this.classicQuickstartPath);
+        }
+        
         const oakRunFile = files.find(file => file.match(/oak-run-.*\.jar$/));
 
         await this.installAemInstance(`${this.project.folderPath}/author`, this.installDir + '/' + quickstartFile, 'author');
@@ -93,9 +102,23 @@ export class Installer {
         await this.createFolders()
         await this.extractSdk()
 
+        // Handle classic quickstart JAR if needed
+        if (this.project.classic && this.classicQuickstartPath) {
+            const jarFileName = path.basename(this.classicQuickstartPath);
+            const targetPath = `${this.installDir}/${jarFileName}`;
+            fs.copyFileSync(this.classicQuickstartPath, targetPath);
+            console.log(`Copied classic quickstart JAR to: ${targetPath}`);
+        }
+
         // Find and copy the AEM SDK quickstart file
         const files = fs.readdirSync(this.installDir);
-        const quickstartFile = files.find(file => file.startsWith('aem-sdk-quickstart'));
+        let quickstartFile = files.find(file => file.startsWith('aem-sdk-quickstart'));
+        
+        // Use classic quickstart JAR if in classic mode
+        if (this.project.classic && this.classicQuickstartPath) {
+            quickstartFile = path.basename(this.classicQuickstartPath);
+        }
+        
         const dispatcherScript = files.find(file => file.match(/aem-sdk-dispatcher-.*.sh/));
         //const windowsDispatcherZip = files.find(file => file.match(/aem-sdk-dispatcher-.*.zip/));
 
@@ -130,6 +153,10 @@ export class Installer {
             throw new Error('aem-sdk.zip file not found');
         }
         
+        if (this.project.classic && !fs.existsSync(this.classicQuickstartPath)) {
+            throw new Error('classic quickstart jar file not found ' + this.classicQuickstartPath);
+        }
+        
         if (!fs.existsSync(this.workDir)) {
             throw new Error('work folder not found');
         }
@@ -153,13 +180,13 @@ export class Installer {
         }
         
         if (process.platform === 'win32') {
-            fs.copyFileSync(quickstartFile, `${instanceDir}/aem-sdk-quickstart.jar`);
+            fs.copyFileSync(quickstartFile, `${instanceDir}/aem-quickstart.jar`);
         } else {
-            fs.symlinkSync(quickstartFile, `${instanceDir}/aem-sdk-quickstart.jar`);
+            fs.symlinkSync(quickstartFile, `${instanceDir}/aem-quickstart.jar`);
         }
         
         // Force headless mode and terminal-like behavior
-        const javaCommand = `java -Djava.awt.headless=true -Dorg.apache.felix.webconsole.internal.servlet.OsgiManager.username=admin -jar aem-sdk-quickstart.jar -unpack -nobrowser -nointeractive`;
+        const javaCommand = `java -Djava.awt.headless=true -Dorg.apache.felix.webconsole.internal.servlet.OsgiManager.username=admin -jar aem-quickstart.jar -unpack -nobrowser -nointeractive`;
         
         await execAsync(javaCommand, { 
             cwd: instanceDir,

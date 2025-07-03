@@ -385,9 +385,11 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
                     configure replication between Author, Publisher, and Dispatcher instances, 
                     load matching oak-run.jar
                     and install the WKND packages.
+
                   </Text>
                   <Group gap="xs">
                     <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
+                    <Badge variant="outline" color="red" size="xs">CS only. Not for classic.</Badge>
                   </Group>
                 </div>
               </AutomationTaskTeaser>
@@ -412,6 +414,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
                         <Group gap="xs">
                           <Badge variant="outline" color="blue" size="xs">Configuration</Badge>
                           <Badge variant="outline" color="gray" size="xs">Requires All Running</Badge>
+                          <Badge variant="outline" color="red" size="xs">CS optimized</Badge>  
                           {!allInstancesRunning && (
                             <Badge variant="outline" color="red" size="xs" leftSection={<IconAlertCircle size={10} />}>
                               Instances Stopped

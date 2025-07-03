@@ -7,6 +7,8 @@ export interface Project {
   createdAt: Date;
   lastModified: Date;
   settings: ProjectSettings;
+  classic: boolean;
+  classicQuickstartPath: string;
 }
 
 export interface ProjectSettings {

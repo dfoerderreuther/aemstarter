@@ -422,11 +422,15 @@ export class AemInstanceManager {
       });
     } else {
       console.log(`[AemInstanceManager] Start script not found at ${startScriptPath} or win32, falling back to quickstart.jar`);
-      // Fall back to quickstart.jar method
-      const jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
-
+      // Fall back to quickstart.jar method - try new name first, then old name for backward compatibility
+      let jarPath = path.join(instanceDir, 'aem-quickstart.jar');
+      
       if (!fs.existsSync(jarPath)) {
-        throw new Error(`Neither start script nor AEM jar found. Start script: ${startScriptPath}, Jar: ${jarPath}`);
+        // Try old name for backward compatibility
+        jarPath = path.join(instanceDir, 'aem-sdk-quickstart.jar');
+        if (!fs.existsSync(jarPath)) {
+          throw new Error(`Neither start script nor AEM jar found. Start script: ${startScriptPath}, Tried jars: ${path.join(instanceDir, 'aem-quickstart.jar')}, ${path.join(instanceDir, 'aem-sdk-quickstart.jar')}`);
+        }
       }
 
       const env = {
@@ -438,7 +442,7 @@ export class AemInstanceManager {
 
       const javaArgs = [
         '-jar',
-        'aem-sdk-quickstart.jar',
+        path.basename(jarPath), // Use the actual jar filename that was found
         '-port',
         port.toString(),
         '-r',

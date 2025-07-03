@@ -19,6 +19,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [aemSdkPath, setAemSdkPath] = useState('');
   const [licensePath, setLicensePath] = useState('');
   const [runFirstStartSetup, setRunFirstStartSetup] = useState(true);
+  const [classic, setClassic] = useState(false);
+  const [classicQuickstartPath, setClassicQuickstartPath] = useState('');
 
   // Helper function to extract filename from path
   const getFileName = (path: string) => {
@@ -35,24 +37,41 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         if (globalSettings.aemSdkPath) {
           setAemSdkPath(globalSettings.aemSdkPath);
         }
-        if (globalSettings.licensePath) {
+        // Only load license path if classic is selected (since license is only needed for classic)
+        if (classic && globalSettings.licensePath) {
           setLicensePath(globalSettings.licensePath);
         }
       };
       loadGlobalSettings();
     }
-  }, [opened]);
+  }, [opened, classic]);
 
   const handleClose = () => {
     setNewProjectName('');
     setAemSdkPath('');
     setLicensePath('');
     setRunFirstStartSetup(true);
+    setClassic(false);
+    setClassicQuickstartPath('');
     onClose();
+  };
+
+  // Clear license path when classic is unchecked
+  const handleClassicChange = (checked: boolean) => {
+    setClassic(checked);
+    if (!checked) {
+      setLicensePath('');
+      setClassicQuickstartPath('');
+    } else {
+      // Uncheck runFirstStartSetup when classic is selected as they're not compatible
+      setRunFirstStartSetup(false);
+    }
   };
 
   const handleCreateProject = async () => {
     if (!newProjectName.trim() || !aemSdkPath) return;
+    if (classic && !classicQuickstartPath) return;
+    if (classic && !licensePath) return;
     setCreating(true);
     
     try {
@@ -67,7 +86,9 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           newProjectName,
           result.filePaths[0],
           aemSdkPath,
-          licensePath
+          licensePath,
+          classic,
+          classicQuickstartPath
         );
         
         // Start the installation procedure and wait for it to complete
@@ -121,13 +142,36 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     if (!result.canceled && result.filePaths.length > 0) {
       const newPath = result.filePaths[0];
       setLicensePath(newPath);
-      await window.electronAPI.setGlobalSettings({ licensePath: newPath });
+      // Only save to global settings if classic is selected (since license is only needed for classic)
+      if (classic) {
+        await window.electronAPI.setGlobalSettings({ licensePath: newPath });
+      }
     }
   };
 
   const handleClearLicense = async () => {
     setLicensePath('');
-    await window.electronAPI.setGlobalSettings({ licensePath: '' });
+    // Only clear global settings if classic is selected (since license is only needed for classic)
+    if (classic) {
+      await window.electronAPI.setGlobalSettings({ licensePath: '' });
+    }
+  };
+
+  const handleSelectClassicQuickstart = async () => {
+    const result = await window.electronAPI.showOpenDialog({
+      properties: ['openFile'],
+      title: 'Select Classic Quickstart JAR',
+      buttonLabel: 'Select File',
+      message: 'Select the classic AEM quickstart JAR file',
+      filters: [{ name: 'JAR Files', extensions: ['jar'] }]
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      setClassicQuickstartPath(result.filePaths[0]);
+    }
+  };
+
+  const handleClearClassicQuickstart = async () => {
+    setClassicQuickstartPath('');
   };
 
   return (
@@ -151,6 +195,14 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           autoFocus
           disabled={creating}
         />
+        <Group>
+          <Checkbox
+            label="Classic AEM Version"
+            checked={classic}
+            onChange={(e) => handleClassicChange(e.target.checked)}
+            description="Use for older AEM versions (AEM 6.x and earlier)"
+          />
+        </Group>
         <Group>
           <TextInput
             label="AEM SDK"
@@ -176,34 +228,77 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         >
           Download AEM SDK from experience.adobe.com
         </Anchor>
-        <Group>
-          <TextInput
-            label="License File (Optional)"
-            placeholder="Select license properties file (optional)"
-            value={licensePath}
-            readOnly
-            style={{ flex: 1 }}
-            disabled={creating}
-          />
-          <Button 
-            onClick={handleSelectLicense}
-            disabled={creating}
-            style={{ marginTop: 'auto' }}
-          >
-            Browse
-          </Button>
-          {licensePath && (
-            <Button 
-              onClick={handleClearLicense}
-              disabled={creating}
-              variant="outline"
-              color="red"
-              style={{ marginTop: 'auto' }}
+        {classic && (
+          <>
+            <Group>
+              <TextInput
+                label="Classic Quickstart JAR"
+                placeholder="Select classic AEM quickstart JAR file"
+                value={getFileName(classicQuickstartPath)}
+                readOnly
+                style={{ flex: 1 }}
+                disabled={creating}
+                title={classicQuickstartPath} // Show full path on hover
+                required
+              />
+              <Button 
+                onClick={handleSelectClassicQuickstart}
+                disabled={creating}
+                style={{ marginTop: 'auto' }}
+              >
+                Browse
+              </Button>
+              {classicQuickstartPath && (
+                <Button 
+                  onClick={handleClearClassicQuickstart}
+                  disabled={creating}
+                  variant="outline"
+                  color="red"
+                  style={{ marginTop: 'auto' }}
+                >
+                  ✕
+                </Button>
+              )}
+            </Group>
+            <Anchor
+              onClick={() => window.electronAPI.openUrl("https://experience.adobe.com/#/downloads/content/software-distribution/en/aemcloud.html?fulltext=AEM*+Quickstart*&1_group.propertyvalues.property=.%2Fjcr%3Acontent%2Fmetadata%2Fdc%3AsoftwareType&1_group.propertyvalues.operation=equals&1_group.propertyvalues.0_values=software-type%3Atooling&orderby=%40jcr%3Acontent%2Fjcr%3AlastModified&orderby.sort=desc&layout=list&p.offset=0&p.limit=24")}
+              size="sm"
+              style={{ marginTop: '-8px', marginBottom: '8px', cursor: 'pointer' }}
             >
-              ✕
-            </Button>
-          )}
-        </Group>
+              Download Classic AEM Quickstart from experience.adobe.com
+            </Anchor>
+            <Group>
+              <TextInput
+                label="License File"
+                placeholder="Select license properties file"
+                value={getFileName(licensePath)}
+                readOnly
+                style={{ flex: 1 }}
+                disabled={creating}
+                title={licensePath} // Show full path on hover
+                required
+              />
+              <Button 
+                onClick={handleSelectLicense}
+                disabled={creating}
+                style={{ marginTop: 'auto' }}
+              >
+                Browse
+              </Button>
+              {licensePath && (
+                <Button 
+                  onClick={handleClearLicense}
+                  disabled={creating}
+                  variant="outline"
+                  color="red"
+                  style={{ marginTop: 'auto' }}
+                >
+                  ✕
+                </Button>
+              )}
+            </Group>
+          </>
+        )}
         <Group>
           <Checkbox
             label="Run first start and initial setup"
@@ -223,7 +318,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           <Button 
             onClick={handleCreateProject} 
             loading={creating}
-            disabled={!newProjectName.trim() || !aemSdkPath}
+            disabled={!newProjectName.trim() || !aemSdkPath || (classic && !classicQuickstartPath) || (classic && !licensePath)}
           >
             Create
           </Button>

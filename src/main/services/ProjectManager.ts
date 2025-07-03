@@ -100,13 +100,16 @@ export class ProjectManager {
     return this.projects;
   }
 
-  createProject(name: string, folderPath: string, aemSdkPath: string, licensePath: string): Project {
+  createProject(name: string, folderPath: string, aemSdkPath: string, licensePath: string, classic: boolean = false, classicQuickstartPath: string = ''): Project {
     // Validate file types
     if (!aemSdkPath.toLowerCase().endsWith('.zip')) {
       throw new Error('AEM SDK path must be a .zip file');
     }
     if (licensePath && !licensePath.toLowerCase().endsWith('.properties')) {
       throw new Error('License path must be a .properties file');
+    }
+    if (classic && !classicQuickstartPath.toLowerCase().endsWith('.jar')) {
+      throw new Error('Classic quickstart path must be a .jar file');
     }
 
     // Validate files exist
@@ -115,6 +118,12 @@ export class ProjectManager {
     }
     if (licensePath && !fs.existsSync(licensePath)) {
       throw new Error('License file does not exist');
+    }
+    if (classic && !fs.existsSync(classicQuickstartPath)) {
+      throw new Error('Classic quickstart file does not exist');
+    }
+    if (classic && !licensePath) {
+      throw new Error('License file is required for classic AEM versions');
     }
 
     const project: Project = {
@@ -125,6 +134,8 @@ export class ProjectManager {
       licensePath,
       createdAt: new Date(),
       lastModified: new Date(),
+      classic,
+      classicQuickstartPath,
       settings: ProjectSettingsService.getDefaultSettings({
         id: uuidv4(),
         name,
@@ -133,6 +144,8 @@ export class ProjectManager {
         licensePath,
         createdAt: new Date(),
         lastModified: new Date(),
+        classic,
+        classicQuickstartPath,
         settings: {} as any // Temporary placeholder
       })
     };
@@ -156,6 +169,8 @@ export class ProjectManager {
       licensePath: '', // Not needed for existing installations
       createdAt: new Date(),
       lastModified: new Date(),
+      classic: false,
+      classicQuickstartPath: '',
       settings: ProjectSettingsService.getDefaultSettings({
         id: uuidv4(),
         name,
@@ -164,6 +179,8 @@ export class ProjectManager {
         licensePath: '',
         createdAt: new Date(),
         lastModified: new Date(),
+        classic: false,
+        classicQuickstartPath: '',
         settings: {} as any // Temporary placeholder
       })
     };

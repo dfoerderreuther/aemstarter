@@ -14,7 +14,7 @@ declare global {
         }>;
       }>;
       getAllProjects: () => Promise<Project[]>;
-      createProject: (name: string, folderPath: string, aemSdkPath: string, licensePath: string) => Promise<Project>;
+      createProject: (name: string, folderPath: string, aemSdkPath: string, licensePath: string, classic?: boolean, classicQuickstartPath?: string) => Promise<Project>;
       importProject: (name: string, folderPath: string) => Promise<Project>;
       loadProject: (id: string) => Promise<Project | undefined>;
       deleteProject: (id: string) => Promise<boolean>;

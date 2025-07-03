@@ -192,8 +192,8 @@ ipcMain.handle('check-running-instances', async (_, project: Project) => {
   return result;
 });
 
-ipcMain.handle('create-project', async (_, { name, folderPath, aemSdkPath, licensePath }) => {
-  return ProjectManagerRegister.getManager().createProject(name, folderPath, aemSdkPath, licensePath);
+ipcMain.handle('create-project', async (_, { name, folderPath, aemSdkPath, licensePath, classic, classicQuickstartPath }) => {
+  return ProjectManagerRegister.getManager().createProject(name, folderPath, aemSdkPath, licensePath, classic, classicQuickstartPath);
 });
 
 ipcMain.handle('import-project', async (_, { name, folderPath }) => {
