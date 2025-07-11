@@ -832,6 +832,17 @@ ipcMain.handle('clear-dispatcher-cache', async (_, project: Project) => {
   }
 });
 
+ipcMain.handle('add-enforce-https-rewrite-rule', async (_, project: Project) => {
+  try {
+    const manager = DispatcherManagerRegister.getManager(project);
+    await manager.addEnforceHttpsRewriteRule();
+    return { success: true };
+  } catch (error) {
+    console.error('Error adding enforce https rewrite rule:', error);
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
 // Dispatcher Health Checking
 ipcMain.handle('take-dispatcher-screenshot', async (_, project: Project) => {
   try {

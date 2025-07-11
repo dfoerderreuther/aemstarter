@@ -34,6 +34,7 @@ Then go to https://github.com/dfoerderreuther/aemstarter/releases and download /
 ## Clean local app data to cause a fresh start
 
     rm -Rf ~/Library/Application\ Support/AEM-Starter/
+    rm -Rf ~/Library/Application\ Support/AEM\ Starter/
 
 
 # Icons

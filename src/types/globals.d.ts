@@ -128,6 +128,7 @@ declare global {
       getDispatcherStatus: (project: Project) => Promise<{ isRunning: boolean; pid: number | null; port: number; config: string }>;
       flushDispatcher: (project: Project) => Promise<boolean>;
       clearDispatcherCache: (project: Project) => Promise<boolean>;
+      addEnforceHttpsRewriteRule: (project: Project) => Promise<{ success: boolean; error?: string }>;
 
       // Dispatcher Health Checking
       takeDispatcherScreenshot: (project: Project) => Promise<string>;
