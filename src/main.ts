@@ -17,6 +17,7 @@ import { ProjectManagerRegister } from './main/ProjectManagerRegister';
 import { Automation } from './main/services/automation/Automation';
 import { TerminalService } from './main/services/TerminalService';
 import { AemProcessManager } from './main/services/AemProcessManager';
+import { HttpsServiceRegister } from './main/HttpsServiceRegister';
 import { spawn } from 'child_process';
 
 // Set the app name immediately (this affects dock/taskbar display)
@@ -609,6 +610,7 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: Pr
     // Update project references in existing managers to use the new settings
     AemInstanceManagerRegister.updateProjectReference(updatedProject);
     DispatcherManagerRegister.updateProjectReference(updatedProject);
+    HttpsServiceRegister.updateProjectReference(updatedProject);
     
     // Check if health checking was enabled for running instances and start it
     const manager = AemInstanceManagerRegister.getInstanceManager(updatedProject);
@@ -969,6 +971,39 @@ ipcMain.handle('clear-all-terminals', async () => {
     return true;
   }
   return false;
+});
+
+// HTTPS Service IPC handlers
+ipcMain.handle('start-ssl-proxy', async (_, project: Project) => {
+  try {
+    const httpsService = HttpsServiceRegister.getService(project);
+    await httpsService.startSslProxy();
+    return true;
+  } catch (error) {
+    console.error('Error starting SSL proxy:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('stop-ssl-proxy', async (_, project: Project) => {
+  try {
+    const httpsService = HttpsServiceRegister.getService(project);
+    await httpsService.stopSslProxy();
+    return true;
+  } catch (error) {
+    console.error('Error stopping SSL proxy:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('is-ssl-proxy-running', async (_, project: Project) => {
+  try {
+    const httpsService = HttpsServiceRegister.getService(project);
+    return await httpsService.isSslProxyRunning();
+  } catch (error) {
+    console.error('Error checking SSL proxy status:', error);
+    throw error;
+  }
 });
 
 // Helper function to get current project ID from storage

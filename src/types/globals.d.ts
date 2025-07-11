@@ -144,6 +144,11 @@ declare global {
       // Dispatcher status streaming
       onDispatcherStatus: (callback: (data: { projectId: string; isRunning: boolean; pid: number | null; port: number }) => void) => () => void;
 
+      // HTTPS Service
+      startSslProxy: (project: Project) => Promise<boolean>;
+      stopSslProxy: (project: Project) => Promise<boolean>;
+      isSslProxyRunning: (project: Project) => Promise<boolean>;
+
       // Oak-run.jar functionality
       isOakJarAvailable: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
       loadOakJar: (project: Project) => Promise<boolean>;

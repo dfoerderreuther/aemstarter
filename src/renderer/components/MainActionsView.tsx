@@ -25,6 +25,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
   const [isPublisherRunning, setIsPublisherRunning] = useState(false);
   const [isPublisherDebugging, setIsPublisherDebugging] = useState(false);
   const [isDispatcherRunning, setIsDispatcherRunning] = useState(false);
+  const [isSslProxyRunningState, setIsSslProxyRunningState] = useState(false);
   const [authorPid, setAuthorPid] = useState<number | null>(null);
   const [publisherPid, setPublisherPid] = useState<number | null>(null);
   const [autoStartTask, setAutoStartTask] = useState<string | undefined>();
@@ -69,14 +70,15 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const [authorRunning, publisherRunning, authorPidValue, publisherPidValue, authorDebugValue, publisherDebugValue, dispatcherStatus] = await Promise.all([
+        const [authorRunning, publisherRunning, authorPidValue, publisherPidValue, authorDebugValue, publisherDebugValue, dispatcherStatus, sslProxyRunning] = await Promise.all([
           window.electronAPI.isAemInstanceRunning(project, 'author'),
           window.electronAPI.isAemInstanceRunning(project, 'publisher'),
           window.electronAPI.getAemInstancePid(project, 'author'),
           window.electronAPI.getAemInstancePid(project, 'publisher'),
           window.electronAPI.getAemInstanceDebugStatus(project, 'author'),
           window.electronAPI.getAemInstanceDebugStatus(project, 'publisher'),
-          window.electronAPI.getDispatcherStatus(project)
+          window.electronAPI.getDispatcherStatus(project),
+          window.electronAPI.isSslProxyRunning(project)
         ]);
         setIsAuthorRunning(authorRunning);
         setIsPublisherRunning(publisherRunning);
@@ -85,6 +87,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
         setIsAuthorDebugging(authorDebugValue);
         setIsPublisherDebugging(publisherDebugValue);
         setIsDispatcherRunning(dispatcherStatus.isRunning);
+        setIsSslProxyRunningState(sslProxyRunning);
       } catch (error) {
         console.error('Error checking instance status:', error);
       }
@@ -300,6 +303,24 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
       console.error('Error stopping dispatcher:', error);
     }
   };
+
+  const handleStartSslProxy = async () => {
+    try {
+      await window.electronAPI.startSslProxy(project);
+    } catch (error) {
+      console.error('Error starting SSL proxy:', error);
+    }
+  };
+
+  const handleStopSslProxy = async () => {
+    try {
+      await window.electronAPI.stopSslProxy(project);
+    } catch (error) {
+      console.error('Error stopping SSL proxy:', error);
+    }
+  };
+
+
 
   const sectionStyles = {
     padding: '12px',
@@ -584,6 +605,42 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                   <IconBrowser size={16} />
                 </Button>
               </Tooltip>
+            </Group>
+          </Stack>
+        </Paper>
+
+        <Divider orientation="vertical" />
+
+        <Paper style={sectionStyles}>
+          <Stack gap="xs">
+            <Text size="sm" fw={500} c="dimmed">SSL Proxy</Text>
+            <Group gap="xs">
+              <Button.Group>
+                <Tooltip label="Start SSL Proxy">
+                  <Button 
+                    color="green" 
+                    variant="filled"  
+                    size="xs"
+                    styles={buttonStyles}
+                    onClick={handleStartSslProxy}
+                    disabled={isSslProxyRunningState}
+                  >
+                    <IconPlayerPlay size={16} />    
+                  </Button>
+                </Tooltip>
+                <Tooltip label="Stop SSL Proxy">
+                  <Button 
+                    color="red" 
+                    variant="filled" 
+                    size="xs"
+                    styles={buttonStyles}
+                    onClick={handleStopSslProxy}
+                    disabled={!isSslProxyRunningState}
+                  >
+                    <IconPlayerStop size={16} />
+                  </Button>
+                </Tooltip>
+              </Button.Group>
             </Group>
           </Stack>
         </Paper>

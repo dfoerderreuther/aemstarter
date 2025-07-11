@@ -107,6 +107,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
     });
   };
 
+  const updateHttpsSettings = (field: string, value: any) => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      https: {
+        ...settings.https,
+        [field]: value
+      }
+    });
+  };
+
   const updateDevSettings = (field: string, value: any) => {
     if (!settings) return;
     setSettings({
@@ -161,6 +172,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
           <Tabs.Tab value="author">Author</Tabs.Tab>
           <Tabs.Tab value="publisher">Publisher</Tabs.Tab>
           <Tabs.Tab value="dispatcher">Dispatcher</Tabs.Tab>
+          <Tabs.Tab value="https">SSL Proxy</Tabs.Tab>
           <Tabs.Tab value="dev">Dev</Tabs.Tab>
         </Tabs.List>
 
@@ -304,6 +316,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               description="Path to the document the sytem should check for health and take screenshot of. Default is /."
               value={settings.dispatcher.healthCheckPath}
               onChange={(event) => updateDispatcherSettings('healthCheckPath', event.currentTarget.value)}
+            />
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="https" pt="md">
+          <Stack gap="md">
+            <NumberInput
+              label="Port"
+              description="Port number for the ssl proxy"
+              value={settings.https?.port || 443}
+              onChange={(value) => updateHttpsSettings('port', value)}
+              min={1}
+              max={65535}
             />
           </Stack>
         </Tabs.Panel>

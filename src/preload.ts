@@ -375,5 +375,15 @@ contextBridge.exposeInMainWorld(
         ipcRenderer.removeListener('dispatcher-status', handler);
       };
     },
+
+    // HTTPS Service
+    startSslProxy: (project: Project) =>
+      ipcRenderer.invoke('start-ssl-proxy', project),
+    
+    stopSslProxy: (project: Project) =>
+      ipcRenderer.invoke('stop-ssl-proxy', project),
+    
+    isSslProxyRunning: (project: Project) =>
+      ipcRenderer.invoke('is-ssl-proxy-running', project),
   }
 );

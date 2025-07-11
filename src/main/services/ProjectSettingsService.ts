@@ -30,6 +30,9 @@ export class ProjectSettingsService {
                 config: "./config",
                 healthCheckPath: ""
             },
+            https: {
+                port: 443
+            },
             dev: {
                 path: "",
                 editor: "",
@@ -100,6 +103,9 @@ export class ProjectSettingsService {
                 port: settings.dispatcher?.port || defaults.dispatcher.port,
                 config: settings.dispatcher?.config || defaults.dispatcher.config,
                 healthCheckPath: settings.dispatcher?.healthCheckPath || defaults.dispatcher.healthCheckPath
+            },
+            https: {
+                port: settings.https?.port ?? defaults.https.port
             },
             dev: {
                 path: settings.dev?.path || defaults.dev.path,
