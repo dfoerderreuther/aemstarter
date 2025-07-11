@@ -15,6 +15,7 @@ export class SystemCheck {
         const dockerDaemonRunning = await this.checkDockerDaemonRunning();
         const dockerVersion = await this.checkDockerVersion();
         const portDispatcherAvailable = await this.checkPortDispatcherAvailable(settings);
+        const portHttpsAvailable = await this.checkPortHttpsAvailable(settings);
         const portAuthorAvailable = await this.checkportAuthorAvailable(settings);
         const portPublisherAvailable = await this.checkportPublisherAvailable(settings);
         const portAuthorDebugAvailable = await this.checkPortAuthorDebugAvailable(settings);
@@ -27,6 +28,7 @@ export class SystemCheck {
             dockerDaemonRunning,
             dockerVersion,
             portDispatcherAvailable,
+            portHttpsAvailable,
             portAuthorAvailable,
             portPublisherAvailable,
             portAuthorDebugAvailable,
@@ -138,6 +140,10 @@ export class SystemCheck {
 
     private async checkPortDispatcherAvailable(settings: ProjectSettings): Promise<[number, boolean]> {
         return this.checkPortAvailable(settings.dispatcher.port);
+    }
+
+    private async checkPortHttpsAvailable(settings: ProjectSettings): Promise<[number, boolean]> {
+        return this.checkPortAvailable(settings.https.port || 443);
     }
 
     private async checkportAuthorAvailable(settings: ProjectSettings): Promise<[number, boolean]> {

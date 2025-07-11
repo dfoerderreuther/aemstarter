@@ -547,9 +547,10 @@ export class DispatcherManager {
     }
 
     public async addEnforceHttpsRewriteRule(): Promise<void> {
+        console.log(`[DispatcherManager] Adding enforce https rewrite rule`);
         const dispatcherDir = path.join(this.project.folderPath, 'dispatcher');
 
-        const rewriteRuleFile = path.join(dispatcherDir, 'config/conf.d/rewrite.rules');
+        const rewriteRuleFile = path.join(dispatcherDir, 'config/conf.d/rewrites/rewrite.rules');
         const rewriteCondition = '\n\n# Enforce HTTPS\nRewriteCond %{HTTP:X-Forwarded-Proto} !https\n';
         const rewriteRule = 'RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\n';   
         fs.appendFileSync(rewriteRuleFile, rewriteCondition);

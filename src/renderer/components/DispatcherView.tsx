@@ -195,7 +195,19 @@ export const DispatcherView = ({
     if (!projectSettings) return;
     const port = projectSettings.dispatcher?.port || 80;
     try {
-      await window.electronAPI.openUrl(`http://localhost:${port}`);
+      await window.electronAPI.openUrl(`http://localhost/`);
+    } catch (error) {
+      console.error('Error opening Dispatcher URL:', error);
+    }
+  };
+
+  const handleOpenDispatcherHttps = async () => {
+    if (!projectSettings) return;
+    const port = projectSettings.https?.port || 443;
+    try {
+      //await window.electronAPI.openUrl(`https://localhost:${port}`);
+      console.log(`https://localhost:${port}/`);
+      await window.electronAPI.openUrl(`https://localhost/`);
     } catch (error) {
       console.error('Error opening Dispatcher URL:', error);
     }
@@ -377,7 +389,18 @@ export const DispatcherView = ({
                       style={websiteButtonStyle}
                       styles={websiteButtonStyles}
                     >
-                      Website
+                      Web
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      onClick={handleOpenDispatcherHttps}
+                      disabled={!isRunning}
+                      leftSection={<IconExternalLink size={12} />}
+                      style={websiteButtonStyle}
+                      styles={websiteButtonStyles}
+                    >
+                      Web (ssl)
                     </Button>
                   </Stack>
                 </Box>
