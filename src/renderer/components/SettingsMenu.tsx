@@ -29,23 +29,6 @@ export const SettingsMenu = ({ project, instance, isRunning = true }: SettingsMe
     }
   };
 
-  const handleAddEnforceHttpsRewriteRule = async () => {
-    setIsLoading(true);
-    try {
-      console.log('Adding enforce https rewrite rule...');
-      const result = await window.electronAPI.addEnforceHttpsRewriteRule(project);
-      if (result.success) {
-        console.log('Enforce https rewrite rule added successfully');
-      } else {
-        console.error('Failed to add enforce https rewrite rule:', result.error);
-      }
-    } catch (error) {
-      console.error('Error adding enforce https rewrite rule:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   return (
     <>
       
@@ -83,15 +66,7 @@ export const SettingsMenu = ({ project, instance, isRunning = true }: SettingsMe
           >
             Set up replication
           </Menu.Item>
-          {instance === 'dispatcher' && (
-            <Menu.Item
-              leftSection={<IconRefresh size={14} />}
-              disabled={!isRunning || isLoading}
-              onClick={handleAddEnforceHttpsRewriteRule}
-            >
-              Add enforce https rewrite rule
-            </Menu.Item>
-          )}
+          
         </Menu.Dropdown>
       </Menu>
     </>

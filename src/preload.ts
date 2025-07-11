@@ -338,9 +338,6 @@ contextBridge.exposeInMainWorld(
     clearDispatcherCache: (project: Project) =>
       ipcRenderer.invoke('clear-dispatcher-cache', project),
 
-    addEnforceHttpsRewriteRule: (project: Project) =>
-      ipcRenderer.invoke('add-enforce-https-rewrite-rule', project),
-
     // Dispatcher Health Checking
     takeDispatcherScreenshot: (project: Project) =>
       ipcRenderer.invoke('take-dispatcher-screenshot', project),
