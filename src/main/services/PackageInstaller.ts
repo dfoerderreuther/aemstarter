@@ -4,6 +4,14 @@ import fs from 'fs';
 import { randomUUID } from 'crypto';
 import AdmZip from 'adm-zip';
 
+export interface PackageInfo {
+    name: string;
+    createdDate: Date;
+    paths: string[];
+    hasAuthor: boolean;
+    hasPublisher: boolean;
+}
+
 export class PackageInstaller {
 
     private project: Project;
@@ -107,6 +115,14 @@ ${filterEntries}
             console.log(`[PackageInstaller] Created packages directory: ${packagesDir}`);
         }
 
+        // Create package-specific directory
+        const packageDir = path.join(packagesDir, name);
+        if (fs.existsSync(packageDir)) {
+            throw new Error(`Package '${name}' already exists. Please choose a different name.`);
+        }
+        fs.mkdirSync(packageDir, { recursive: true });
+        console.log(`[PackageInstaller] Created package directory: ${packageDir}`);
+
         // Get instance settings
         const settings = this.project.settings;
 
@@ -128,7 +144,7 @@ ${filterEntries}
                 const packageBuffer = this.createPackageZip(packageName, paths);
                 
                 // Save package locally first for debugging
-                const tempPackagePath = path.join(packagesDir, `${packageName}.zip`);
+                const tempPackagePath = path.join(packageDir, `${packageName}.zip`);
                 fs.writeFileSync(tempPackagePath, packageBuffer);
                 console.log(`[PackageInstaller] Created package zip at: ${tempPackagePath}`);
                 console.log(`[PackageInstaller] Package size: ${packageBuffer.length} bytes`);
@@ -226,77 +242,157 @@ ${filterEntries}
         }
     }
 
-    public async listPackages(): Promise<string[]> {
+    public async listPackages(): Promise<PackageInfo[]> {
         const packagesDir = path.join(this.project.folderPath, 'packages');
         if (!fs.existsSync(packagesDir)) {
             return [];
         }
-        return fs.readdirSync(packagesDir);
+
+        const packages: PackageInfo[] = [];
+        for (const packageFolder of fs.readdirSync(packagesDir)) {
+            const packageFolderPath = path.join(packagesDir, packageFolder);
+            
+            // Skip if not a directory
+            if (!fs.statSync(packageFolderPath).isDirectory()) {
+                continue;
+            }
+            
+            try {
+                // Check for author and publisher zip files
+                const authorZipPath = path.join(packageFolderPath, `${packageFolder}-author.zip`);
+                const publisherZipPath = path.join(packageFolderPath, `${packageFolder}-publisher.zip`);
+                
+                const hasAuthor = fs.existsSync(authorZipPath);
+                const hasPublisher = fs.existsSync(publisherZipPath);
+                
+                // Get folder creation date
+                const stats = fs.statSync(packageFolderPath);
+                
+                // Extract paths from one of the zip files (they should be the same)
+                const paths: string[] = [];
+                let zipToRead = hasAuthor ? authorZipPath : (hasPublisher ? publisherZipPath : null);
+                
+                if (zipToRead) {
+                    try {
+                        const zip = new AdmZip(zipToRead);
+                        const entries = zip.getEntries();
+                        const filterEntry = entries.find(entry => entry.entryName === 'META-INF/vault/filter.xml');
+                        
+                        if (filterEntry) {
+                            try {
+                                let filterXmlContent: string;
+                                
+                                if (filterEntry.data) {
+                                    // Try the direct data approach first
+                                    filterXmlContent = filterEntry.data.toString('utf8');
+                                } else {
+                                    // Try alternative method using zip.readFile()
+                                    const data = zip.readFile('META-INF/vault/filter.xml');
+                                    if (data) {
+                                        filterXmlContent = data.toString('utf8');
+                                    } else {
+                                        throw new Error('Could not read filter.xml content using any method');
+                                    }
+                                }
+                                
+                                const pathsMatch = filterXmlContent.match(/<filter root="([^"]+)"/g);
+                                if (pathsMatch) {
+                                    for (const match of pathsMatch) {
+                                        const pathMatch = match.match(/root="([^"]+)"/);
+                                        if (pathMatch) {
+                                            paths.push(pathMatch[1]);
+                                        }
+                                    }
+                                }
+                            } catch (filterError) {
+                                console.error(`[PackageInstaller] Error reading filter.xml content for ${packageFolder}:`, filterError);
+                            }
+                        }
+                    } catch (zipError) {
+                        console.error(`[PackageInstaller] Error reading zip file for ${packageFolder}:`, zipError);
+                    }
+                }
+                
+                packages.push({
+                    name: packageFolder,
+                    createdDate: stats.birthtime || stats.ctime,
+                    paths: paths,
+                    hasAuthor: hasAuthor,
+                    hasPublisher: hasPublisher
+                });
+            } catch (error) {
+                console.error(`[PackageInstaller] Error reading package folder ${packageFolder}:`, error);
+                // Still add the package with basic info if folder reading fails
+                try {
+                    const stats = fs.statSync(packageFolderPath);
+                    packages.push({
+                        name: packageFolder,
+                        createdDate: stats.birthtime || stats.ctime,
+                        paths: [],
+                        hasAuthor: false,
+                        hasPublisher: false
+                    });
+                } catch (statsError) {
+                    console.error(`[PackageInstaller] Error getting stats for ${packageFolder}:`, statsError);
+                }
+            }
+        }
+        return packages;
     }
 
     public async deletePackage(packageName: string): Promise<void> {
         const packagesDir = path.join(this.project.folderPath, 'packages');
-        const packagePath = path.join(packagesDir, packageName);
+        const packageFolderPath = path.join(packagesDir, packageName);
         
-        if (fs.existsSync(packagePath)) {
-            fs.unlinkSync(packagePath);
-            console.log(`[PackageInstaller] Deleted package: ${packageName}`);
+        if (fs.existsSync(packageFolderPath)) {
+            // Remove the entire package folder and its contents
+            fs.rmSync(packageFolderPath, { recursive: true, force: true });
+            console.log(`[PackageInstaller] Deleted package folder: ${packageName}`);
         } else {
-            console.log(`[PackageInstaller] Package not found: ${packageName}`);
+            console.log(`[PackageInstaller] Package folder not found: ${packageName}`);
         }
     }
 
-    async installPackage(instance: 'author' | 'publisher', packageUrl: string): Promise<void> {
+    async installPackage(instance: 'author' | 'publisher', packageName: string): Promise<void> {
+        const packagesDir = path.join(this.project.folderPath, 'packages');
+        const packageFolderPath = path.join(packagesDir, packageName);
+        const zipFileName = `${packageName}-${instance}.zip`;
+        const zipFilePath = path.join(packageFolderPath, zipFileName);
 
-        // Create install directory if it doesn't exist
-        const installDir = this.getInstallDir();
-
-        // Extract filename from URL and make it instance-specific
-        const originalFileName = path.basename(packageUrl);
-        const fileExtension = path.extname(originalFileName);
-        const baseName = path.basename(originalFileName, fileExtension);
-        const fileName = `${baseName}${fileExtension}`;
-        const filePath = path.join(installDir, fileName);
-
-        if (packageUrl.startsWith('http')) {
-
-            // Download the package if it doesn't exist
-            if (!fs.existsSync(filePath)) {
-                console.log(`[PackageInstaller] Downloading package from ${packageUrl} for ${instance} instance`);
-                
-                try {
-                    await this.atomicDownload(packageUrl, filePath);
-                    console.log(`[PackageInstaller] Downloaded package to ${filePath}`);
-                } catch (error) {
-                    console.error(`[PackageInstaller] Error downloading package:`, error);
-                    throw error;
-                }
-            } else {
-                console.log(`[PackageInstaller] Package already exists at ${filePath}`);
-            }
-        } else {
-            // its a file
-            
-            // Copy the package if it doesn't exist
-            if (!fs.existsSync(filePath)) {
-                console.log(`[PackageInstaller] Copying package from ${packageUrl} for ${instance} instance`);
-                fs.copyFileSync(packageUrl, filePath);
-                console.log(`[PackageInstaller] Copied package to ${filePath}`);
-            } else {
-                console.log(`[PackageInstaller] Package already exists at ${filePath}`);
-            }
+        if (!fs.existsSync(zipFilePath)) {
+            throw new Error(`Package file not found: ${zipFilePath}`);
         }
-        return this.installPackageFromFile(instance, filePath);
+
+        console.log(`[PackageInstaller] Installing package ${packageName} for ${instance} instance from ${zipFilePath}`);
+        return this.installPackageFromFile(instance, zipFilePath);
     }
 
-    private getInstallDir(): string {
-        // Create install directory if it doesn't exist
-        const installDir = path.join(this.project.folderPath, 'install');
-        if (!fs.existsSync(installDir)) {
-            fs.mkdirSync(installDir, { recursive: true });
+    async installPackageAll(packageName: string): Promise<void> {
+        const packagesDir = path.join(this.project.folderPath, 'packages');
+        const packageFolderPath = path.join(packagesDir, packageName);
+        
+        const authorZipPath = path.join(packageFolderPath, `${packageName}-author.zip`);
+        const publisherZipPath = path.join(packageFolderPath, `${packageName}-publisher.zip`);
+        
+        const promises: Promise<void>[] = [];
+        
+        if (fs.existsSync(authorZipPath)) {
+            promises.push(this.installPackageFromFile('author', authorZipPath));
         }
-        return installDir;
+        
+        if (fs.existsSync(publisherZipPath)) {
+            promises.push(this.installPackageFromFile('publisher', publisherZipPath));
+        }
+        
+        if (promises.length === 0) {
+            throw new Error(`No package files found for: ${packageName}`);
+        }
+        
+        await Promise.all(promises);
+        console.log(`[PackageInstaller] Successfully installed all packages for ${packageName}`);
     }
+
+
 
     private async installPackageFromFile(instance: 'author' | 'publisher', filePath: string): Promise<void> {
 
