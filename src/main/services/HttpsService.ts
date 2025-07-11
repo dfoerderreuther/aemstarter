@@ -5,16 +5,77 @@ import { execSync } from 'child_process';
 import * as https from 'https';
 import * as httpProxy from 'http-proxy';
 
-export class HttpsService {
+class HttpsProxyLogger {
     private project: Project;
-    private server: https.Server | null = null;
+    private logDir: string;
 
     constructor(project: Project) {
         this.project = project;
+        this.logDir = path.join(this.project.folderPath, 'ssl', 'logs');
+        this.ensureLogDirectory();
+    }
+
+    private ensureLogDirectory(): void {
+        if (!fs.existsSync(this.logDir)) {
+            fs.mkdirSync(this.logDir, { recursive: true });
+        }
+    }
+
+    private getLogFilePath(): string {
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+        return path.join(this.logDir, `proxy_${dateStr}.log`);
+    }
+
+    private formatLogMessage(level: string, message: string): string {
+        const timestamp = new Date().toISOString();
+        return `[${timestamp}] [${level}] ${message}\n`;
+    }
+
+    public log(message: string): void {
+        const logFilePath = this.getLogFilePath();
+        const formattedMessage = this.formatLogMessage('INFO', message);
+        
+        try {
+            fs.appendFileSync(logFilePath, formattedMessage);
+        } catch (error) {
+            // Fallback to console if file writing fails
+            console.log(`[HTTPS Proxy] ${message}`);
+        }
+    }
+
+    public error(message: string): void {
+        const logFilePath = this.getLogFilePath();
+        const formattedMessage = this.formatLogMessage('ERROR', message);
+        
+        try {
+            fs.appendFileSync(logFilePath, formattedMessage);
+        } catch (error) {
+            // Fallback to console if file writing fails
+            console.error(`[HTTPS Proxy] ${message}`);
+        }
     }
 
     public updateProject(project: Project): void {
         this.project = project;
+        this.logDir = path.join(this.project.folderPath, 'ssl', 'logs');
+        this.ensureLogDirectory();
+    }
+}
+
+export class HttpsService {
+    private project: Project;
+    private server: https.Server | null = null;
+    private logger: HttpsProxyLogger;
+
+    constructor(project: Project) {
+        this.project = project;
+        this.logger = new HttpsProxyLogger(project);
+    }
+
+    public updateProject(project: Project): void {
+        this.project = project;
+        this.logger.updateProject(project);
     }
 
     private async generateSelfSignedCertificate(): Promise<void> {
@@ -33,16 +94,16 @@ export class HttpsService {
                 `-out ${path.join(sslDir, 'localhost.crt')} ` +
                 `-subj "/C=US/ST=State/L=City/O=Local/CN=localhost"`;
 
-            console.log('Generating self-signed certificate...');
+            this.logger.log('Generating self-signed certificate...');
             execSync(opensslCommand, { 
                 cwd: this.project.folderPath,
                 stdio: 'inherit' 
             });
             
-            console.log('Self-signed certificate generated successfully in', sslDir);
+            this.logger.log(`Self-signed certificate generated successfully in ${sslDir}`);
             
         } catch (error) {
-            console.error('Error generating self-signed certificate:', error);
+            this.logger.error(`Error generating self-signed certificate: ${error}`);
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`Failed to generate self-signed certificate: ${errorMessage}`);
         }
@@ -56,6 +117,7 @@ export class HttpsService {
                 const certPath = path.join(sslDir, 'localhost.crt');
                 const targetPort = this.project.settings.dispatcher.port;
                 const httpsPort = this.project.settings.https.port || 443;
+                
                 // Check if SSL certificates exist, generate if they don't
                 if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
                     await this.generateSelfSignedCertificate();
@@ -79,7 +141,7 @@ export class HttpsService {
                 
                 // Handle proxy errors
                 proxy.on('error', (err, req, res) => {
-                    console.error('Proxy error:', err);
+                    this.logger.error(`Proxy error: ${err.message}`);
                     if (res && 'writeHead' in res && !res.headersSent) {
                         res.writeHead(500, { 'Content-Type': 'text/plain' });
                         res.end('Proxy error occurred');
@@ -91,17 +153,17 @@ export class HttpsService {
                 });
                 
                 this.server.on('error', (err) => {
-                    console.error('HTTPS server error:', err);
+                    this.logger.error(`HTTPS server error: ${err.message}`);
                     reject(err);
                 });
                 
                 this.server.listen(httpsPort, () => {
-                    console.log(`HTTPS Proxy running on https://localhost:${httpsPort} → ${target}`);
+                    this.logger.log(`HTTPS Proxy running on https://localhost:${httpsPort} → ${target}`);
                     resolve();
                 });
                 
             } catch (error) {
-                console.error('Error starting SSL proxy:', error);
+                this.logger.error(`Error starting SSL proxy: ${error}`);
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 reject(new Error(`Failed to start SSL proxy: ${errorMessage}`));
             }
@@ -111,19 +173,19 @@ export class HttpsService {
     public async stopSslProxy(): Promise<void> {
         return new Promise((resolve, reject) => {
             if (!this.server) {
-                console.log('No SSL proxy server to stop');
+                this.logger.log('No SSL proxy server to stop');
                 resolve();
                 return;
             }
 
-            console.log('Stopping SSL proxy server...');
+            this.logger.log('Stopping SSL proxy server...');
             
             this.server.close((err) => {
                 if (err) {
-                    console.error('Error stopping SSL proxy server:', err);
+                    this.logger.error(`Error stopping SSL proxy server: ${err.message}`);
                     reject(new Error(`Failed to stop SSL proxy server: ${err.message}`));
                 } else {
-                    console.log('SSL proxy server stopped successfully');
+                    this.logger.log('SSL proxy server stopped successfully');
                     this.server = null;
                     resolve();
                 }

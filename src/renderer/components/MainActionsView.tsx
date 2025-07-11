@@ -135,6 +135,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
       await window.electronAPI.killAllAemInstances(project);
       console.log('About to call killDispatcher...'); // Debug log
       await window.electronAPI.killDispatcher(project);
+      await window.electronAPI.stopSslProxy(project)
       console.log('killDispatcher call completed'); // Debug log
       setShowKillAllConfirm(false);
     } catch (error) {
@@ -151,6 +152,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
       ]);
 
       await handleStartDispatcherAfterPublisher();
+
+
 
     } catch (error) {
       console.error('Error starting all instances:', error);
@@ -181,6 +184,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
       if (publisherReady) {
         try {
           await window.electronAPI.startDispatcher(project);
+          await window.electronAPI.startSslProxy(project);
         } catch (err) {
           console.error('Error starting dispatcher:', err);
         }
@@ -199,6 +203,13 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
         window.electronAPI.startAemInstance(project, 'publisher', true)
       ]);
       await handleStartDispatcherAfterPublisher();
+      
+      // Start SSL proxy after everything else is running
+      try {
+        await window.electronAPI.startSslProxy(project);
+      } catch (error) {
+        console.error('Error starting SSL proxy:', error);
+      }
     } catch (error) {
       console.error('Error starting all instances in debug mode:', error);
     }
@@ -209,7 +220,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
       await Promise.all([
         window.electronAPI.stopAemInstance(project, 'author'),
         window.electronAPI.stopAemInstance(project, 'publisher'),
-        window.electronAPI.stopDispatcher(project)
+        window.electronAPI.stopDispatcher(project),
+        window.electronAPI.stopSslProxy(project)
       ]);
     } catch (error) {
       console.error('Error stopping all instances:', error);
@@ -364,7 +376,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                   size="xs"
                   styles={buttonStyles}
                   onClick={handleStartAll}
-                  disabled={isAuthorRunning && isPublisherRunning}
+                  disabled={isAuthorRunning && isPublisherRunning && isDispatcherRunning && isSslProxyRunningState}
                 >
                   <IconPlayerPlay size={16} />
                 </Button>
@@ -375,7 +387,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                     size="xs"
                     styles={buttonStyles}
                     onClick={handleDebugAll}
-                    disabled={isAuthorRunning && isPublisherRunning}
+                    disabled={isAuthorRunning && isPublisherRunning && isDispatcherRunning && isSslProxyRunningState}
                   >
                     <IconBug size={16} />
                   </Button>
@@ -388,7 +400,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                   size="xs"
                   styles={buttonStyles}
                   onClick={handleStopAll}
-                  disabled={!isAuthorRunning && !isPublisherRunning && !isDispatcherRunning}
+                  disabled={!isAuthorRunning && !isPublisherRunning && !isDispatcherRunning && !isSslProxyRunningState}
                 >
                   <IconPlayerStop size={16} />
                 </Button>
