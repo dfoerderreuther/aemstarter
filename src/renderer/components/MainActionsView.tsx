@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Modal, Stack, Text, Paper, Tooltip, Badge, Divider } from '@mantine/core';
-import { IconPlayerPlay, IconPlayerStop, IconSkull, IconSettings, IconBug, IconBrowser, IconDeviceFloppy, IconFolder, IconTerminal2, IconCode, IconRobot } from '@tabler/icons-react';
+import { IconPlayerPlay, IconPlayerStop, IconSkull, IconSettings, IconBug, IconBrowser, IconDeviceFloppy, IconFolder, IconTerminal2, IconCode, IconRobot, IconPackage } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
 import { AutomationModal } from './automation/AutomationModal';
-
+import { PackageManagerModal } from './PackageManagerModal';
 
 
 interface MainActionsViewProps {
@@ -20,6 +20,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
   const [showSettings, setShowSettings] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
   const [showAutomation, setShowAutomation] = useState(false);
+  const [showPackageManager, setShowPackageManager] = useState(false);
   const [isAuthorRunning, setIsAuthorRunning] = useState(false);
   const [isAuthorDebugging, setIsAuthorDebugging] = useState(false);
   const [isPublisherRunning, setIsPublisherRunning] = useState(false);
@@ -698,6 +699,18 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                   <IconDeviceFloppy size={16} />
                 </Button>
               </Tooltip>
+              <Tooltip label="Package Manager">
+                <Button 
+                  color="blue" 
+                  variant="filled" 
+                  size="xs"
+                  styles={secondButtonStyles}
+                  disabled={!isAuthorRunning && !isPublisherRunning}
+                  onClick={() => setShowPackageManager(true)}
+                >
+                  <IconPackage size={16} />
+                </Button>
+              </Tooltip>
              
               </Button.Group>
             </Group>
@@ -823,6 +836,11 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
         isDispatcherRunning={isDispatcherRunning}
         autoStartTask={autoStartTask}
         onAutoTaskStarted={handleAutoTaskStarted}
+      />
+      <PackageManagerModal
+        opened={showPackageManager}
+        onClose={() => setShowPackageManager(false)}
+        project={project}
       />
     </>
   );

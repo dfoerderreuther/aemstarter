@@ -101,6 +101,14 @@ contextBridge.exposeInMainWorld(
     // Package Installation
     installPackage: (project: Project, instance: 'author' | 'publisher', packageUrl: string) =>
       ipcRenderer.invoke('install-package', project, instance, packageUrl),
+    
+    // Package Management
+    listPackages: (project: Project) =>
+      ipcRenderer.invoke('list-packages', project),
+    createPackage: (project: Project, name: string, instances: string[], paths: string[]) =>
+      ipcRenderer.invoke('create-package', project, name, instances, paths),
+    deletePackage: (project: Project, packageName: string) =>
+      ipcRenderer.invoke('delete-package', project, packageName),
 
     // Replication Settings
     setupReplication: (project: Project, instance: 'author' | 'publisher' | 'dispatcher') =>

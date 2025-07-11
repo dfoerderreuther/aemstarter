@@ -16,5 +16,6 @@ declare module 'adm-zip' {
     }>;
     readFile(entryName: string): Buffer;
     writeZip(filename?: string): void;
+    toBuffer(): Buffer;
   }
 } 

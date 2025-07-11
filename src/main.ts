@@ -661,6 +661,39 @@ ipcMain.handle('install-package', async (_, project: Project, instance: 'author'
   }
 });
 
+// Package Management
+ipcMain.handle('list-packages', async (_, project: Project) => {
+  try {
+    const packageInstaller = new PackageInstaller(project);
+    return await packageInstaller.listPackages();
+  } catch (error) {
+    console.error('Error listing packages:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('create-package', async (_, project: Project, name: string, instances: string[], paths: string[]) => {
+  try {
+    const packageInstaller = new PackageInstaller(project);
+    await packageInstaller.createPackage(name, instances, paths);
+    return true;
+  } catch (error) {
+    console.error('Error creating package:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('delete-package', async (_, project: Project, packageName: string) => {
+  try {
+    const packageInstaller = new PackageInstaller(project);
+    await packageInstaller.deletePackage(packageName);
+    return true;
+  } catch (error) {
+    console.error('Error deleting package:', error);
+    throw error;
+  }
+});
+
 // Replication Settings
 ipcMain.handle('setup-replication', async (_, project: Project, instance: 'author' | 'publisher' | 'dispatcher') => {
   try {
