@@ -1,6 +1,6 @@
 import { AutomationTaskTeaser } from "../AutomationTaskTeaser";
 import { Project } from '../../../../types/Project';
-import { Text, TextInput, Group, Button } from '@mantine/core';
+import { Text, TextInput, Group, Button, Badge } from '@mantine/core';
 import { useState } from "react";
 
 
@@ -43,7 +43,7 @@ export const UpdateSdkAndRunTeaser: React.FC<UpdateSdkAndRunTeaserProps> = ({
                 <Text size="xs" c="dimmed" mb={8}>
                     This will update the SDK and run.
                 </Text>
-                <Group align="end" gap="xs">
+                <Group align="end" gap="xs" mb="md">
                     <TextInput
                         label="SDK"
                         value={sdkPath}
@@ -58,6 +58,10 @@ export const UpdateSdkAndRunTeaser: React.FC<UpdateSdkAndRunTeaserProps> = ({
                     >
                         Browse
                     </Button>
+                </Group>
+                <Group gap="xs">
+                    <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
+                    <Badge variant="outline" color="red" size="xs">CS only. Not for classic.</Badge>
                 </Group>
             </div>
         </AutomationTaskTeaser>

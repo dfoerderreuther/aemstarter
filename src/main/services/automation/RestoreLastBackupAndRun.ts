@@ -16,7 +16,7 @@ export class RestoreLastBackupAndRun implements AutoTask {
         this.backupService = new BackupService(project);
     }
 
-    public async run(progressCallback?: (message: string) => void) : Promise<void> {
+    public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
         
         const lastBackup = await this.findBackup();

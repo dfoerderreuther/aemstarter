@@ -14,12 +14,12 @@ export class UpdateSdkAndRun implements AutoTask {
         this.startStopService = new AutoStartStopService(project);
     }
 
-    public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string }) : Promise<void> {
+    public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
 
         progress('Updating SDK and running');
 
-        const sdkPath = parameters?.sdkPath ?? null
+        const sdkPath = parameters?.sdkPath ? String(parameters.sdkPath) : null
 
         if (!sdkPath) {
             progress('Error: SDK path is not provided');

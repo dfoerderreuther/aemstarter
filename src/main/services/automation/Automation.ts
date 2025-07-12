@@ -10,8 +10,8 @@ import { UpdateSdkAndRun } from './UpdateSdkAndRun';
 
 export interface AutoTask {
     project: Project;
-    parameters?: { [key: string]: string };
-    run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string }) : Promise<void>;
+    parameters?: { [key: string]: string | boolean | number };
+    run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void>;
 }
 
 type AutoTaskConstructor = new (project: Project) => AutoTask;
@@ -34,12 +34,12 @@ export class Automation {
         this.project = project;
     }
 
-    static async run(project: Project, type: string, mainWindow?: BrowserWindow, parameters?: { [key: string]: string }) : Promise<void> {
+    static async run(project: Project, type: string, mainWindow?: BrowserWindow, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const automation = new Automation(project);
         await automation.run(type, mainWindow, parameters);
     }
 
-    private async run(type: string, mainWindow?: BrowserWindow, parameters?: { [key: string]: string }) : Promise<void> {
+    private async run(type: string, mainWindow?: BrowserWindow, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const TaskConstructor = Automation.taskRegistry.get(type);
         if (TaskConstructor) {
             console.log(`[Automation] Running task: ${type}${parameters ? ' with parameters: ' + JSON.stringify(parameters) : ''}`);

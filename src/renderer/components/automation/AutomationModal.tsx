@@ -310,12 +310,6 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
               />
               <Divider />
 
-              <ReinstallTeaser 
-                project={project}
-                onTaskStart={handleTaskStart}
-              />
-              <Divider />
-
               <UpdateSdkAndRunTeaser 
                 project={project}
                 onTaskStart={handleTaskStart}
@@ -338,6 +332,12 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
                 taskItemStyles={taskItemStyles}
               />
 
+              <Divider />
+
+              <ReinstallTeaser 
+                project={project}
+                onTaskStart={handleTaskStart}
+              />
               <Divider />
 
               {/* Placeholder for future tasks */}

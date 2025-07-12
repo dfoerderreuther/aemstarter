@@ -14,7 +14,7 @@ export class ReinstallAndRun implements AutoTask {
         this.startStopService = new AutoStartStopService(project);
     }
 
-    public async run(progressCallback?: (message: string) => void) : Promise<void> {
+    public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
         
         progress('Initiating automated AEM reinstallation process...');

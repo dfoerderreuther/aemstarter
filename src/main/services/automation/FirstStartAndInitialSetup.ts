@@ -8,6 +8,7 @@ import { AemInstanceManagerRegister } from "../../AemInstanceManagerRegister";
 import { DispatcherManagerRegister } from "../../DispatcherManagerRegister";
 import { ReplicationSettings } from "../ReplicationSettings";
 import { PackageInstaller } from "../PackageInstaller";
+import { PackageManager } from "../PackageManager";
 
 export class FirstStartAndInitialSetup implements AutoTask {
 
@@ -21,8 +22,12 @@ export class FirstStartAndInitialSetup implements AutoTask {
         this.dispatcherManager = DispatcherManagerRegister.getManager(this.project);
     }
 
-    public async run(progressCallback?: (message: string) => void) : Promise<void> {
+    public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
+
+        const wknd = parameters?.wknd === 'true';
+        const localPackage: string = (parameters?.localPackage ?? '') as string;
+        const replication = parameters?.replication === 'true';
 
         progress('Starting first start and initial setup');
 
@@ -43,17 +48,28 @@ export class FirstStartAndInitialSetup implements AutoTask {
         progress('Loading Oak jar');
         this.aemInstanceManager.loadOakJar();
 
-        progress('Setting up replication');
-        const replicationSettings = ReplicationSettings.getInstance();
-        await replicationSettings.setReplication(this.project, 'author');
-        await replicationSettings.setReplication(this.project, 'publisher');
-        await replicationSettings.setReplication(this.project, 'dispatcher');
+        if (replication) {
+            progress('Setting up replication');
+            const replicationSettings = ReplicationSettings.getInstance();
+            await replicationSettings.setReplication(this.project, 'author');
+            await replicationSettings.setReplication(this.project, 'publisher');
+            await replicationSettings.setReplication(this.project, 'dispatcher');
+        }
 
-        progress('Installing WKND package');
-        const packageInstaller = new PackageInstaller(this.project);
-        const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip"
-        await packageInstaller.installPackage('author', wkndUrl);
-        await packageInstaller.installPackage('publisher', wkndUrl);
+        if (wknd) {
+            progress('Installing WKND package');
+            const packageInstaller = new PackageInstaller(this.project);
+            const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip"
+            await packageInstaller.installPackage('author', wkndUrl);
+            await packageInstaller.installPackage('publisher', wkndUrl);
+        }
+
+        if (localPackage) {
+            progress('Installing local package');
+            const packageInstaller = new PackageManager(this.project);
+            await packageInstaller.installPackage('author', localPackage);
+            await packageInstaller.installPackage('publisher', localPackage);
+        }
     }
 
     private async awaitInstallComplete(): Promise<boolean> {

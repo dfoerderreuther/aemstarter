@@ -6,7 +6,7 @@ import { Project } from '../../../types/Project';
 interface AutomationTaskTeaserProps {
     task: string;
     project: Project;
-    parameters?: { [key: string]: string };
+    parameters?: { [key: string]: string | boolean | number };
     children: React.ReactNode;
     icon?: React.ComponentType<{ size: number; color?: string }>;
     taskTitle?: string;

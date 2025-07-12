@@ -806,7 +806,7 @@ ipcMain.handle('delete-backup-all', async (_, project: Project, tarName: string)
 });
 
 // Automation Tasks
-ipcMain.handle('run-automation-task', async (_, project: Project, task: string, parameters?: { [key: string]: string }) => {
+ipcMain.handle('run-automation-task', async (_, project: Project, task: string, parameters?: { [key: string]: string | boolean | number }) => {
   try {
     await Automation.run(project, task, mainWindow || undefined, parameters);
     return true;
