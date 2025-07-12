@@ -22,7 +22,8 @@ import {
   Checkbox,
   Textarea,
   Tooltip,
-  Code
+  Code,
+  ButtonGroup
 } from '@mantine/core';
 import { Project } from '../../types/Project';
 import { IconPackage, IconAlertCircle, IconPlus, IconCloudUpload, IconTrash, IconDownload, IconInfoCircle, IconCopy } from '@tabler/icons-react';
@@ -52,9 +53,10 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
   const [packageName, setPackageName] = useState('');
   const [packagePaths, setPackagePaths] = useState('');
   const [includeAuthor, setIncludeAuthor] = useState(true);
-  const [includePublisher, setIncludePublisher] = useState(false);
+  const [includePublisher, setIncludePublisher] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [selectedInstances, setSelectedInstances] = useState<Record<string, { author: boolean; publisher: boolean }>>({});
 
   const isStringArray = (value: unknown): value is string[] => {
     return Array.isArray(value) && value.every(item => typeof item === 'string');
@@ -94,6 +96,16 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
         // Sort by date (newest first)
         packageInfos.sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
         setPackages(packageInfos);
+        
+        // Initialize all checkboxes as checked by default
+        const initialSelections: Record<string, { author: boolean; publisher: boolean }> = {};
+        packageInfos.forEach(pkg => {
+          initialSelections[pkg.name] = {
+            author: pkg.hasAuthor,
+            publisher: pkg.hasPublisher
+          };
+        });
+        setSelectedInstances(initialSelections);
       } else if (isPackageInfoArray(result)) {
         // New PackageInfo[] format - convert dates from string to Date objects
         const packageInfos: PackageInfo[] = (result as any[]).map((pkg: any) => ({
@@ -103,6 +115,16 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
         // Sort by date (newest first)
         packageInfos.sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
         setPackages(packageInfos);
+        
+        // Initialize all checkboxes as checked by default
+        const initialSelections: Record<string, { author: boolean; publisher: boolean }> = {};
+        packageInfos.forEach(pkg => {
+          initialSelections[pkg.name] = {
+            author: pkg.hasAuthor,
+            publisher: pkg.hasPublisher
+          };
+        });
+        setSelectedInstances(initialSelections);
       } else {
         setPackages([]);
       }
@@ -187,40 +209,60 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
     }
   };
 
-  const handleInstall = async (packageName: string, instance: 'author' | 'publisher') => {
+  const handleInstallSelected = async (packageName: string) => {
     setError(null);
     try {
-      await window.electronAPI.installPackage(project, instance, packageName);
-    } catch (err: unknown) {
-      setError(`Failed to install package on ${instance}`);
-    }
-  };
-
-  const handleInstallAll = async (packageName: string) => {
-    setError(null);
-    try {
-      // Install both author and publisher if they exist
-      const packageInfo = packages.find(p => p.name === packageName);
-      if (!packageInfo) {
-        throw new Error('Package not found');
+      const selected = selectedInstances[packageName];
+      if (!selected || (!selected.author && !selected.publisher)) {
+        setError('Please select at least one instance to install');
+        return;
       }
-      
+
       const promises: Promise<any>[] = [];
-      if (packageInfo.hasAuthor) {
+      if (selected.author) {
         promises.push(window.electronAPI.installPackage(project, 'author', packageName));
       }
-      if (packageInfo.hasPublisher) {
+      if (selected.publisher) {
         promises.push(window.electronAPI.installPackage(project, 'publisher', packageName));
       }
       
-      if (promises.length === 0) {
-        throw new Error('No packages to install');
-      }
-      
       await Promise.all(promises);
+      
+      // Restore default checked state after successful install
+      const packageInfo = packages.find(p => p.name === packageName);
+      if (packageInfo) {
+        setSelectedInstances(prev => ({
+          ...prev,
+          [packageName]: { author: packageInfo.hasAuthor, publisher: packageInfo.hasPublisher }
+        }));
+      }
     } catch (err: unknown) {
-      setError(`Failed to install all packages for ${packageName}`);
+      setError(`Failed to install selected packages for ${packageName}`);
     }
+  };
+
+  const handleInstanceSelection = (packageName: string, instance: 'author' | 'publisher', checked: boolean) => {
+    setSelectedInstances(prev => ({
+      ...prev,
+      [packageName]: {
+        ...prev[packageName],
+        [instance]: checked
+      }
+    }));
+  };
+
+  const getInstanceLabel = (packageName: string, instance: 'author' | 'publisher', size?: number) => {
+    const instanceName = instance.charAt(0).toUpperCase() + instance.slice(1);
+    const fileName = `${packageName}-${instance}.zip`;
+    const sizeText = size ? ` (${formatFileSize(size)})` : '';
+    return (
+      <div>
+        <div>{instanceName}</div>
+        <div style={{ fontSize: '0.8em', color: 'var(--mantine-color-dimmed)' }}>
+          {fileName}{sizeText}
+        </div>
+      </div>
+    );
   };
 
   const handleCopyPaths = (paths: string[]) => {
@@ -350,10 +392,11 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
                           <Table.Td style={{ verticalAlign: 'top' }}>
                             <Group gap="sm">
                               <Box>
-                                <Text fw={500} size="sm">{packageInfo.name}</Text>
-                                                                  <Text size="sm" c="dimmed" mt="xs">
-                                    {packageInfo.createdDate.toLocaleDateString()} {packageInfo.createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </Text>
+                                <Text fw={500} >{packageInfo.name}</Text>
+                                <Text size="sm" c="dimmed" mt="xs">
+                                  {packageInfo.createdDate.toLocaleDateString()} {packageInfo.createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </Text>
+                               
                               </Box>
                             </Group>
                           </Table.Td>
@@ -382,50 +425,48 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
                           </Table.Td>
                           <Table.Td style={{ verticalAlign: 'top' }}>
                             <Stack gap="xs">
-                              <Group gap="xs">
-                                <Button
-                                  size="xs"
-                                  color="blue"
-                                  leftSection={<IconDownload size={14} />}
-                                  onClick={() => handleInstall(packageInfo.name, 'author')}
-                                  variant="light"
-                                  disabled={!packageInfo.hasAuthor}
-                                >
-                                  Author{packageInfo.authorSize ? ` (${formatFileSize(packageInfo.authorSize)})` : ''}
-                                </Button>
-                                <Button
-                                  size="xs"
-                                  color="green"
-                                  leftSection={<IconDownload size={14} />}
-                                  onClick={() => handleInstall(packageInfo.name, 'publisher')}
-                                  variant="light"
-                                  disabled={!packageInfo.hasPublisher}
-                                >
-                                  Publisher{packageInfo.publisherSize ? ` (${formatFileSize(packageInfo.publisherSize)})` : ''}
-                                </Button>
-                              </Group>
+                              {packageInfo.hasAuthor && (
+                                <Checkbox
+                                  label={getInstanceLabel(packageInfo.name, 'author', packageInfo.authorSize)}
+                                  checked={selectedInstances[packageInfo.name]?.author || false}
+                                  onChange={(event) => handleInstanceSelection(packageInfo.name, 'author', event.currentTarget.checked)}
+                                  color="gray"
+                                  size="sm"
+                                />
+                              )}
+                              {packageInfo.hasPublisher && (
+                                <Checkbox
+                                  label={getInstanceLabel(packageInfo.name, 'publisher', packageInfo.publisherSize)}
+                                  checked={selectedInstances[packageInfo.name]?.publisher || false}
+                                  onChange={(event) => handleInstanceSelection(packageInfo.name, 'publisher', event.currentTarget.checked)}
+                                  color="gray"
+                                  size="sm"
+                                />
+                              )}
                               <Button
                                 size="xs"
-                                color="indigo"
+                                color="blue"
                                 leftSection={<IconDownload size={14} />}
-                                onClick={() => handleInstallAll(packageInfo.name)}
+                                onClick={() => handleInstallSelected(packageInfo.name)}
                                 variant="filled"
-                                disabled={!packageInfo.hasAuthor && !packageInfo.hasPublisher}
+                                disabled={!selectedInstances[packageInfo.name]?.author && !selectedInstances[packageInfo.name]?.publisher}
                               >
-                                Install All
-                              </Button>
-                              <Button
-                                size="xs"
-                                color="red"
-                                leftSection={<IconTrash size={14} />}
-                                loading={deleting === packageInfo.name}
-                                disabled={deleting === packageInfo.name}
-                                onClick={() => setConfirmDelete(packageInfo.name)}
-                                variant="light"
-                              >
-                                Delete
+                                Install
                               </Button>
                             </Stack>
+                          </Table.Td>
+                          <Table.Td style={{ verticalAlign: 'top' }}>
+                              <Tooltip label="Delete package">
+                                <ActionIcon
+                                  size="xs"
+                                  variant="subtle"
+                                  color="gray"
+                                  onClick={() => setConfirmDelete(packageInfo.name)}
+                                >
+                                  <IconTrash size={14} />
+                                </ActionIcon>
+                              </Tooltip>
+                              
                           </Table.Td>
                         </Table.Tr>
                       ))}
