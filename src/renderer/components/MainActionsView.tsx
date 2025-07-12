@@ -185,7 +185,9 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
       if (publisherReady) {
         try {
           await window.electronAPI.startDispatcher(project);
-          await window.electronAPI.startSslProxy(project);
+          if (project.settings?.https?.enabled || false) {
+            await window.electronAPI.startSslProxy(project);
+          }
         } catch (err) {
           console.error('Error starting dispatcher:', err);
         }
@@ -205,12 +207,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
       ]);
       await handleStartDispatcherAfterPublisher();
       
-      // Start SSL proxy after everything else is running
-      try {
-        await window.electronAPI.startSslProxy(project);
-      } catch (error) {
-        console.error('Error starting SSL proxy:', error);
-      }
     } catch (error) {
       console.error('Error starting all instances in debug mode:', error);
     }
@@ -222,7 +218,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
         window.electronAPI.stopAemInstance(project, 'author'),
         window.electronAPI.stopAemInstance(project, 'publisher'),
         window.electronAPI.stopDispatcher(project),
-        window.electronAPI.stopSslProxy(project)
+        project.settings?.https?.enabled || false ? window.electronAPI.stopSslProxy(project) : Promise.resolve()
       ]);
     } catch (error) {
       console.error('Error stopping all instances:', error);
@@ -318,6 +314,10 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
   };
 
   const handleStartSslProxy = async () => {
+    if (!project.settings?.https?.enabled || false) {
+      console.error('SSL proxy is not enabled in settings');
+      return;
+    }
     try {
       await window.electronAPI.startSslProxy(project);
     } catch (error) {
@@ -326,6 +326,10 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
   };
 
   const handleStopSslProxy = async () => {
+    if (!project.settings?.https?.enabled || false) {
+      console.error('SSL proxy is not enabled in settings');
+      return;
+    }
     try {
       await window.electronAPI.stopSslProxy(project);
     } catch (error) {
@@ -377,7 +381,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                   size="xs"
                   styles={buttonStyles}
                   onClick={handleStartAll}
-                  disabled={isAuthorRunning && isPublisherRunning && isDispatcherRunning && isSslProxyRunningState}
+                  disabled={isAuthorRunning && isPublisherRunning && isDispatcherRunning}
                 >
                   <IconPlayerPlay size={16} />
                 </Button>
@@ -388,7 +392,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                     size="xs"
                     styles={buttonStyles}
                     onClick={handleDebugAll}
-                    disabled={isAuthorRunning && isPublisherRunning && isDispatcherRunning && isSslProxyRunningState}
+                    disabled={isAuthorRunning && isPublisherRunning && isDispatcherRunning}
                   >
                     <IconBug size={16} />
                   </Button>
@@ -401,7 +405,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                   size="xs"
                   styles={buttonStyles}
                   onClick={handleStopAll}
-                  disabled={!isAuthorRunning && !isPublisherRunning && !isDispatcherRunning && !isSslProxyRunningState}
+                  disabled={!isAuthorRunning && !isPublisherRunning && !isDispatcherRunning}
                 >
                   <IconPlayerStop size={16} />
                 </Button>
@@ -624,41 +628,43 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
 
         <Divider orientation="vertical" />
 
-        <Paper style={sectionStyles}>
-          <Stack gap="xs">
-            <Text size="sm" fw={500} c="dimmed">SSL Proxy</Text>
-            <Group gap="xs">
-              <Button.Group>
-                <Tooltip label="Start SSL Proxy">
-                  <Button 
-                    color="green" 
-                    variant="filled"  
-                    size="xs"
-                    styles={buttonStyles}
-                    onClick={handleStartSslProxy}
-                    disabled={isSslProxyRunningState}
-                  >
-                    <IconPlayerPlay size={16} />    
-                  </Button>
-                </Tooltip>
-                <Tooltip label="Stop SSL Proxy">
-                  <Button 
-                    color="red" 
-                    variant="filled" 
-                    size="xs"
-                    styles={buttonStyles}
-                    onClick={handleStopSslProxy}
-                    disabled={!isSslProxyRunningState}
-                  >
-                    <IconPlayerStop size={16} />
-                  </Button>
-                </Tooltip>
-              </Button.Group>
-            </Group>
-          </Stack>
-        </Paper>
+        {project.settings?.https?.enabled && (
+          <Paper style={sectionStyles}>
+            <Stack gap="xs">
+              <Text size="sm" fw={500} c="dimmed">SSL Proxy</Text>
+              <Group gap="xs">
+                <Button.Group>
+                  <Tooltip label="Start SSL Proxy">
+                    <Button 
+                      color="green" 
+                      variant="filled"  
+                      size="xs"
+                      styles={buttonStyles}
+                      onClick={handleStartSslProxy}
+                      disabled={isSslProxyRunningState}
+                    >
+                      <IconPlayerPlay size={16} />    
+                    </Button>
+                  </Tooltip>
+                  <Tooltip label="Stop SSL Proxy">
+                    <Button 
+                      color="red" 
+                      variant="filled" 
+                      size="xs"
+                      styles={buttonStyles}
+                      onClick={handleStopSslProxy}
+                      disabled={!isSslProxyRunningState}
+                    >
+                      <IconPlayerStop size={16} />
+                    </Button>
+                  </Tooltip>
+                </Button.Group>
+              </Group>
+            </Stack>
+          </Paper>
+        )}
 
-        <Divider orientation="vertical" />
+        {project.settings?.https?.enabled && <Divider orientation="vertical" />}
 
         <Paper style={sectionStyles}>
           <Stack gap="xs">

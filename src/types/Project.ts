@@ -37,6 +37,7 @@ export interface ProjectSettings {
     healthCheckPath: string;
   };
   https: {
+    enabled: boolean;
     port: number;
   };
   dev: {

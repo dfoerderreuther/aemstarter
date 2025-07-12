@@ -31,6 +31,7 @@ export class ProjectSettingsService {
                 healthCheckPath: ""
             },
             https: {
+                enabled: false,
                 port: 443
             },
             dev: {
@@ -105,6 +106,7 @@ export class ProjectSettingsService {
                 healthCheckPath: settings.dispatcher?.healthCheckPath || defaults.dispatcher.healthCheckPath
             },
             https: {
+                enabled: settings.https?.enabled ?? defaults.https.enabled,
                 port: settings.https?.port ?? defaults.https.port
             },
             dev: {

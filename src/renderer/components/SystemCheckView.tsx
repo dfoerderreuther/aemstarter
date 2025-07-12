@@ -115,6 +115,7 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, stric
         healthCheckPath: ""
       },
       https: {
+        enabled: false,
         port: 443
       },
       dev: {

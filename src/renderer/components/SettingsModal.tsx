@@ -322,6 +322,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
 
         <Tabs.Panel value="https" pt="md">
           <Stack gap="md">
+            <Checkbox
+              label="Enabled"
+              description="Enable SSL proxy"
+              checked={settings.https?.enabled}
+              onChange={(event) => updateHttpsSettings('enabled', event.currentTarget.checked)}
+            />
             <NumberInput
               label="Port"
               description="Port number for the ssl proxy"
@@ -330,6 +336,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               min={1}
               max={65535}
             />
+            <Text>
+              If enabled, the system will start a https proxy to Dispatcher. The proxy will use a self-signed certificate, generated on first start with openssl (requires openssl to be installed).
+            </Text>
           </Stack>
         </Tabs.Panel>
 
