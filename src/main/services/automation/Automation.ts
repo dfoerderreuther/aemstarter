@@ -6,6 +6,7 @@ import { RestoreLastBackupAndRun } from './RestoreLastBackupAndRun';
 import { ReinstallAndRun } from './ReinstallAndRun';
 import { BrowserWindow } from 'electron';
 import { FirstStartAndInitialSetup } from './FirstStartAndInitialSetup';
+import { UpdateSdkAndRun } from './UpdateSdkAndRun';
 
 export interface AutoTask {
     project: Project;
@@ -25,7 +26,8 @@ export class Automation {
         ['last-backup-and-debug', RestoreLastBackupAndDebug],
         ['first-backup-and-run', RestoreFirstBackupAndRun],
         ['reinstall', ReinstallAndRun],
-        ['first-start-and-initial-setup', FirstStartAndInitialSetup]
+        ['first-start-and-initial-setup', FirstStartAndInitialSetup], 
+        ['update-sdk-and-run', UpdateSdkAndRun]
     ]);
 
     private constructor(project: Project) {

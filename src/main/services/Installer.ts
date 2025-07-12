@@ -93,6 +93,36 @@ export class Installer {
         console.log('Installation complete');
     }
 
+    async installSdk(sdkPath: string) {
+        this.sdkPath = sdkPath;
+        
+        // Delete all existing aem-sdk-* files first
+        if (fs.existsSync(this.installDir)) {
+            const existingFiles = fs.readdirSync(this.installDir);
+            for (const file of existingFiles) {
+                if (file.startsWith('aem-sdk-') || file.match(/oak-run-.*\.jar$/)) {
+                    const filePath = `${this.installDir}/${file}`;
+                    console.log('Deleting existing SDK file:', filePath);
+                    fs.rmSync(filePath, { force: true, recursive: true });
+                }
+            }
+        }
+        
+        await this.extractSdk();
+        
+        // Handle extracted aem-sdk-* files
+        const files = fs.readdirSync(this.installDir);
+        const quickstartFile = files.find(file => file.startsWith('aem-sdk-quickstart'));
+        const dispatcherScript = files.find(file => file.match(/aem-sdk-dispatcher-.*.sh/));
+        const windowsDispatcherZip = files.find(file => file.match(/aem-sdk-dispatcher-.*.zip/));
+        
+        console.log('SDK extracted with files:', {
+            quickstartFile,
+            dispatcherScript,
+            windowsDispatcherZip
+        });
+    }
+
     async install() {
         this.validate();
         
