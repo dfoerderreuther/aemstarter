@@ -6,4 +6,6 @@ export interface PackageInfo {
     hasPublisher: boolean;
     authorSize?: number;
     publisherSize?: number;
+    authorAemPath?: string;  // Actual AEM package path for author instance
+    publisherAemPath?: string;  // Actual AEM package path for publisher instance
 } 

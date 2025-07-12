@@ -84,6 +84,8 @@ declare global {
         hasPublisher: boolean;
         authorSize?: number;
         publisherSize?: number;
+        authorAemPath?: string;
+        publisherAemPath?: string;
       }>>;
       createPackage: (project: Project, name: string, instances: string[], paths: string[]) => Promise<boolean>;
       deletePackage: (project: Project, packageName: string) => Promise<boolean>;

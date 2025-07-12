@@ -150,6 +150,13 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
       return;
     }
 
+    // Validate package name is URL-safe (no spaces, special characters except hyphens and underscores)
+    const urlSafePattern = /^[a-zA-Z0-9_-]+$/;
+    if (!urlSafePattern.test(packageName.trim())) {
+      setError('Package name must only contain letters, numbers, hyphens (-), and underscores (_). No spaces or special characters allowed.');
+      return;
+    }
+
     if (!packagePaths.trim()) {
       setError('At least one path is required');
       return;

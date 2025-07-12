@@ -137,6 +137,23 @@ ${filterEntries}
             console.log(`[PackageManager] Created package directory: ${packageDir}`);
         }
 
+        // Load package metadata to get actual AEM paths
+        const metadataPath = path.join(packageDir, 'package.json');
+        let packageMetadata: any = {};
+        
+        if (fs.existsSync(metadataPath)) {
+            try {
+                const metadataContent = fs.readFileSync(metadataPath, 'utf8');
+                packageMetadata = JSON.parse(metadataContent);
+                console.log(`[PackageManager] Loaded package metadata from: ${metadataPath}`);
+            } catch (error) {
+                console.error(`[PackageManager] Error loading package metadata:`, error);
+                console.log(`[PackageManager] Will use fallback path construction`);
+            }
+        } else {
+            console.log(`[PackageManager] No metadata file found, using fallback path construction`);
+        }
+
         // Get instance settings
         const settings = this.project.settings;
 
@@ -154,8 +171,19 @@ ${filterEntries}
             console.log(`[PackageManager] Rebuilding package ${packageName} on ${instance} instance`);
             
             try {
-                // Construct the expected package path (assuming default group 'aem-starter')
-                const packagePath = `/etc/packages/aem-starter/${packageName}.zip`;
+                // Get the actual AEM package path from metadata, or fall back to constructed path
+                let packagePath;
+                if (instance === 'author' && packageMetadata.authorAemPath) {
+                    packagePath = packageMetadata.authorAemPath;
+                    console.log(`[PackageManager] Using stored author AEM path: ${packagePath}`);
+                } else if (instance === 'publisher' && packageMetadata.publisherAemPath) {
+                    packagePath = packageMetadata.publisherAemPath;
+                    console.log(`[PackageManager] Using stored publisher AEM path: ${packagePath}`);
+                } else {
+                    // Fallback to constructed path for backward compatibility
+                    packagePath = `/etc/packages/aem-starter/${packageName}.zip`;
+                    console.log(`[PackageManager] Using fallback path: ${packagePath}`);
+                }
                 
                 // Build the package
                 const buildUrl = `http://${host}:${port}/crx/packmgr/service/.json${packagePath}?cmd=build`;
@@ -206,6 +234,17 @@ ${filterEntries}
         }
         fs.mkdirSync(packageDir, { recursive: true });
         console.log(`[PackageManager] Created package directory: ${packageDir}`);
+
+        // Initialize package metadata
+        const packageMetadata: any = {
+            name: name,
+            createdDate: new Date(),
+            paths: paths,
+            hasAuthor: instances.includes('author'),
+            hasPublisher: instances.includes('publisher'),
+            authorAemPath: undefined,
+            publisherAemPath: undefined
+        };
 
         // Get instance settings
         const settings = this.project.settings;
@@ -292,6 +331,13 @@ ${filterEntries}
                         throw new Error(`Could not determine package path from upload response: ${uploadResponseText}`);
                     }
                 }
+
+                // Store the actual AEM package path in metadata
+                if (instance === 'author') {
+                    packageMetadata.authorAemPath = packagePath;
+                } else if (instance === 'publisher') {
+                    packageMetadata.publisherAemPath = packagePath;
+                }
                 
                 // Build the package
                 const buildUrl = `http://${host}:${port}/crx/packmgr/service/.json${packagePath}?cmd=build`;
@@ -324,6 +370,15 @@ ${filterEntries}
                 throw error;
             }
         }
+
+        // Save package metadata to file
+        const metadataPath = path.join(packageDir, 'package.json');
+        try {
+            fs.writeFileSync(metadataPath, JSON.stringify(packageMetadata, null, 2));
+            console.log(`[PackageManager] Saved package metadata to: ${metadataPath}`);
+        } catch (error) {
+            console.error(`[PackageManager] Error saving package metadata:`, error);
+        }
     }
 
     public async listPackages(): Promise<PackageInfo[]> {
@@ -348,6 +403,19 @@ ${filterEntries}
                 
                 const hasAuthor = fs.existsSync(authorZipPath);
                 const hasPublisher = fs.existsSync(publisherZipPath);
+                
+                // Load package metadata if available
+                const metadataPath = path.join(packageFolderPath, 'package.json');
+                let packageMetadata: any = {};
+                
+                if (fs.existsSync(metadataPath)) {
+                    try {
+                        const metadataContent = fs.readFileSync(metadataPath, 'utf8');
+                        packageMetadata = JSON.parse(metadataContent);
+                    } catch (error) {
+                        console.error(`[PackageManager] Error loading package metadata for ${packageFolder}:`, error);
+                    }
+                }
                 
                 // Get file sizes
                 let authorSize: number | undefined;
@@ -421,12 +489,14 @@ ${filterEntries}
                 
                 packages.push({
                     name: packageFolder,
-                    createdDate: stats.birthtime || stats.ctime,
-                    paths: paths,
+                    createdDate: packageMetadata.createdDate ? new Date(packageMetadata.createdDate) : (stats.birthtime || stats.ctime),
+                    paths: packageMetadata.paths || paths,
                     hasAuthor: hasAuthor,
                     hasPublisher: hasPublisher,
                     authorSize: authorSize,
-                    publisherSize: publisherSize
+                    publisherSize: publisherSize,
+                    authorAemPath: packageMetadata.authorAemPath,
+                    publisherAemPath: packageMetadata.publisherAemPath
                 });
             } catch (error) {
                 console.error(`[PackageManager] Error reading package folder ${packageFolder}:`, error);
