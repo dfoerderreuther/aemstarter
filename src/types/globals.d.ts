@@ -76,7 +76,15 @@ declare global {
       installPackage: (project: Project, instance: 'author' | 'publisher', packageUrl: string) => Promise<boolean>;
       
       // Package Management
-      listPackages: (project: Project) => Promise<string[]>;
+      listPackages: (project: Project) => Promise<Array<{
+        name: string;
+        createdDate: Date;
+        paths: string[];
+        hasAuthor: boolean;
+        hasPublisher: boolean;
+        authorSize?: number;
+        publisherSize?: number;
+      }>>;
       createPackage: (project: Project, name: string, instances: string[], paths: string[]) => Promise<boolean>;
       deletePackage: (project: Project, packageName: string) => Promise<boolean>;
 

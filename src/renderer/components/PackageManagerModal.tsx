@@ -26,6 +26,7 @@ import {
 } from '@mantine/core';
 import { Project } from '../../types/Project';
 import { IconPackage, IconAlertCircle, IconPlus, IconCloudUpload, IconTrash, IconDownload, IconInfoCircle, IconCopy } from '@tabler/icons-react';
+import { formatFileSize } from '../utils/fileUtils';
 
 interface PackageInfo {
   name: string;
@@ -33,6 +34,8 @@ interface PackageInfo {
   paths: string[];
   hasAuthor: boolean;
   hasPublisher: boolean;
+  authorSize?: number;
+  publisherSize?: number;
 }
 
 interface PackageManagerModalProps {
@@ -65,7 +68,9 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
       ((item as any).createdDate || (item as any).size) && // Support both old and new format
       Array.isArray((item as any).paths) &&
       typeof (item as any).hasAuthor === 'boolean' &&
-      typeof (item as any).hasPublisher === 'boolean'
+      typeof (item as any).hasPublisher === 'boolean' &&
+      (typeof (item as any).authorSize === 'number' || typeof (item as any).authorSize === 'undefined') &&
+      (typeof (item as any).publisherSize === 'number' || typeof (item as any).publisherSize === 'undefined')
     );
   };
 
@@ -77,13 +82,17 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
       
       if (isStringArray(result)) {
         // Convert old string[] format to PackageInfo[] (legacy support)
-        const packageInfos: PackageInfo[] = result.map(name => ({
-          name,
+        const packageInfos: PackageInfo[] = result.map((name: string) => ({
+          name: name,
           createdDate: new Date(),
           paths: [],
           hasAuthor: false,
-          hasPublisher: false
+          hasPublisher: false,
+          authorSize: undefined,
+          publisherSize: undefined
         }));
+        // Sort by date (newest first)
+        packageInfos.sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
         setPackages(packageInfos);
       } else if (isPackageInfoArray(result)) {
         // New PackageInfo[] format - convert dates from string to Date objects
@@ -91,6 +100,8 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
           ...pkg,
           createdDate: new Date(pkg.createdDate)
         }));
+        // Sort by date (newest first)
+        packageInfos.sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
         setPackages(packageInfos);
       } else {
         setPackages([]);
@@ -328,53 +339,48 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
                                   <Table striped highlightOnHover withTableBorder={false} verticalSpacing="md">
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th style={{ width: '35%' }}>Package Info</Table.Th>
-                        <Table.Th style={{ width: '30%' }}>Install</Table.Th>
-                        <Table.Th style={{ width: '20%' }}>Created</Table.Th>
-                        <Table.Th style={{ width: '15%', textAlign: 'center' }}>Actions</Table.Th>
+                        <Table.Th style={{ width: '25%' }}>Package Info</Table.Th>
+                        <Table.Th style={{ width: '40%' }}>Paths</Table.Th>
+                        <Table.Th style={{ width: '35%' }}>Actions</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
                       {packages.map((packageInfo) => (
                         <Table.Tr key={packageInfo.name}>
-                          <Table.Td>
+                          <Table.Td style={{ verticalAlign: 'top' }}>
                             <Group gap="sm">
-                              <ActionIcon variant="light" color="blue" size="sm">
-                                <IconPackage size={14} />
-                              </ActionIcon>
                               <Box>
                                 <Text fw={500} size="sm">{packageInfo.name}</Text>
-                                <Group gap="xs" mt="xs">
-                                  {packageInfo.hasAuthor && (
-                                    <Badge size="xs" color="blue" variant="light">Author</Badge>
-                                  )}
-                                  {packageInfo.hasPublisher && (
-                                    <Badge size="xs" color="green" variant="light">Publisher</Badge>
-                                  )}
-                                </Group>
-                                {packageInfo.paths.length > 0 && (
-                                  <Group gap="xs" mt="xs" align="flex-start">
-                                    <Stack gap="xs" style={{ flex: 1 }}>
-                                      {packageInfo.paths.map((path, index) => (
-                                        <Code key={index} c="dimmed">{path}</Code>
-                                      ))}
-                                    </Stack>
-                                    <Tooltip label="Copy paths to form">
-                                      <ActionIcon
-                                        size="xs"
-                                        variant="subtle"
-                                        color="gray"
-                                        onClick={() => handleCopyPaths(packageInfo.paths)}
-                                      >
-                                        <IconCopy size={12} />
-                                      </ActionIcon>
-                                    </Tooltip>
-                                  </Group>
-                                )}
+                                                                  <Text size="sm" c="dimmed" mt="xs">
+                                    {packageInfo.createdDate.toLocaleDateString()} {packageInfo.createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </Text>
                               </Box>
                             </Group>
                           </Table.Td>
-                          <Table.Td>
+                          <Table.Td style={{ verticalAlign: 'top' }}>
+                            {packageInfo.paths.length > 0 ? (
+                              <Group gap="xs" align="flex-start">
+                                <Stack gap="xs" style={{ flex: 1 }}>
+                                  {packageInfo.paths.map((path, index) => (
+                                    <Code key={index} c="dimmed">{path}</Code>
+                                  ))}
+                                </Stack>
+                                <Tooltip label="Copy paths to form">
+                                  <ActionIcon
+                                    size="xs"
+                                    variant="subtle"
+                                    color="gray"
+                                    onClick={() => handleCopyPaths(packageInfo.paths)}
+                                  >
+                                    <IconCopy size={12} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              </Group>
+                            ) : (
+                              <Text size="sm" c="dimmed">No paths specified</Text>
+                            )}
+                          </Table.Td>
+                          <Table.Td style={{ verticalAlign: 'top' }}>
                             <Stack gap="xs">
                               <Group gap="xs">
                                 <Button
@@ -385,7 +391,7 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
                                   variant="light"
                                   disabled={!packageInfo.hasAuthor}
                                 >
-                                  Author
+                                  Author{packageInfo.authorSize ? ` (${formatFileSize(packageInfo.authorSize)})` : ''}
                                 </Button>
                                 <Button
                                   size="xs"
@@ -395,7 +401,7 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
                                   variant="light"
                                   disabled={!packageInfo.hasPublisher}
                                 >
-                                  Publisher
+                                  Publisher{packageInfo.publisherSize ? ` (${formatFileSize(packageInfo.publisherSize)})` : ''}
                                 </Button>
                               </Group>
                               <Button
@@ -408,15 +414,6 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
                               >
                                 Install All
                               </Button>
-                            </Stack>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm" c="dimmed">
-                              {packageInfo.createdDate.toLocaleDateString()}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Center>
                               <Button
                                 size="xs"
                                 color="red"
@@ -428,7 +425,7 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
                               >
                                 Delete
                               </Button>
-                            </Center>
+                            </Stack>
                           </Table.Td>
                         </Table.Tr>
                       ))}

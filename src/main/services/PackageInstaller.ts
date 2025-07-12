@@ -10,6 +10,8 @@ export interface PackageInfo {
     paths: string[];
     hasAuthor: boolean;
     hasPublisher: boolean;
+    authorSize?: number;
+    publisherSize?: number;
 }
 
 export class PackageInstaller {
@@ -265,6 +267,28 @@ ${filterEntries}
                 const hasAuthor = fs.existsSync(authorZipPath);
                 const hasPublisher = fs.existsSync(publisherZipPath);
                 
+                // Get file sizes
+                let authorSize: number | undefined;
+                let publisherSize: number | undefined;
+                
+                if (hasAuthor) {
+                    try {
+                        const authorStats = fs.statSync(authorZipPath);
+                        authorSize = authorStats.size;
+                    } catch (error) {
+                        console.error(`[PackageInstaller] Error getting author package size for ${packageFolder}:`, error);
+                    }
+                }
+                
+                if (hasPublisher) {
+                    try {
+                        const publisherStats = fs.statSync(publisherZipPath);
+                        publisherSize = publisherStats.size;
+                    } catch (error) {
+                        console.error(`[PackageInstaller] Error getting publisher package size for ${packageFolder}:`, error);
+                    }
+                }
+                
                 // Get folder creation date
                 const stats = fs.statSync(packageFolderPath);
                 
@@ -318,7 +342,9 @@ ${filterEntries}
                     createdDate: stats.birthtime || stats.ctime,
                     paths: paths,
                     hasAuthor: hasAuthor,
-                    hasPublisher: hasPublisher
+                    hasPublisher: hasPublisher,
+                    authorSize: authorSize,
+                    publisherSize: publisherSize
                 });
             } catch (error) {
                 console.error(`[PackageInstaller] Error reading package folder ${packageFolder}:`, error);
