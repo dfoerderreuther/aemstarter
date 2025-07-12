@@ -92,7 +92,48 @@ ${filterEntries}
     }
 
     /**
-     * Creates a package zip with META-INF/vault/filter.xml and jcr_root structure
+     * Creates properties.xml content for the package
+     */
+    private createPropertiesXml(name: string, group: string = 'aem-starter'): string {
+        const timestamp = new Date().toISOString();
+        return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+    <entry key="name">${name}</entry>
+    <entry key="group">${group}</entry>
+    <entry key="version">1.0</entry>
+    <entry key="created">${timestamp}</entry>
+    <entry key="createdBy">aem-starter</entry>
+    <entry key="description">Package created by AEM Starter</entry>
+    <entry key="buildCount">1</entry>
+    <entry key="packageType">content</entry>
+    <entry key="requiresRoot">false</entry>
+    <entry key="allowIndexDefinitions">false</entry>
+</properties>`;
+    }
+
+    /**
+     * Creates definition/.content.xml content for the package
+     */
+    private createDefinitionXml(name: string, group: string = 'aem-starter'): string {
+        const timestamp = new Date().toISOString();
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:vlt="http://www.day.com/jcr/vault/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:created="${timestamp}"
+    jcr:createdBy="aem-starter"
+    jcr:description="Package created by AEM Starter"
+    jcr:lastModified="${timestamp}"
+    jcr:lastModifiedBy="aem-starter"
+    jcr:primaryType="vlt:PackageDefinition"
+    buildCount="1"
+    builtWith="aem-starter"
+    group="${group}"
+    name="${name}"
+    version="1.0"/>`;
+    }
+
+    /**
+     * Creates a package zip with proper AEM package structure including metadata
      */
     private createPackageZip(name: string, paths: string[]): Buffer {
         const zip = new AdmZip();
@@ -100,8 +141,16 @@ ${filterEntries}
         // Create filter.xml content
         const filterXml = this.createFilterXml(paths);
         
-        // Add filter.xml to the zip with proper structure
+        // Create properties.xml content
+        const propertiesXml = this.createPropertiesXml(name);
+        
+        // Create definition/.content.xml content
+        const definitionXml = this.createDefinitionXml(name);
+        
+        // Add all metadata files to the zip with proper structure
         zip.addFile('META-INF/vault/filter.xml', Buffer.from(filterXml, 'utf8'));
+        zip.addFile('META-INF/vault/properties.xml', Buffer.from(propertiesXml, 'utf8'));
+        zip.addFile('META-INF/vault/definition/.content.xml', Buffer.from(definitionXml, 'utf8'));
         
         // Add jcr_root folder (required for AEM packages)
         zip.addFile('jcr_root/.content.xml', Buffer.from('<?xml version="1.0" encoding="UTF-8"?>\n<jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0"/>', 'utf8'));

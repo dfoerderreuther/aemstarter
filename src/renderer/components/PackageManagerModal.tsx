@@ -184,7 +184,7 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
       setPackageName('');
       setPackagePaths('');
       setIncludeAuthor(true);
-      setIncludePublisher(false);
+      setIncludePublisher(true);
       
       await loadPackages();
     } catch (err: unknown) {
