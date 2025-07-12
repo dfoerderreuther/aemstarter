@@ -12,82 +12,90 @@ export class PackageInstaller {
     }
 
     /**
-     * Installs a package from a URL or local file path
+     * Atomically downloads a file to prevent corruption during concurrent downloads
      */
-    async installPackage(instance: 'author' | 'publisher', packageUrl: string): Promise<void> {
-        if (packageUrl.startsWith('http://') || packageUrl.startsWith('https://')) {
-            // Handle URL installation
-            await this.installPackageFromUrl(instance, packageUrl);
-        } else {
-            // Handle local file installation
-            await this.installPackageFromFile(instance, packageUrl);
-        }
-    }
-
-    /**
-     * Downloads and installs a package from a URL
-     */
-    private async installPackageFromUrl(instance: 'author' | 'publisher', packageUrl: string): Promise<void> {
-        console.log(`[PackageInstaller] Installing package from URL: ${packageUrl} on ${instance} instance`);
+    private async atomicDownload(url: string, targetPath: string): Promise<void> {
+        const tempPath = `${targetPath}.tmp.${randomUUID()}`;
         
-        // Get instance settings to determine port
-        const settings = this.project.settings;
-        const instanceSettings = settings[instance];
-        const port = instanceSettings.port;
-        const host = 'localhost';
-
         try {
-            // Download the package
-            const response = await fetch(packageUrl);
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`Failed to download package: ${response.status} ${response.statusText}`);
             }
 
             const packageBuffer = await response.arrayBuffer();
-            const fileName = path.basename(packageUrl);
+            fs.writeFileSync(tempPath, Buffer.from(packageBuffer));
             
-            // Create FormData-like structure manually
-            const boundary = `----WebKitFormBoundary${randomUUID()}`;
-            const formData = this.createMultipartFormData(boundary, {
-                file: { buffer: Buffer.from(packageBuffer), filename: fileName },
-                name: fileName,
-                force: 'true',
-                install: 'true'
-            });
-
-            const url = `http://${host}:${port}/crx/packmgr/service.jsp`;
-            console.log(`[PackageInstaller] Installing package to: ${url}`);
-
-            const installResponse = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64'),
-                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                    'Content-Length': formData.length.toString()
-                },
-                body: formData
-            });
-
-            if (!installResponse.ok) {
-                const responseText = await installResponse.text();
-                throw new Error(`Failed to install package: ${installResponse.status} ${installResponse.statusText}. Response: ${responseText}`);
-            }
-
-            const responseText = await installResponse.text();
-            console.log(`[PackageInstaller] Installation response:`, responseText);
-            console.log(`[PackageInstaller] Successfully installed package from URL on ${instance} instance`);
+            // Atomic rename - this operation is atomic on most filesystems
+            fs.renameSync(tempPath, targetPath);
             
         } catch (error) {
-            console.error(`[PackageInstaller] Error installing package from URL:`, error);
+            // Clean up temp file if download failed
+            if (fs.existsSync(tempPath)) {
+                fs.unlinkSync(tempPath);
+            }
             throw error;
         }
     }
 
-    /**
-     * Installs a package from a local file path
-     */
+    async installPackage(instance: 'author' | 'publisher', packageUrl: string): Promise<void> {
+
+        // Create install directory if it doesn't exist
+        const installDir = this.getInstallDir();
+        console.log(`[PackageInstaller] DEBUG: packageUrl = ${packageUrl}`);
+        console.log(`[PackageInstaller] DEBUG: installDir = ${installDir}`);
+
+        // Extract filename from URL and make it instance-specific
+        const originalFileName = path.basename(packageUrl);
+        console.log(`[PackageInstaller] DEBUG: originalFileName = ${originalFileName}`);
+        const fileExtension = path.extname(originalFileName);
+        const baseName = path.basename(originalFileName, fileExtension);
+        const fileName = `${baseName}-${instance}${fileExtension}`;
+        const filePath = path.join(installDir, fileName);
+        console.log(`[PackageInstaller] DEBUG: fileName = ${fileName}`);
+        console.log(`[PackageInstaller] DEBUG: filePath = ${filePath}`);
+
+        if (packageUrl.startsWith('http')) {
+
+            // Download the package if it doesn't exist
+            if (!fs.existsSync(filePath)) {
+                console.log(`[PackageInstaller] Downloading package from ${packageUrl} for ${instance} instance`);
+                
+                try {
+                    await this.atomicDownload(packageUrl, filePath);
+                    console.log(`[PackageInstaller] Downloaded package to ${filePath}`);
+                } catch (error) {
+                    console.error(`[PackageInstaller] Error downloading package:`, error);
+                    throw error;
+                }
+            } else {
+                console.log(`[PackageInstaller] Package already exists at ${filePath}`);
+            }
+        } else {
+            // its a file
+            
+            // Copy the package if it doesn't exist
+            if (!fs.existsSync(filePath)) {
+                console.log(`[PackageInstaller] Copying package from ${packageUrl} for ${instance} instance`);
+                fs.copyFileSync(packageUrl, filePath);
+                console.log(`[PackageInstaller] Copied package to ${filePath}`);
+            } else {
+                console.log(`[PackageInstaller] Package already exists at ${filePath}`);
+            }
+        }
+        return this.installPackageFromFile(instance, filePath);
+    }
+
+    private getInstallDir(): string {
+        // Create install directory if it doesn't exist
+        const installDir = path.join(this.project.folderPath, 'install');
+        if (!fs.existsSync(installDir)) {
+            fs.mkdirSync(installDir, { recursive: true });
+        }
+        return installDir;
+    }
+
     private async installPackageFromFile(instance: 'author' | 'publisher', filePath: string): Promise<void> {
-        console.log(`[PackageInstaller] Installing package from file: ${filePath} on ${instance} instance`);
 
         // Verify the file exists
         if (!fs.existsSync(filePath)) {
@@ -101,13 +109,15 @@ export class PackageInstaller {
         const settings = this.project.settings;
         const instanceSettings = settings[instance];
         const port = instanceSettings.port;
-        const host = 'localhost';
+        const host = 'localhost'; // Default host
 
+        console.log(`[PackageInstaller] Installing package on ${instance} instance (${host}:${port})`);
+        
         try {
             // Read the file as a buffer
             const fileBuffer = fs.readFileSync(filePath);
             
-            // Create FormData-like structure manually
+            // Create FormData-like structure manually since Node.js doesn't have FormData
             const boundary = `----WebKitFormBoundary${randomUUID()}`;
             const formData = this.createMultipartFormData(boundary, {
                 file: { buffer: fileBuffer, filename: fileName },
@@ -136,10 +146,10 @@ export class PackageInstaller {
 
             const responseText = await response.text();
             console.log(`[PackageInstaller] Installation response:`, responseText);
-            console.log(`[PackageInstaller] Successfully installed package from file on ${instance} instance`);
+            console.log(`[PackageInstaller] Successfully installed package on ${instance} instance`);
             
         } catch (error) {
-            console.error(`[PackageInstaller] Error installing package from file:`, error);
+            console.error(`[PackageInstaller] Error installing package:`, error);
             throw error;
         }
     }
@@ -155,9 +165,8 @@ export class PackageInstaller {
             
             if (value.buffer && value.filename) {
                 // File field
-                const contentType = value.filename.endsWith('.zip') ? 'application/zip' : 'application/octet-stream';
                 parts.push(Buffer.from(`Content-Disposition: form-data; name="${name}"; filename="${value.filename}"\r\n`));
-                parts.push(Buffer.from(`Content-Type: ${contentType}\r\n\r\n`));
+                parts.push(Buffer.from('Content-Type: application/octet-stream\r\n\r\n'));
                 parts.push(value.buffer);
             } else {
                 // Text field
@@ -172,4 +181,5 @@ export class PackageInstaller {
         
         return Buffer.concat(parts);
     }
+
 }

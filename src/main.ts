@@ -657,6 +657,10 @@ ipcMain.handle('install-package', async (_, project: Project, instance: 'author'
       // Handle URL installation
       const packageInstaller = new PackageInstaller(project);
       await packageInstaller.installPackage(instance, packageUrl);
+    } else if (packageUrl.includes('/') || packageUrl.includes('\\')) {
+      // Handle local file path installation
+      const packageInstaller = new PackageInstaller(project);
+      await packageInstaller.installPackage(instance, packageUrl);
     } else {
       // Handle local package installation by name
       const packageManager = new PackageManager(project);
@@ -1018,6 +1022,9 @@ ipcMain.handle('clear-all-terminals', async () => {
 ipcMain.handle('start-ssl-proxy', async (_, project: Project) => {
   try {
     const httpsService = HttpsServiceRegister.getService(project);
+    if (mainWindow) {
+      httpsService.setMainWindow(mainWindow);
+    }
     await httpsService.startSslProxy();
     return true;
   } catch (error) {
@@ -1029,6 +1036,9 @@ ipcMain.handle('start-ssl-proxy', async (_, project: Project) => {
 ipcMain.handle('stop-ssl-proxy', async (_, project: Project) => {
   try {
     const httpsService = HttpsServiceRegister.getService(project);
+    if (mainWindow) {
+      httpsService.setMainWindow(mainWindow);
+    }
     await httpsService.stopSslProxy();
     return true;
   } catch (error) {
@@ -1040,6 +1050,9 @@ ipcMain.handle('stop-ssl-proxy', async (_, project: Project) => {
 ipcMain.handle('is-ssl-proxy-running', async (_, project: Project) => {
   try {
     const httpsService = HttpsServiceRegister.getService(project);
+    if (mainWindow) {
+      httpsService.setMainWindow(mainWindow);
+    }
     return await httpsService.isSslProxyRunning();
   } catch (error) {
     console.error('Error checking SSL proxy status:', error);

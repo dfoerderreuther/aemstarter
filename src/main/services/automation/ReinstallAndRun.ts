@@ -6,12 +6,15 @@ import { BackupService } from "../BackupService";
 import { AemInstanceManagerRegister } from "../../AemInstanceManagerRegister";
 import { DispatcherManagerRegister } from "../../DispatcherManagerRegister";
 import { Installer } from "../Installer";
+import { HttpsService } from "../HttpsService";
+import { HttpsServiceRegister } from "../../HttpsServiceRegister";
 
 export class ReinstallAndRun implements AutoTask {
 
     public project: Project;
     protected aemInstanceManager: AemInstanceManager;
     protected dispatcherManager: DispatcherManager;
+    protected httpsService: HttpsService;
     protected backupService: BackupService;
 
 
@@ -19,6 +22,7 @@ export class ReinstallAndRun implements AutoTask {
         this.project = project;
         this.aemInstanceManager = AemInstanceManagerRegister.getInstanceManager(this.project);
         this.dispatcherManager = DispatcherManagerRegister.getManager(this.project);
+        this.httpsService = HttpsServiceRegister.getService(this.project);
         this.backupService = new BackupService(project)
     }
 
@@ -50,6 +54,9 @@ export class ReinstallAndRun implements AutoTask {
         if (this.dispatcherManager.isDispatcherRunning()) {
             stopPromises.push(this.dispatcherManager.stopDispatcher());
         }
+        if (this.project.settings?.https?.enabled || false) {
+            stopPromises.push(this.httpsService.stopSslProxy());
+        }
         await Promise.all(stopPromises);
     }
     
@@ -59,9 +66,14 @@ export class ReinstallAndRun implements AutoTask {
     }
     
     protected async start() {
-        await this.aemInstanceManager.startInstance('author', 'start')
-        await this.aemInstanceManager.startInstance('publisher', 'start')
-        await this.dispatcherManager.startDispatcher()
+        const startPromises: Promise<void>[] = [];
+        startPromises.push(this.aemInstanceManager.startInstance('author', 'start'))
+        startPromises.push(this.aemInstanceManager.startInstance('publisher', 'start'))
+        startPromises.push(this.dispatcherManager.startDispatcher())
+        if (this.project.settings?.https?.enabled || false) {
+            startPromises.push(this.httpsService.startSslProxy());
+        }
+        await Promise.all(startPromises);
     }
     
 }

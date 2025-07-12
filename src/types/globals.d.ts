@@ -164,6 +164,9 @@ declare global {
       stopSslProxy: (project: Project) => Promise<boolean>;
       isSslProxyRunning: (project: Project) => Promise<boolean>;
 
+      // SSL Proxy status streaming
+      onSslProxyStatus: (callback: (data: { projectId: string; isRunning: boolean; port: number }) => void) => () => void;
+
       // Oak-run.jar functionality
       isOakJarAvailable: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
       loadOakJar: (project: Project) => Promise<boolean>;

@@ -8,6 +8,9 @@ export class RestoreLastBackupAndDebug extends RestoreLastBackupAndRun {
         startPromises.push(this.aemInstanceManager.startInstance('author', 'debug'))
         startPromises.push(this.aemInstanceManager.startInstance('publisher', 'debug'))
         startPromises.push(this.dispatcherManager.startDispatcher())
+        if (this.project.settings?.https?.enabled || false) {
+            startPromises.push(this.httpsService.startSslProxy());
+        }
         await Promise.all(startPromises);
     }
 }

@@ -116,11 +116,19 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
         setIsDispatcherRunning(data.isRunning);
       }
     });
+
+    // Set up SSL proxy status event listener
+    const sslProxyStatusCleanup = window.electronAPI.onSslProxyStatus((data) => {
+      if (data.projectId === project.id) {
+        setIsSslProxyRunningState(data.isRunning);
+      }
+    });
     
     return () => {
       clearInterval(interval);
       pidStatusCleanup();
       dispatcherStatusCleanup();
+      sslProxyStatusCleanup();
     };
   }, [project]);
 

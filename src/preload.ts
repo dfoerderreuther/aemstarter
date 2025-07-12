@@ -392,5 +392,16 @@ contextBridge.exposeInMainWorld(
     
     isSslProxyRunning: (project: Project) =>
       ipcRenderer.invoke('is-ssl-proxy-running', project),
+
+    // SSL Proxy status streaming
+    onSslProxyStatus: (callback: (data: { projectId: string; isRunning: boolean; port: number }) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { projectId: string; isRunning: boolean; port: number }) => callback(data);
+      ipcRenderer.on('ssl-proxy-status', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('ssl-proxy-status', handler);
+      };
+    },
   }
 );

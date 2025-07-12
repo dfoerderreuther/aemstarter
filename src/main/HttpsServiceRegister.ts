@@ -1,5 +1,6 @@
 import { Project } from "../types/Project";
 import { HttpsService } from "./services/HttpsService";
+import { BrowserWindow } from 'electron';
 
 export class HttpsServiceRegister {
 
@@ -19,5 +20,11 @@ export class HttpsServiceRegister {
         if (service) {
             service.updateProject(project);
         }
+    }
+
+    static setMainWindow(mainWindow: BrowserWindow): void {
+        this.services.forEach(service => {
+            service.setMainWindow(mainWindow);
+        });
     }
 } 

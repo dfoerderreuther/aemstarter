@@ -4,6 +4,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import * as https from 'https';
 import * as httpProxy from 'http-proxy';
+import { BrowserWindow } from 'electron';
 
 class HttpsProxyLogger {
     private project: Project;
@@ -67,10 +68,15 @@ export class HttpsService {
     private project: Project;
     private server: https.Server | null = null;
     private logger: HttpsProxyLogger;
+    private mainWindow: BrowserWindow | null = null;
 
     constructor(project: Project) {
         this.project = project;
         this.logger = new HttpsProxyLogger(project);
+    }
+
+    public setMainWindow(mainWindow: BrowserWindow): void {
+        this.mainWindow = mainWindow;
     }
 
     public updateProject(project: Project): void {
@@ -110,6 +116,7 @@ export class HttpsService {
     }
 
     public async startSslProxy(): Promise<void> {
+        console.log('[HttpsService] startSslProxy');
         return new Promise(async (resolve, reject) => {
             try {
                 const sslDir = path.join(this.project.folderPath, 'ssl');
@@ -159,6 +166,7 @@ export class HttpsService {
                 
                 this.server.listen(httpsPort, () => {
                     this.logger.log(`HTTPS Proxy running on https://localhost:${httpsPort} → ${target}`);
+                    this.sendStatusUpdate(true);
                     resolve();
                 });
                 
@@ -171,9 +179,11 @@ export class HttpsService {
     }
 
     public async stopSslProxy(): Promise<void> {
+        console.log('[HttpsService] stopSslProxy');
         return new Promise((resolve, reject) => {
             if (!this.server) {
                 this.logger.log('No SSL proxy server to stop');
+                this.sendStatusUpdate(false);
                 resolve();
                 return;
             }
@@ -187,6 +197,7 @@ export class HttpsService {
                 } else {
                     this.logger.log('SSL proxy server stopped successfully');
                     this.server = null;
+                    this.sendStatusUpdate(false);
                     resolve();
                 }
             });
@@ -195,5 +206,22 @@ export class HttpsService {
 
     public async isSslProxyRunning(): Promise<boolean> {
         return this.server !== null;
+    }
+
+    private sendStatusUpdate(isRunning: boolean): void {
+        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+            this.mainWindow.webContents.send('ssl-proxy-status', {
+                projectId: this.project.id,
+                isRunning: isRunning,
+                port: this.project.settings?.https?.port || 443
+            });
+        }
+    }
+
+    /**
+     * Force a status update to be sent to the UI
+     */
+    public forceStatusUpdate(): void {
+        this.sendStatusUpdate(this.server !== null);
     }
 }
