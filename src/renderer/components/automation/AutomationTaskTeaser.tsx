@@ -6,6 +6,7 @@ import { Project } from '../../../types/Project';
 interface AutomationTaskTeaserProps {
     task: string;
     project: Project;
+    parameters?: { [key: string]: string };
     children: React.ReactNode;
     icon?: React.ComponentType<{ size: number; color?: string }>;
     taskTitle?: string;
@@ -15,6 +16,7 @@ interface AutomationTaskTeaserProps {
 export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({ 
     task, 
     project, 
+    parameters,
     children, 
     icon: Icon = IconPackage,
     taskTitle = "Automation Task",
@@ -29,7 +31,7 @@ export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({
                 onTaskStart(task, taskTitle);
             }
             console.log(`[AutomationTaskTeaser] Running task: ${task}`);
-            await window.electronAPI.runAutomationTask(project, task);
+            await window.electronAPI.runAutomationTask(project, task, parameters);
         } catch (error) {
             console.error(`[AutomationTaskTeaser] Failed to run task ${task}:`, error);
         } finally {

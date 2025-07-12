@@ -9,7 +9,8 @@ import { FirstStartAndInitialSetup } from './FirstStartAndInitialSetup';
 
 export interface AutoTask {
     project: Project;
-    run(progressCallback?: (message: string) => void) : Promise<void>;
+    parameters?: { [key: string]: string };
+    run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string }) : Promise<void>;
 }
 
 type AutoTaskConstructor = new (project: Project) => AutoTask;
@@ -31,15 +32,15 @@ export class Automation {
         this.project = project;
     }
 
-    static async run(project: Project, type: string, mainWindow?: BrowserWindow) : Promise<void> {
+    static async run(project: Project, type: string, mainWindow?: BrowserWindow, parameters?: { [key: string]: string }) : Promise<void> {
         const automation = new Automation(project);
-        await automation.run(type, mainWindow);
+        await automation.run(type, mainWindow, parameters);
     }
 
-    private async run(type: string, mainWindow?: BrowserWindow) : Promise<void> {
+    private async run(type: string, mainWindow?: BrowserWindow, parameters?: { [key: string]: string }) : Promise<void> {
         const TaskConstructor = Automation.taskRegistry.get(type);
         if (TaskConstructor) {
-            console.log(`[Automation] Running task: ${type}`);
+            console.log(`[Automation] Running task: ${type}${parameters ? ' with parameters: ' + JSON.stringify(parameters) : ''}`);
             
             // Create progress callback to send updates to frontend
             const progressCallback = (message: string) => {
@@ -55,7 +56,7 @@ export class Automation {
             };
 
             const task = new TaskConstructor(this.project);
-            await task.run(progressCallback);
+            await task.run(progressCallback, parameters);
             
             console.log(`[Automation] Task ${type} completed`);
             progressCallback('Task completed successfully');

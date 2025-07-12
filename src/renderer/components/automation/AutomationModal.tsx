@@ -3,6 +3,13 @@ import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge, L
 import { IconRefresh, IconPlayerPlay, IconAlertCircle, IconBug, IconPackage, IconHistory, IconRobot } from '@tabler/icons-react';
 import { Project } from '../../../types/Project';
 import { AutomationTaskTeaser } from './AutomationTaskTeaser';
+import { BackupAndStartTeaser } from './teaser/BackupAndStartTeaser';
+import { LastBackupAndRunTeaser } from './teaser/LastBackupAndRunTeaser';
+import { LastBackupAndDebugTeaser } from './teaser/LastBackupAndDebugTeaser';
+import { FirstBackupAndRunTeaser } from './teaser/FirstBackupAndRunTeaser';
+import { ReinstallTeaser } from './teaser/ReinstallTeaser';
+import { FirstStartAndInitialSetupTeaser } from './teaser/FirstStartAndInitialSetupTeaser';
+import { SetUpReplicationTeaser } from './teaser/SetUpReplicationTeaser';
 
 interface AutomationModalProps {
   opened: boolean;
@@ -277,171 +284,57 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
           // Show normal task list when no task is running
           <ScrollArea style={{ height: '400px' }}>
             <Stack gap={0}>
-              <AutomationTaskTeaser 
-                task="create-backup-and-run" 
-                project={project} 
-                icon={IconPlayerPlay}
-                taskTitle="Create backup and start"
+
+              <LastBackupAndRunTeaser 
+                project={project}
                 onTaskStart={handleTaskStart}
-              >
-                <div>
-                  <Text fw={500} size="sm" mb={4}>Create backup and start</Text>
-                  <Text size="xs" c="dimmed" mb={8}>
-                    This will shut down all instances, create a backup and start again.
-                  </Text>
-                </div>
-              </AutomationTaskTeaser>
-              <Divider />
-              <AutomationTaskTeaser 
-                task="last-backup-and-run" 
-                project={project} 
-                icon={IconPlayerPlay}
-                taskTitle="Restore last backup and start"
-                onTaskStart={handleTaskStart}
-              >
-                <div>
-                  <Text fw={500} size="sm" mb={4}>Restore last backup and start</Text>
-                  <Text size="xs" c="dimmed" mb={8}>
-                    This will shut down all instances, restore the last backup and start again.
-                  </Text>
-                  <Group gap="xs">
-                    <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
-                  </Group>
-                </div>
-              </AutomationTaskTeaser>
+              />
               <Divider />
 
-              <AutomationTaskTeaser 
-                task="last-backup-and-debug" 
-                project={project} 
-                icon={IconBug}
-                taskTitle="Restore last backup and start in debug mode"
+              <LastBackupAndDebugTeaser 
+                project={project}
                 onTaskStart={handleTaskStart}
-              >
-                <div>
-                  <Text fw={500} size="sm" mb={4}>Restore last backup and start in debug mode</Text>
-                  <Text size="xs" c="dimmed" mb={8}>
-                    This will shut down all instances, restore the last backup and start again in debug mode.
-                  </Text>
-                  <Group gap="xs">
-                    <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
-                  </Group>
-                </div>
-              </AutomationTaskTeaser>
+              />
+              <Divider />
               
+              <BackupAndStartTeaser 
+                project={project}
+                onTaskStart={handleTaskStart}
+              />
               <Divider />
 
-              <AutomationTaskTeaser 
-                task="first-backup-and-run" 
-                project={project} 
-                icon={IconHistory}
-                taskTitle="Restore first backup and start"
+              <FirstBackupAndRunTeaser 
+                project={project}
                 onTaskStart={handleTaskStart}
-              >
-                <div>
-                  <Text fw={500} size="sm" mb={4}>Restore first backup and start</Text>
-                  <Text size="xs" c="dimmed" mb={8}>
-                    This will shut down all instances, restore the first backup and start again.
-                  </Text>
-                  <Group gap="xs">
-                    <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
-                  </Group>
-                </div>
-              </AutomationTaskTeaser>
+              />
               <Divider />
 
-              <AutomationTaskTeaser 
-                task="reinstall" 
-                project={project} 
-                icon={IconPackage}
-                taskTitle="Reinstall AEM"
+              <ReinstallTeaser 
+                project={project}
                 onTaskStart={handleTaskStart}
-              >
-                <div>
-                  <Text fw={500} size="sm" mb={4}>Reinstall AEM</Text>
-                  <Text size="xs" c="dimmed" mb={8}>
-                    Completely reinstall AEM instances. This will delete existing folders, 
-                    create new ones, copy license files, and unzip the SDK package.
-                  </Text>
-                  <Group gap="xs">
-                    <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
-                  </Group>
-                </div>
-              </AutomationTaskTeaser>
+              />
 
               <Divider />
 
-              <AutomationTaskTeaser 
-                task="first-start-and-initial-setup" 
-                project={project} 
-                icon={IconPackage}
-                taskTitle="First start and initial setup"
+              <FirstStartAndInitialSetupTeaser 
+                project={project}
                 onTaskStart={handleTaskStart}
-              >
-                <div>
-                  <Text fw={500} size="sm" mb={4}>First start and initial setup</Text>
-                  <Text size="xs" c="dimmed" mb={8}>
-                    This will start all instances, 
-                    configure replication between Author, Publisher, and Dispatcher instances, 
-                    load matching oak-run.jar
-                    and install the WKND packages.
-
-                  </Text>
-                  <Group gap="xs">
-                    <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
-                    <Badge variant="outline" color="red" size="xs">CS only. Not for classic.</Badge>
-                  </Group>
-                </div>
-              </AutomationTaskTeaser>
+              />
 
               <Divider />
               
-              {/* Setup Replication Task */}
-              <Paper style={taskItemStyles} radius="md" withBorder>
-                <Group align="flex-start" gap="md">
-                  <ThemeIcon size="xl" variant="light" color="blue" radius="md">
-                    <IconRefresh size={24} />
-                  </ThemeIcon>
-                  
-                  <div style={{ flex: 1 }}>
-                    <Group justify="space-between" align="flex-start">
-                      <div>
-                        <Text fw={500} size="sm" mb={4}>Set Up Replication</Text>
-                        <Text size="xs" c="dimmed" mb={8}>
-                          Configure replication between Author, Publisher, and Dispatcher instances. 
-                          This will set up the proper replication agents and configurations.
-                        </Text>
-                        <Group gap="xs">
-                          <Badge variant="outline" color="blue" size="xs">Configuration</Badge>
-                          <Badge variant="outline" color="gray" size="xs">Requires All Running</Badge>
-                          <Badge variant="outline" color="orange" size="xs">CS optimized</Badge>  
-                          {!allInstancesRunning && (
-                            <Badge variant="outline" color="red" size="xs" leftSection={<IconAlertCircle size={10} />}>
-                              Instances Stopped
-                            </Badge>
-                          )}
-                        </Group>
-                      </div>
-                      
-                      <Button
-                        color="blue"
-                        size="xs"
-                        loading={isSettingUpReplication}
-                        disabled={!allInstancesRunning}
-                        onClick={handleSetupReplication}
-                        leftSection={<IconRefresh size={14} />}
-                      >
-                        Set Up
-                      </Button>
-                    </Group>
-                  </div>
-                </Group>
-              </Paper>
+              <SetUpReplicationTeaser 
+                project={project}
+                isSettingUpReplication={isSettingUpReplication}
+                allInstancesRunning={allInstancesRunning}
+                onSetupReplication={handleSetupReplication}
+                taskItemStyles={taskItemStyles}
+              />
 
               <Divider />
 
               {/* Placeholder for future tasks */}
-              <Paper style={{...taskItemStyles, opacity: 0.6, cursor: 'default'}} radius="md" withBorder>
+              <Paper style={{...taskItemStyles, opacity: 0.6, cursor: 'default'}} radius={0}>
                 <Group align="flex-start" gap="md">
                   <ThemeIcon size="xl" variant="light" color="gray" radius="md">
                     <IconPlayerPlay size={24} />
