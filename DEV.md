@@ -1,5 +1,16 @@
 # Development instructions
 
+
+## github actions
+
+### release: 
+
+1. Regular commits → Only builds (no release)
+2. Create tag (git tag v1.0.4 && git push --tags) → Builds + Creates Release
+3. Pull requests → Only builds (no release)
+
+
+
 ## Build
 
 ### Dev:
@@ -65,11 +76,3 @@ You can use online converters or ImageMagick:
 
     magick icons/icon-256.png icons/icon.ico
 
-
-## github actions
-
-### releae: 
-
-1. Regular commits → Only builds (no release)
-2. Create tag (git tag v1.0.4 && git push --tags) → Builds + Creates Release
-3. Pull requests → Only builds (no release)
