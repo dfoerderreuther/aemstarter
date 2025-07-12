@@ -67,7 +67,7 @@ export const LogFileSelector = ({ availableFiles, selectedFiles, onChange, onFoc
         </Button>
       </Popover.Target>
       
-      <Popover.Dropdown>
+      <Popover.Dropdown style={{ maxHeight: '550px', overflowY: 'auto' }}>
         <Stack gap="xs">
           <Text size="xs" fw={500} c="dimmed">Select log files to monitor:</Text>
           {availableFiles.map((file) => (
