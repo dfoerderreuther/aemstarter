@@ -29,7 +29,7 @@ export class Installer {
 
     private project: Project;
 
-    private folders = ['author', 'publisher', 'dispatcher', 'install'];
+    private folders = ['author', 'publisher', 'dispatcher', 'install', 'packages', 'backup'];
     private licensePropertiesPath: string;
     private sdkPath: string;
     private classicQuickstartPath: string;

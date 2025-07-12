@@ -5,6 +5,7 @@ import started from 'electron-squirrel-startup';
 import { Installer } from './main/services/Installer';
 import { ProjectSettingsService } from './main/services/ProjectSettingsService';
 import { PackageInstaller } from './main/services/PackageInstaller';
+import { PackageManager } from './main/services/PackageManager';
 import { ReplicationSettings } from './main/services/ReplicationSettings';
 import { Project, ProjectSettings } from './types/Project';
 //import { BackupManager } from './main/services/BackupManager';
@@ -652,8 +653,15 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: Pr
 // Package Installation
 ipcMain.handle('install-package', async (_, project: Project, instance: 'author' | 'publisher', packageUrl: string) => {
   try {
-    const packageInstaller = new PackageInstaller(project);
-    await packageInstaller.installPackage(instance, packageUrl);
+    if (packageUrl.startsWith('http://') || packageUrl.startsWith('https://')) {
+      // Handle URL installation
+      const packageInstaller = new PackageInstaller(project);
+      await packageInstaller.installPackage(instance, packageUrl);
+    } else {
+      // Handle local package installation by name
+      const packageManager = new PackageManager(project);
+      await packageManager.installPackage(instance, packageUrl);
+    }
     return true;
   } catch (error) {
     console.error('Error installing package:', error);
@@ -664,8 +672,8 @@ ipcMain.handle('install-package', async (_, project: Project, instance: 'author'
 // Package Management
 ipcMain.handle('list-packages', async (_, project: Project) => {
   try {
-    const packageInstaller = new PackageInstaller(project);
-    return await packageInstaller.listPackages();
+    const packageManager = new PackageManager(project);
+    return await packageManager.listPackages();
   } catch (error) {
     console.error('Error listing packages:', error);
     throw error;
@@ -674,8 +682,8 @@ ipcMain.handle('list-packages', async (_, project: Project) => {
 
 ipcMain.handle('create-package', async (_, project: Project, name: string, instances: string[], paths: string[]) => {
   try {
-    const packageInstaller = new PackageInstaller(project);
-    await packageInstaller.createPackage(name, instances, paths);
+    const packageManager = new PackageManager(project);
+    await packageManager.createPackage(name, instances, paths);
     return true;
   } catch (error) {
     console.error('Error creating package:', error);
@@ -685,11 +693,22 @@ ipcMain.handle('create-package', async (_, project: Project, name: string, insta
 
 ipcMain.handle('delete-package', async (_, project: Project, packageName: string) => {
   try {
-    const packageInstaller = new PackageInstaller(project);
-    await packageInstaller.deletePackage(packageName);
+    const packageManager = new PackageManager(project);
+    await packageManager.deletePackage(packageName);
     return true;
   } catch (error) {
     console.error('Error deleting package:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('rebuild-package', async (_, project: Project, name: string, instances: string[]) => {
+  try {
+    const packageManager = new PackageManager(project);
+    await packageManager.rebuildPackage(name, instances);
+    return true;
+  } catch (error) {
+    console.error('Error rebuilding package:', error);
     throw error;
   }
 });

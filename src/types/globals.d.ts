@@ -87,6 +87,7 @@ declare global {
       }>>;
       createPackage: (project: Project, name: string, instances: string[], paths: string[]) => Promise<boolean>;
       deletePackage: (project: Project, packageName: string) => Promise<boolean>;
+      rebuildPackage: (project: Project, name: string, instances: string[]) => Promise<boolean>;
 
       // Replication Settings
       setupReplication: (project: Project, instance: 'author' | 'publisher' | 'dispatcher') => Promise<{ success: boolean; output?: string; error?: unknown }>;

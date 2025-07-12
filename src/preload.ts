@@ -109,6 +109,8 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('create-package', project, name, instances, paths),
     deletePackage: (project: Project, packageName: string) =>
       ipcRenderer.invoke('delete-package', project, packageName),
+    rebuildPackage: (project: Project, name: string, instances: string[]) =>
+      ipcRenderer.invoke('rebuild-package', project, name, instances),
 
     // Replication Settings
     setupReplication: (project: Project, instance: 'author' | 'publisher' | 'dispatcher') =>

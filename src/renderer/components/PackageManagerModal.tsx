@@ -26,7 +26,7 @@ import {
   ButtonGroup
 } from '@mantine/core';
 import { Project } from '../../types/Project';
-import { IconPackage, IconAlertCircle, IconPlus, IconCloudUpload, IconTrash, IconDownload, IconInfoCircle, IconCopy } from '@tabler/icons-react';
+import { IconPackage, IconAlertCircle, IconPlus, IconCloudUpload, IconTrash, IconDownload, IconInfoCircle, IconCopy, IconUpload } from '@tabler/icons-react';
 import { formatFileSize } from '../utils/fileUtils';
 
 interface PackageInfo {
@@ -50,6 +50,7 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [rebuilding, setRebuilding] = useState<string | null>(null);
   const [packageName, setPackageName] = useState('');
   const [packagePaths, setPackagePaths] = useState('');
   const [includeAuthor, setIncludeAuthor] = useState(true);
@@ -241,6 +242,32 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
     }
   };
 
+  const handleRebuildSelected = async (packageName: string) => {
+    setError(null);
+    setRebuilding(packageName);
+    try {
+      const selected = selectedInstances[packageName];
+      if (!selected || (!selected.author && !selected.publisher)) {
+        setError('Please select at least one instance to rebuild');
+        return;
+      }
+
+      const instances: string[] = [];
+      if (selected.author) instances.push('author');
+      if (selected.publisher) instances.push('publisher');
+      
+      await window.electronAPI.rebuildPackage(project, packageName, instances);
+      
+      // Reload packages to refresh info after rebuild
+      await loadPackages();
+      
+    } catch (err: unknown) {
+      setError(`Failed to rebuild selected packages for ${packageName}`);
+    } finally {
+      setRebuilding(null);
+    }
+  };
+
   const handleInstanceSelection = (packageName: string, instance: 'author' | 'publisher', checked: boolean) => {
     setSelectedInstances(prev => ({
       ...prev,
@@ -404,9 +431,11 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
                             {packageInfo.paths.length > 0 ? (
                               <Group gap="xs" align="flex-start">
                                 <Stack gap="xs" style={{ flex: 1 }}>
-                                  {packageInfo.paths.map((path, index) => (
-                                    <Code key={index} c="dimmed">{path}</Code>
+                                <Code c="dimmed" style={{ whiteSpace: 'pre-wrap' }}>
+                                  {packageInfo.paths.map((path) => (
+                                    <>{path}<br /></>
                                   ))}
+                                  </Code>
                                 </Stack>
                                 <Tooltip label="Copy paths to form">
                                   <ActionIcon
@@ -443,16 +472,34 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
                                   size="sm"
                                 />
                               )}
-                              <Button
-                                size="xs"
-                                color="blue"
-                                leftSection={<IconDownload size={14} />}
-                                onClick={() => handleInstallSelected(packageInfo.name)}
-                                variant="filled"
-                                disabled={!selectedInstances[packageInfo.name]?.author && !selectedInstances[packageInfo.name]?.publisher}
-                              >
-                                Install
-                              </Button>
+                              <ButtonGroup>
+                              <Tooltip label="Rebuild the package(s) in AEM and download to your local file system">
+                                <Button
+                                  size="xs"
+                                  color="gray"
+                                  leftSection={<IconDownload size={14} />}
+                                  onClick={() => handleRebuildSelected(packageInfo.name)}
+                                  variant="filled"
+                                  disabled={!selectedInstances[packageInfo.name]?.author && !selectedInstances[packageInfo.name]?.publisher}
+                                  loading={rebuilding === packageInfo.name}
+                                >
+                                  Rebuild
+                                </Button>
+                              </Tooltip>
+                              <Tooltip label="Upload and install package(s) to the selected AEM instances">
+                                <Button
+                                  size="xs"
+                                  color="blue"
+                                  leftSection={<IconUpload size={14} />}
+                                  onClick={() => handleInstallSelected(packageInfo.name)}
+                                  variant="filled"
+                                  disabled={!selectedInstances[packageInfo.name]?.author && !selectedInstances[packageInfo.name]?.publisher}
+                                >
+                                  Install
+                                </Button>
+                              </Tooltip>
+
+                              </ButtonGroup>
                             </Stack>
                           </Table.Td>
                           <Table.Td style={{ verticalAlign: 'top' }}>
