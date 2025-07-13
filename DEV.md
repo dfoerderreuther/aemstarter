@@ -6,10 +6,8 @@
 ### release: 
 
 1. Regular commits → Only builds (no release)
-2. Create tag (git tag v1.0.5 && git push --tags) → Builds + Creates Release
+2. Create tag (git tag v1.0.6 && git push --tags) → Builds + Creates Release
 3. Pull requests → Only builds (no release)
-
-
 
 ## Build
 
@@ -41,8 +39,6 @@ Then go to https://github.com/dfoerderreuther/aemstarter/releases and download /
 ## Uninstall
 
     rm -rf /Applications/AEM-Starter.app
-
-## Clean local app data to cause a fresh start
 
     rm -Rf ~/Library/Application\ Support/AEM-Starter/
     rm -Rf ~/Library/Application\ Support/AEM\ Starter/
