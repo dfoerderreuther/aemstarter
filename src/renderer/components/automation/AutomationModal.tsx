@@ -11,6 +11,7 @@ import { ReinstallTeaser } from './teaser/ReinstallTeaser';
 import { FirstStartAndInitialSetupTeaser } from './teaser/FirstStartAndInitialSetupTeaser';
 import { SetUpReplicationTeaser } from './teaser/SetUpReplicationTeaser';
 import { UpdateSdkAndRunTeaser } from './teaser/UpdateSdkAndRunTeaser';
+import { UpdateSdkAndInstallAndRunTeaser } from './teaser/UpdateSdkAndInstallAndRunTeaser';
 
 interface AutomationModalProps {
   opened: boolean;
@@ -311,6 +312,13 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
               <Divider />
 
               <UpdateSdkAndRunTeaser 
+                project={project}
+                onTaskStart={handleTaskStart}
+              />
+
+              <Divider />
+
+              <UpdateSdkAndInstallAndRunTeaser 
                 project={project}
                 onTaskStart={handleTaskStart}
               />

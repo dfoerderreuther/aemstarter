@@ -10,8 +10,9 @@ import { ReplicationSettings } from "../ReplicationSettings";
 import { PackageInstaller } from "../PackageInstaller";
 import { PackageManager } from "../PackageManager";
 import { AutoStartStopService } from "../AutoStartStopService";
+import { Installer } from "../Installer";
 
-export class FirstStartAndInitialSetup implements AutoTask {
+export class UpdateSdkAndInstallAndRun implements AutoTask {
 
     public project: Project;
     protected aemInstanceManager: AemInstanceManager;
@@ -31,25 +32,37 @@ export class FirstStartAndInitialSetup implements AutoTask {
         const wknd = parameters?.wknd === true;
         const localPackage: string = (parameters?.localPackage ?? '') as string;
         const replication = parameters?.replication === true;
+        const sdkPath = parameters?.sdkPath ? String(parameters.sdkPath) : null
 
-        progress(`Starting first start and initial setup. (wknd: ${wknd}, replication: ${replication}, custom package: ${localPackage ? `'${localPackage}'` : 'false'})`);
+        if (!sdkPath) {
+            progress('Error: SDK path is not provided');
+            return;
+        }
+
+        progress('Stopping AEM instances...');
+        await this.startStopService.stop();
+
+        progress('Unpack SDK from: ' + sdkPath);
+        const installer = new Installer(this.project);
+        await installer.installSdk(sdkPath);
+
+        progress('Removing existing AEM installation and installing new SDK');
+        await installer.reinstall();
 
         if (!await this.awaitInstallComplete()) {
             progress('Error: Install did not complete in time');
             throw new Error('Install did not complete in time');
         }
-
-        progress('Stopping all instances in case they were running');
-        await this.startStopService.stop();
-
-        progress('Starting all instances again');
+        
+        progress('Starting all instances. Waiting for all instances to be running...');
         await this.startStopService.start();
-
-        progress('Waiting for all instances to be running');
         if (!await this.startStopService.awaitAllRunning()) {
             progress('Error: Instances did not start in time');
             throw new Error('Instances did not start in time');
         }
+        progress('AEM SDK update completed successfully - all services are running');
+
+        progress(`Starting first start and initial setup. (wknd: ${wknd}, replication: ${replication}, custom package: ${localPackage ? `'${localPackage}'` : 'false'})`);
 
         progress('Loading Oak jar');
         this.aemInstanceManager.loadOakJar();

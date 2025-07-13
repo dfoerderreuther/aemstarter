@@ -60,4 +60,35 @@ export class AutoStartStopService {
         await Promise.all(stopPromises);
     }
 
+
+    public async awaitAllRunning() {
+        const maxWaitTime = 10 * 60 * 1000; // 5 minutes in milliseconds
+        const checkInterval = 2000; // 2 seconds in milliseconds
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxWaitTime) {
+            if (await this.isAEMRunning('author') && await this.isAEMRunning('publisher') && await this.isDispatcherRunning()) {
+                return true;
+            }
+
+            // Wait for 2 seconds before next check
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        }
+        
+        // Timeout reached, file not found
+        return false;
+    }
+
+    private async isAEMRunning(instanceType: 'author' | 'publisher') {
+        if (!this.aemInstanceManager.isInstanceRunning(instanceType)) return false;
+
+        const port = instanceType === 'author' ? this.project.settings.author.port : this.project.settings.publisher.port;
+        const response = await fetch(`http://localhost:${port}/libs/granite/core/content/login.html`);
+        return response.status === 200;
+    }
+
+    private async isDispatcherRunning() {
+        return this.dispatcherManager.isDispatcherRunning();
+    }
+
 }

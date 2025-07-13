@@ -120,7 +120,7 @@ export const FirstStartAndInitialSetupTeaser: React.FC<FirstStartAndInitialSetup
             label="Replication"
             checked={replication}
             onChange={(e) => setReplication(e.target.checked)}
-            size="xs"
+          size="xs"
         />
         </Stack>
         <Group gap="xs">

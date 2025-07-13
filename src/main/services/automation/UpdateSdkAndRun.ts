@@ -17,7 +17,7 @@ export class UpdateSdkAndRun implements AutoTask {
     public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
 
-        progress('Updating SDK and running');
+        progress('Updating SDK and start');
 
         const sdkPath = parameters?.sdkPath ? String(parameters.sdkPath) : null
 
@@ -26,23 +26,20 @@ export class UpdateSdkAndRun implements AutoTask {
             return;
         }
 
-        progress('Initiating automated AEM reinstallation process...');
+        progress('Stopping AEM instances...');
         await this.startStopService.stop();
 
-        progress('Installing SDK from: ' + sdkPath);
-
+        progress('Unpack SDK from: ' + sdkPath);
         const installer = new Installer(this.project);
-
-        progress('Updating SDK');
         await installer.installSdk(sdkPath);
 
-        progress('Removing existing AEM installation and preparing for fresh install...');
+        progress('Removing existing AEM installation and installing new SDK');
         await installer.reinstall();
         
-        progress('Starting AEM author and publisher instances...');
+        progress('Starting all instances...');
         await this.startStopService.start();
         
-        progress('AEM reinstallation completed successfully - all services are running');
+        progress('AEM SDK update completed successfully - all services are running');
 
         progress('Done');
     }
