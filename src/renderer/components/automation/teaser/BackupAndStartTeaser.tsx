@@ -19,6 +19,7 @@ export const BackupAndStartTeaser: React.FC<BackupAndStartTeaserProps> = ({
       task="create-backup-and-run" 
       project={project} 
       icon={IconPlayerPlay}
+      color="green"
       taskTitle="Create backup and start"
       onTaskStart={onTaskStart}
       parameters={{

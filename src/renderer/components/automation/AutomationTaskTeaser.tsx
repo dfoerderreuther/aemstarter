@@ -10,6 +10,7 @@ interface AutomationTaskTeaserProps {
     children: React.ReactNode;
     icon?: React.ComponentType<{ size: number; color?: string }>;
     taskTitle?: string;
+    color?: string;
     onTaskStart?: (taskType: string, taskTitle: string) => void;
 }
 
@@ -20,6 +21,7 @@ export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({
     children, 
     icon: Icon = IconPackage,
     taskTitle = "Automation Task",
+    color = "orange",
     onTaskStart
 }) => {
     const [isRunning, setIsRunning] = useState(false);
@@ -54,13 +56,13 @@ export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({
             <div style={{ 
               width: '48px', 
               height: '48px', 
-              backgroundColor: 'var(--mantine-color-orange-1)', 
+              backgroundColor: `var(--mantine-color-${color}-1)`, 
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Icon size={24} color="var(--mantine-color-orange-6)" />
+              <Icon size={24} color={`var(--mantine-color-${color}-6)`} />
             </div>
             
             <div style={{ flex: 1 }}>
@@ -70,7 +72,7 @@ export const AutomationTaskTeaser: React.FC<AutomationTaskTeaserProps> = ({
                 </Stack>
                 
                 <Button
-                  color="orange"
+                  color={color}
                   size="xs"
                   loading={isRunning}
                   disabled={isRunning}

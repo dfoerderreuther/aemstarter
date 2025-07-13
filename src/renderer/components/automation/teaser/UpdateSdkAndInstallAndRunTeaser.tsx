@@ -3,6 +3,7 @@ import { Project } from '../../../../types/Project';
 import { Text, TextInput, Group, Button, Badge, Stack, Checkbox, Select } from '@mantine/core';
 import { useEffect, useState } from "react";
 import { PackageInfo } from "../../../../types/PackageInfo";
+import { IconRocket } from "@tabler/icons-react";
 
 
 interface UpdateSdkAndInstallAndRunTeaserProps {
@@ -84,6 +85,8 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
             task="update-sdk-and-install-and-run"
             project={project}
             onTaskStart={onTaskStart}
+            icon={IconRocket}
+            color="pink"
             parameters={{
                 sdkPath : sdkPath, 
                 wknd: wknd, 
@@ -92,11 +95,30 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
             }}
         >
             <div>
-                <Text fw={500} size="sm" mb={4}>Update SDK and install and run</Text>
+                <Text fw={500} size="sm" mb={4}>Update SDK, install and run</Text>
                 <Text size="xs" c="dimmed" mb={8}>
-                    This will update the SDK, set  and run.
+                    This will update the SDK, 
+                    configure replication between Author, Publisher, and Dispatcher instances, 
+                    load matching oak-run.jar
+                    and can install WKND or any local package.
                 </Text>        
                 <Stack gap="xs" mb="md">
+                    <Group align="end" gap="xs" mb="md">
+                        <TextInput
+                            label="SDK"
+                            value={sdkPath}
+                            onChange={(e) => setSdkPath(e.target.value)}
+                            size="xs"
+                            style={{ flex: 1 }}
+                        />
+                        <Button 
+                            variant="outline" 
+                            size="xs"
+                            onClick={handleSelectSdkPath}
+                        >
+                            Browse
+                        </Button>
+                    </Group>
                     <Checkbox
                         label="WKND"
                         checked={wknd}
@@ -121,22 +143,6 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
                         onChange={(e) => setReplication(e.target.checked)}
                         size="xs"
                     />
-                    <Group align="end" gap="xs" mb="md">
-                        <TextInput
-                            label="SDK"
-                            value={sdkPath}
-                            onChange={(e) => setSdkPath(e.target.value)}
-                            size="xs"
-                            style={{ flex: 1 }}
-                        />
-                        <Button 
-                            variant="outline" 
-                            size="xs"
-                            onClick={handleSelectSdkPath}
-                        >
-                            Browse
-                        </Button>
-                    </Group>
                 </Stack>
                 <Group gap="xs">
                     <Badge variant="outline" color="orange" size="xs">Destructive</Badge>

@@ -18,6 +18,7 @@ export const LastBackupAndDebugTeaser: React.FC<LastBackupAndDebugTeaserProps> =
       task="last-backup-and-debug" 
       project={project} 
       icon={IconBug}
+      color="red"
       taskTitle="Restore last backup and start in debug mode"
       onTaskStart={onTaskStart}
     >

@@ -21,25 +21,61 @@ export class AutoStartStopService {
     }
 
     public async start() {
-        const startPromises: Promise<void>[] = [];
-        startPromises.push(this.aemInstanceManager.startInstance('author', 'start'))
-        startPromises.push(this.aemInstanceManager.startInstance('publisher', 'start'))
-        startPromises.push(this.dispatcherManager.startDispatcher())
-        if (this.project.settings?.https?.enabled || false) {
-            startPromises.push(this.httpsService.startSslProxy());
+        // Start author and publisher in parallel
+        const aemStartPromises: Promise<void>[] = [];
+        aemStartPromises.push(this.aemInstanceManager.startInstance('author', 'start'))
+        aemStartPromises.push(this.aemInstanceManager.startInstance('publisher', 'start'))
+        await Promise.all(aemStartPromises);
+        
+        // Wait for publisher to be running before starting dispatcher and SSL proxy
+        const maxWaitTime = 10 * 60 * 1000; // 10 minutes in milliseconds
+        const checkInterval = 2000; // 2 seconds in milliseconds
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxWaitTime) {
+            if (await this.isAEMRunning('publisher')) {
+                break;
+            }
+            // Wait for 2 seconds before next check
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
         }
-        await Promise.all(startPromises);
+        
+        // Now start dispatcher and SSL proxy after publisher is running
+        const dispatcherStartPromises: Promise<void>[] = [];
+        dispatcherStartPromises.push(this.dispatcherManager.startDispatcher())
+        if (this.project.settings?.https?.enabled || false) {
+            dispatcherStartPromises.push(this.httpsService.startSslProxy());
+        }
+        await Promise.all(dispatcherStartPromises);
     }
     
     public async startDebug() {
-        const startPromises: Promise<void>[] = [];
-        startPromises.push(this.aemInstanceManager.startInstance('author', 'debug'))
-        startPromises.push(this.aemInstanceManager.startInstance('publisher', 'debug'))
-        startPromises.push(this.dispatcherManager.startDispatcher())
-        if (this.project.settings?.https?.enabled || false) {
-            startPromises.push(this.httpsService.startSslProxy());
+        // Start author and publisher in parallel in debug mode
+        const aemStartPromises: Promise<void>[] = [];
+        aemStartPromises.push(this.aemInstanceManager.startInstance('author', 'debug'))
+        aemStartPromises.push(this.aemInstanceManager.startInstance('publisher', 'debug'))
+        await Promise.all(aemStartPromises);
+        
+        // Wait for publisher to be running before starting dispatcher and SSL proxy
+        const maxWaitTime = 10 * 60 * 1000; // 10 minutes in milliseconds
+        const checkInterval = 2000; // 2 seconds in milliseconds
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxWaitTime) {
+            if (await this.isAEMRunning('publisher')) {
+                break;
+            }
+            // Wait for 2 seconds before next check
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
         }
-        await Promise.all(startPromises);
+        
+        // Now start dispatcher and SSL proxy after publisher is running
+        const dispatcherStartPromises: Promise<void>[] = [];
+        dispatcherStartPromises.push(this.dispatcherManager.startDispatcher())
+        if (this.project.settings?.https?.enabled || false) {
+            dispatcherStartPromises.push(this.httpsService.startSslProxy());
+        }
+        await Promise.all(dispatcherStartPromises);
     }
 
     public async stop() {
@@ -83,8 +119,14 @@ export class AutoStartStopService {
         if (!this.aemInstanceManager.isInstanceRunning(instanceType)) return false;
 
         const port = instanceType === 'author' ? this.project.settings.author.port : this.project.settings.publisher.port;
-        const response = await fetch(`http://localhost:${port}/libs/granite/core/content/login.html`);
-        return response.status === 200;
+        try {
+            const response = await fetch(`http://localhost:${port}/libs/granite/core/content/login.html`, {
+                method: 'HEAD'
+            });
+            return response.status === 200;
+        } catch (error) {
+            return false;
+        }
     }
 
     private async isDispatcherRunning() {

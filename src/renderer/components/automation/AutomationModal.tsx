@@ -311,14 +311,14 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
               />
               <Divider />
 
-              <UpdateSdkAndRunTeaser 
+              <UpdateSdkAndInstallAndRunTeaser 
                 project={project}
                 onTaskStart={handleTaskStart}
               />
 
               <Divider />
 
-              <UpdateSdkAndInstallAndRunTeaser 
+              <UpdateSdkAndRunTeaser 
                 project={project}
                 onTaskStart={handleTaskStart}
               />

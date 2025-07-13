@@ -18,6 +18,7 @@ export const LastBackupAndRunTeaser: React.FC<LastBackupAndRunTeaserProps> = ({
       task="last-backup-and-run" 
       project={project} 
       icon={IconPlayerPlay}
+      color="red"
       taskTitle="Restore last backup and start"
       onTaskStart={onTaskStart}
     >
