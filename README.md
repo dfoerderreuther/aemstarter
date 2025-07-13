@@ -16,6 +16,7 @@ AEM-Starter is a desktop application that streamlines the setup and management o
 - **SDK Update Automation** for quick update or change of SDK with automated setup.
 - **SSL Proxy** for quick setup of https support with a self signed certificate (openssl required)
 - **Connection to AEM development project** for quick access to configurations, code and build tasks
+- Limited **Classic AEM support** by leveraging Cloud SDK dispatcher
 
 ## Requirements
 

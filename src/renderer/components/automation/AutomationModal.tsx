@@ -21,6 +21,7 @@ interface AutomationModalProps {
   isPublisherRunning: boolean;
   isDispatcherRunning: boolean;
   autoStartTask?: string;
+  autoStartTaskParameters?: { [key: string]: string | boolean | number };
   onAutoTaskStarted?: () => void;
 }
 
@@ -32,6 +33,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
   isPublisherRunning,
   isDispatcherRunning,
   autoStartTask,
+  autoStartTaskParameters,
   onAutoTaskStarted
 }) => {
   const [isSettingUpReplication, setIsSettingUpReplication] = useState(false);
@@ -125,8 +127,8 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
       // Start the actual task
       const startTask = async () => {
         try {
-          console.log(`[AutomationModal] Running automation task: ${autoStartTask}`);
-          await window.electronAPI.runAutomationTask(project, autoStartTask);
+          console.log(`[AutomationModal] Running automation task: ${autoStartTask}`, autoStartTaskParameters);
+          await window.electronAPI.runAutomationTask(project, autoStartTask, autoStartTaskParameters);
         } catch (error) {
           console.error(`[AutomationModal] Failed to auto-start task ${autoStartTask}:`, error);
         }
@@ -139,7 +141,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
         onAutoTaskStarted();
       }, 100);
     }
-  }, [opened, autoStartTask, runningTask, onAutoTaskStarted, project]);
+  }, [opened, autoStartTask, autoStartTaskParameters, runningTask, onAutoTaskStarted, project]);
 
   const handleTaskComplete = () => {
     setRunningTask(null);

@@ -29,7 +29,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
   const [isSslProxyRunningState, setIsSslProxyRunningState] = useState(false);
   const [authorPid, setAuthorPid] = useState<number | null>(null);
   const [publisherPid, setPublisherPid] = useState<number | null>(null);
-  const [autoStartTask, setAutoStartTask] = useState<string | undefined>();
+  const [autoStartTask, setAutoStartTask] = useState<{task: string; parameters?: { [key: string]: string | boolean | number }} | undefined>();
 
   // Debug logging
   useEffect(() => {
@@ -49,7 +49,13 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
       // Small delay to ensure UI is ready
       const timer = setTimeout(() => {
         console.log('[MainActionsView] Opening automation modal with auto-start task');
-        setAutoStartTask('first-start-and-initial-setup');
+        setAutoStartTask({
+          task: 'first-start-and-initial-setup',
+          parameters: {
+            replication: true,
+            wknd: true
+          }
+        });
         setShowAutomation(true);
         // Don't clear the flag immediately - let the modal handle it
       }, 1000); // Reduced delay since installation is already complete
@@ -848,7 +854,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
         isAuthorRunning={isAuthorRunning}
         isPublisherRunning={isPublisherRunning}
         isDispatcherRunning={isDispatcherRunning}
-        autoStartTask={autoStartTask}
+        autoStartTask={autoStartTask?.task}
+        autoStartTaskParameters={autoStartTask?.parameters}
         onAutoTaskStarted={handleAutoTaskStarted}
       />
       <PackageManagerModal
