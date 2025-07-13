@@ -96,6 +96,13 @@ export class AutoStartStopService {
         await Promise.all(stopPromises);
     }
 
+    public async restartDispatcher() {
+        if (this.dispatcherManager.isDispatcherRunning()) {
+            await this.dispatcherManager.stopDispatcher();
+        }
+        await this.dispatcherManager.startDispatcher();
+    }
+
 
     public async awaitAllRunning() {
         const maxWaitTime = 10 * 60 * 1000; // 5 minutes in milliseconds

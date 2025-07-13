@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge, Loader, Title, ThemeIcon } from '@mantine/core';
 import { IconRefresh, IconPlayerPlay, IconAlertCircle, IconBug, IconPackage, IconHistory, IconRobot } from '@tabler/icons-react';
 import { Project } from '../../../types/Project';
@@ -40,6 +40,18 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
   const [isTaskCompleted, setIsTaskCompleted] = useState(false);
   const [taskStartTime, setTaskStartTime] = useState<number | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    if (progressMessages.length > 0 && scrollAreaRef.current) {
+      const scrollArea = scrollAreaRef.current;
+      const scrollContainer = scrollArea.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    }
+  }, [progressMessages]);
 
   useEffect(() => {
     if (!opened) {
@@ -231,7 +243,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
         {runningTask ? (
           // Show progress view when task is running
           <Stack gap="md">
-            <ScrollArea style={{ height: '300px' }} type="hover">
+            <ScrollArea style={{ height: '300px' }} type="hover" ref={scrollAreaRef}>
               <Stack gap="xs">
                 {progressMessages.length === 0 ? (
                   <Group gap="sm">

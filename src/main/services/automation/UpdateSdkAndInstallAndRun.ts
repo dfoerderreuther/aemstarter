@@ -89,6 +89,11 @@ export class UpdateSdkAndInstallAndRun implements AutoTask {
             await packageInstaller.installPackage('author', localPackage);
             await packageInstaller.installPackage('publisher', localPackage);
         }
+
+        progress('Restarting dispatcher');
+        await this.startStopService.restartDispatcher();
+
+        progress('Done');
     }
 
     private async awaitInstallComplete(): Promise<boolean> {
