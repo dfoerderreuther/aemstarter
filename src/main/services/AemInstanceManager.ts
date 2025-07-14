@@ -393,6 +393,10 @@ export class AemInstanceManager {
       jvmOpts += ' ' + instanceSettings.debugJvmOpts;
     }
 
+    // Get java home from project settings
+    const javaHome = this.project.settings.general.javaHome;
+    const hasJavaHome = javaHome && javaHome.trim() !== '';
+
     let aemProcess: ChildProcess;
 
     // Use crx-quickstart/bin/start script
@@ -402,12 +406,18 @@ export class AemInstanceManager {
     // can't use start script on windows as it goes crazy with opening multiple cmd windows
     if (hasCrxQuickstart && fs.existsSync(startScriptPath) && process.platform !== 'win32') {
       console.log('[AemInstanceManager] ### Starting AEM instance with crx-quickstart ###');
-      const env = {
+      const env: { [key: string]: string | undefined } = {
         ...process.env,
         CQ_PORT: port.toString(),
         CQ_RUNMODE: runmode,
         CQ_JVM_OPTS: jvmOpts,
       };
+
+      // Set JAVA_HOME if available
+      if (hasJavaHome) {
+        env.JAVA_HOME = javaHome;
+        console.log(`[AemInstanceManager] Using JAVA_HOME from project settings: ${javaHome}`);
+      }
 
       console.log('[AemInstanceManager] Starting AEM instance with start script:', startScriptPath);
       console.log('[AemInstanceManager] Environment variables:', env);
@@ -433,12 +443,17 @@ export class AemInstanceManager {
         }
       }
 
-      const env = {
+      const env: { [key: string]: string | undefined } = {
         ...process.env,
         CQ_PORT: port.toString(),
         CQ_RUNMODE: runmode,
         CQ_JVM_OPTS: jvmOpts,
       };
+
+      // Set JAVA_HOME if available (for consistency)
+      if (hasJavaHome) {
+        env.JAVA_HOME = javaHome;
+      }
 
       const javaArgs = [
         '-jar',
