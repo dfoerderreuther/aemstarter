@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Stack, TextInput, Group, Button, Anchor, Checkbox } from '@mantine/core';
 import { Project } from '../../types/Project';
 import { SystemCheckView } from './SystemCheckView';
+import { JavaHomeSelector } from './JavaHomeSelector';
 
 interface NewProjectModalProps {
   opened: boolean;
@@ -21,6 +22,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [runFirstStartSetup, setRunFirstStartSetup] = useState(true);
   const [classic, setClassic] = useState(false);
   const [classicQuickstartPath, setClassicQuickstartPath] = useState('');
+  const [javaHome, setJavaHome] = useState('');
 
   // Helper function to extract filename from path
   const getFileName = (path: string) => {
@@ -90,6 +92,18 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           classic,
           classicQuickstartPath
         );
+        
+        // Update project settings with the selected Java home
+        if (javaHome) {
+          const updatedSettings = {
+            ...project.settings,
+            general: {
+              ...project.settings.general,
+              javaHome: javaHome
+            }
+          };
+          await window.electronAPI.saveProjectSettings(project, updatedSettings);
+        }
         
         // Start the installation procedure and wait for it to complete
         try {
@@ -195,6 +209,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           autoFocus
           disabled={creating}
         />
+        <JavaHomeSelector value={javaHome} onChange={(value: string) => setJavaHome(value)} />
         <Group>
           <Checkbox
             label="Classic AEM Version"
