@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Tabs, Stack, TextInput, NumberInput, Group, Button, Text, Checkbox, Select, ActionIcon } from '@mantine/core';
-import { IconFolder } from '@tabler/icons-react';
+import { Modal, Tabs, Stack, TextInput, NumberInput, Group, Button, Text, Checkbox, Select, ActionIcon, Tooltip, ButtonGroup, Menu, Box } from '@mantine/core';
+import { IconFolder, IconAlertCircle } from '@tabler/icons-react';
 import { Project, ProjectSettings } from '../../types/Project';
 import { EditorAvailableResults } from '../../types/EditorAvailableResults';
+import { JavaHomeSelector } from './JavaHomeSelector';
 
 interface SettingsModalProps {
   opened: boolean;
@@ -42,6 +43,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
       console.error('Error checking editor availability:', error);
     }
   };
+
+
 
   const handleSave = async () => {
     if (!settings) return;
@@ -188,6 +191,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               description="Turn off if health check interferes with debugging or log output."
               checked={settings.general.healthCheck}
               onChange={(event) => updateGeneralSettings('healthCheck', event.currentTarget.checked)}
+            />
+
+            <JavaHomeSelector
+              value={settings.general.javaHome}
+              onChange={(value) => updateGeneralSettings('javaHome', value)}
             />
           </Stack>
         </Tabs.Panel>

@@ -199,6 +199,10 @@ contextBridge.exposeInMainWorld(
     // Editor Availability Check
     checkEditorAvailability: () =>
       ipcRenderer.invoke('check-editor-availability'),
+    
+    // Java Home Paths
+    getJavaHomePaths: () =>
+      ipcRenderer.invoke('get-java-home-paths'),
 
     // Dev project utilities
     openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') =>

@@ -187,6 +187,9 @@ declare global {
       // Editor Availability Check
       checkEditorAvailability: () => Promise<EditorAvailableResults>;
 
+      // Java Home Paths
+      getJavaHomePaths: () => Promise<string[]>;
+
       // Dev project utilities
       openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') => Promise<boolean>;
       

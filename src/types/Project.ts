@@ -16,6 +16,7 @@ export interface ProjectSettings {
   general: {
     name: string;
     healthCheck: boolean;
+    javaHome: string;
   };
   author: {
     port: number;

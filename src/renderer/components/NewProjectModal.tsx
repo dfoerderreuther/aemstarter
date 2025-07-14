@@ -261,7 +261,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               )}
             </Group>
             <Anchor
-              onClick={() => window.electronAPI.openUrl("https://experience.adobe.com/#/downloads/content/software-distribution/en/aemcloud.html?fulltext=AEM*+Quickstart*&1_group.propertyvalues.property=.%2Fjcr%3Acontent%2Fmetadata%2Fdc%3AsoftwareType&1_group.propertyvalues.operation=equals&1_group.propertyvalues.0_values=software-type%3Atooling&orderby=%40jcr%3Acontent%2Fjcr%3AlastModified&orderby.sort=desc&layout=list&p.offset=0&p.limit=24")}
+              onClick={() => window.electronAPI.openUrl("https://experience.adobe.com/#/downloads/content/software-distribution/en/aem.html?fulltext=quickstart*&orderby=%40jcr%3Acontent%2Fjcr%3AlastModified&orderby.sort=desc&layout=list&p.offset=0&p.limit=4")}
               size="sm"
               style={{ marginTop: '-8px', marginBottom: '8px', cursor: 'pointer' }}
             >

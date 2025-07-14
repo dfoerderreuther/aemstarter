@@ -9,7 +9,8 @@ export class ProjectSettingsService {
             version: "1.0.0",
             general: {
                 name: project.name,
-                healthCheck: true
+                healthCheck: true, 
+                javaHome: ""
             },
             author: {
                 port: 4502,
@@ -84,7 +85,8 @@ export class ProjectSettingsService {
             version: settings.version || defaults.version,
             general: {
                 name: settings.general?.name || defaults.general.name,
-                healthCheck: settings.general?.healthCheck ?? defaults.general.healthCheck
+                healthCheck: settings.general?.healthCheck ?? defaults.general.healthCheck,
+                javaHome: settings.general?.javaHome || defaults.general.javaHome
             },
             author: {
                 port: settings.author?.port || defaults.author.port,

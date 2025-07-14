@@ -93,7 +93,8 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, stric
       version: "1.0.0",
       general: {
         name: "Default",
-        healthCheck: true
+        healthCheck: true,
+        javaHome: ""
       },
       author: {
         port: 4502,

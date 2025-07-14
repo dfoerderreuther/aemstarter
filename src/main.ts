@@ -19,6 +19,7 @@ import { Automation } from './main/services/automation/Automation';
 import { TerminalService } from './main/services/TerminalService';
 import { AemProcessManager } from './main/services/AemProcessManager';
 import { HttpsServiceRegister } from './main/HttpsServiceRegister';
+import { JavaService } from './main/services/JavaService';
 import { spawn } from 'child_process';
 
 // Set the app name immediately (this affects dock/taskbar display)
@@ -595,6 +596,17 @@ ipcMain.handle('check-editor-availability', async () => {
     return await systemCheck.checkEditorAvailability();
   } catch (error) {
     console.error('Error checking editor availability:', error);
+    throw error;
+  }
+});
+
+// Java Home Paths
+ipcMain.handle('get-java-home-paths', async () => {
+  try {
+    const javaService = new JavaService();
+    return await javaService.getJavaHomePaths();
+  } catch (error) {
+    console.error('Error getting Java home paths:', error);
     throw error;
   }
 });
