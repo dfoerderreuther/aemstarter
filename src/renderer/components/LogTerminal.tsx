@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
@@ -7,6 +7,7 @@ interface LogTerminalProps {
   onReady?: (terminal: XTerm) => void;
   visible?: boolean;
   fontSize?: number;
+  style?: React.CSSProperties;
 }
 
 export interface LogTerminalRef {
@@ -14,7 +15,7 @@ export interface LogTerminalRef {
   clear: () => void;
 }
 
-export const LogTerminal = forwardRef<LogTerminalRef, LogTerminalProps>(({ onReady, visible = true, fontSize = 13 }, ref) => {
+export const LogTerminal = forwardRef<LogTerminalRef, LogTerminalProps>(({ onReady, visible = true, fontSize = 13, style }, ref) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -152,7 +153,7 @@ export const LogTerminal = forwardRef<LogTerminalRef, LogTerminalProps>(({ onRea
         console.warn('Failed to fit terminal on tab visibility change:', error);
       }
     }
-  }, [visible]);
+  }, [visible, style]);
 
   // Handle terminals cleared event (when switching projects)
   useEffect(() => {
@@ -171,7 +172,7 @@ export const LogTerminal = forwardRef<LogTerminalRef, LogTerminalProps>(({ onRea
       ref={terminalRef} 
       style={{ 
         width: '100%', 
-        height: '100%'
+        ...style
       }}
     />
   );

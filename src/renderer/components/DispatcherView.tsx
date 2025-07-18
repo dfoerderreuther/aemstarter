@@ -223,6 +223,25 @@ export const DispatcherView = ({
     }
   };
 
+
+  // Helper function to calculate terminal height based on view mode and collapsed state
+  const getTerminalHeight = () => {
+    // Base height accounts for: header bar (~40px), margins, borders
+    let baseOffset = 246;
+    
+    if (viewMode === 'columns') {
+      // In columns mode, the collapsible section is on top
+      if (isCollapsed) {
+        baseOffset = 277; // collapsed height
+      } else {
+        baseOffset = 407; // expanded height
+      }
+    }
+    // In tabs mode, collapsible section is on the side, so no additional height offset needed
+    
+    return `calc(100vh - ${baseOffset}px)`;
+  };
+
   return (
     <>
       <Stack gap="0" style={{ height: '100%' }}>
@@ -446,7 +465,12 @@ export const DispatcherView = ({
             borderRadius: 0
           }}>
             <div style={{ flex: 1, minHeight: 0 }}>
-              <LogTerminal onReady={handleTerminalReady} visible={visible} fontSize={terminalFontSize} ref={terminalComponentRef} />
+              <LogTerminal 
+                fontSize={terminalFontSize}
+                style={{ height: getTerminalHeight() }}
+                onReady={handleTerminalReady}
+                visible={visible}
+              />
             </div>
           </Paper>
         </Box>
