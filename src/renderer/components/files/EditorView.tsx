@@ -258,12 +258,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
       <Box style={{ height: 'calc(100vh - 235px)' }}>
         {isBinaryFile ? (
           selectedFile && isImageFile(selectedFile) ? renderImageViewer() : renderBinaryFileMessage()
-        ) : fileContent ? (
+        ) : selectedFile ? (
           <Editor
             height="100%"
             className="monaco-editor-container"
             language={selectedFile ? getFileLanguage(selectedFile) : 'plaintext'}
-            value={fileContent}
+            value={fileContent || ''}
             onChange={(value) => setFileContent(value || null)}
             theme="vs-dark"
             options={{
