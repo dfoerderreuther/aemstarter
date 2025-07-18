@@ -12,14 +12,23 @@ export interface FileSystemEntry {
   isSymlink: boolean;
 }
 
-
+// Add interface for saving/restoring state
+export interface FileTreeState {
+  selectedFile: string | null;
+  expandedDirectories: Set<string>;
+  directoryContents: Map<string, FileSystemEntry[]>;
+}
 
 interface FileTreeEntryProps {
   entry: FileSystemEntry;
   level: number;
   showHidden: boolean;
   selectedFile: string | null;
+  expandedDirectories: Set<string>;
+  directoryContents: Map<string, FileSystemEntry[]>;
   onSelect: (path: string) => void;
+  onToggleDirectory: (path: string, isExpanded: boolean) => void;
+  onDirectoryLoaded: (path: string, contents: FileSystemEntry[]) => void;
 }
 
 interface FileTreeViewProps {
@@ -30,6 +39,8 @@ interface FileTreeViewProps {
 
 export interface FileTreeViewRef {
   refresh: () => Promise<void>;
+  saveState: () => FileTreeState;
+  restoreState: (state: FileTreeState) => void;
 }
 
 const FileTreeEntry: React.FC<FileTreeEntryProps> = ({ 
@@ -37,13 +48,17 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
   level, 
   showHidden, 
   selectedFile, 
-  onSelect 
+  expandedDirectories,
+  directoryContents,
+  onSelect,
+  onToggleDirectory,
+  onDirectoryLoaded
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [children, setChildren] = useState<FileSystemEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
   const indent = level * 16;
+  const isOpen = expandedDirectories.has(entry.path);
+  const children = directoryContents.get(entry.path) || [];
   
   const toggleDirectory = async () => {
     if (!entry.isDirectory) {
@@ -52,24 +67,27 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
     }
     
     if (!isOpen) {
-      setIsLoading(true);
-      try {
-        const entries = await window.electronAPI.readDirectory(entry.path, showHidden);
-        // Sort directories first, then files alphabetically
-        entries.sort((a, b) => {
-          if (a.isDirectory && !b.isDirectory) return -1;
-          if (!a.isDirectory && b.isDirectory) return 1;
-          return a.name.localeCompare(b.name);
-        });
-        setChildren(entries);
-      } catch (error) {
-        console.error('Error reading directory:', error);
-      } finally {
-        setIsLoading(false);
+      // Load directory contents if not already loaded
+      if (!directoryContents.has(entry.path)) {
+        setIsLoading(true);
+        try {
+          const entries = await window.electronAPI.readDirectory(entry.path, showHidden);
+          // Sort directories first, then files alphabetically
+          entries.sort((a, b) => {
+            if (a.isDirectory && !b.isDirectory) return -1;
+            if (!a.isDirectory && b.isDirectory) return 1;
+            return a.name.localeCompare(b.name);
+          });
+          onDirectoryLoaded(entry.path, entries);
+        } catch (error) {
+          console.error('Error reading directory:', error);
+        } finally {
+          setIsLoading(false);
+        }
       }
     }
     
-    setIsOpen(!isOpen);
+    onToggleDirectory(entry.path, !isOpen);
   };
   
   const isHiddenFile = entry.name.startsWith('.');
@@ -156,7 +174,11 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
                 level={level + 1} 
                 showHidden={showHidden}
                 selectedFile={selectedFile}
+                expandedDirectories={expandedDirectories}
+                directoryContents={directoryContents}
                 onSelect={onSelect}
+                onToggleDirectory={onToggleDirectory}
+                onDirectoryLoaded={onDirectoryLoaded}
               />
             ))}
           </Box>
@@ -171,6 +193,8 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
+  const [expandedDirectories, setExpandedDirectories] = useState<Set<string>>(new Set());
+  const [directoryContents, setDirectoryContents] = useState<Map<string, FileSystemEntry[]>>(new Map());
   
   // Custom sorting function for root level entries
   const sortRootEntries = (entries: FileSystemEntry[]) => {
@@ -217,6 +241,8 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
       // Apply custom sorting for root level
       const sortedEntries = sortRootEntries(entries);
       setRootEntries(sortedEntries);
+      // Store root entries in directory contents
+      setDirectoryContents(prev => new Map(prev).set(rootPath, sortedEntries));
     } catch (error) {
       console.error('Error reading root directory:', error);
     } finally {
@@ -224,8 +250,40 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
     }
   };
 
+  const handleToggleDirectory = (path: string, isExpanded: boolean) => {
+    setExpandedDirectories(prev => {
+      const newSet = new Set(prev);
+      if (isExpanded) {
+        newSet.add(path);
+      } else {
+        newSet.delete(path);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDirectoryLoaded = (path: string, contents: FileSystemEntry[]) => {
+    setDirectoryContents(prev => new Map(prev).set(path, contents));
+  };
+
+  const saveState = (): FileTreeState => {
+    return {
+      selectedFile,
+      expandedDirectories: new Set(expandedDirectories),
+      directoryContents: new Map(directoryContents)
+    };
+  };
+
+  const restoreState = (state: FileTreeState) => {
+    setSelectedFile(state.selectedFile);
+    setExpandedDirectories(new Set(state.expandedDirectories));
+    setDirectoryContents(new Map(state.directoryContents));
+  };
+
   useImperativeHandle(ref, () => ({
-    refresh: loadRootEntries
+    refresh: loadRootEntries,
+    saveState,
+    restoreState
   }));
   
   useEffect(() => {
@@ -302,7 +360,11 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
           level={0} 
           showHidden={showHidden}
           selectedFile={selectedFile}
+          expandedDirectories={expandedDirectories}
+          directoryContents={directoryContents}
           onSelect={handleFileSelect}
+          onToggleDirectory={handleToggleDirectory}
+          onDirectoryLoaded={handleDirectoryLoaded}
         />
       ))}
     </Stack>
