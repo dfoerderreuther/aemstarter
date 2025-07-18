@@ -114,10 +114,14 @@ export const TerminalTabQuickCommands = ({
     'RDE': {
       type: 'dev',
       items: [
-        { url: 'https://experienceleague.adobe.com/docs/experience-manager-learn/cloud-service/developing/rde/overview.html', name: 'RDE Documentation' },
-        { command: 'aio aem:rde:status', name: 'Check RDE Status' },
+        { url: 'https://experienceleague.adobe.com/en/docs/experience-manager-learn/cloud-service/developing/rde/how-to-setup', name: 'How to set up RDE' },
+        { url: 'https://experienceleague.adobe.com/en/docs/experience-manager-learn/cloud-service/developing/rde/how-to-use', name: 'How to use RDE' },
         { command: 'aio aem:rde:setup', name: 'Setup RDE' },
-        { command: 'aio aem:rde:deploy', name: 'Deploy to RDE' }
+        { command: 'aio aem:rde:status', name: 'Check RDE Status' },
+        { command: 'aio aem:rde:install ', name: 'Install to RDE' }, 
+        { command: 'aio aem:rde:logs', name: 'Follow RDE Logs' }, 
+        { command: 'aio aem:rde:logs -s author', name: 'Follow RDE Author Logs' }, 
+        { command: 'aio aem:rde:logs -s publish', name: 'Follow RDE Publish Logs' }
       ]
     },
     'AEM Starter Logging': {

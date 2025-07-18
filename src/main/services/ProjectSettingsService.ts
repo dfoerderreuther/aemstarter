@@ -52,9 +52,15 @@ export class ProjectSettingsService {
                 const settingsData = fs.readFileSync(settingsPath, 'utf8');
                 const parsedSettings = JSON.parse(settingsData) as ProjectSettings;
                 
+                console.log('[ProjectSettingsService] Loaded javaHome from file:', parsedSettings.general?.javaHome);
+                
                 // Validate and merge with defaults to ensure all required fields exist
                 const defaultSettings = this.getDefaultSettings(project);
-                return this.mergeWithDefaults(parsedSettings, defaultSettings);
+                const mergedSettings = this.mergeWithDefaults(parsedSettings, defaultSettings);
+                
+                console.log('[ProjectSettingsService] Final javaHome after merge:', mergedSettings.general.javaHome);
+                
+                return mergedSettings;
             } catch (error) {
                 console.error('Error parsing settings file:', error);
                 // Return default settings if parsing fails
@@ -62,6 +68,7 @@ export class ProjectSettingsService {
             }
         }
         
+        console.log('[ProjectSettingsService] No settings file found, using defaults');
         return this.getDefaultSettings(project);
     }
 
@@ -86,35 +93,35 @@ export class ProjectSettingsService {
             general: {
                 name: settings.general?.name || defaults.general.name,
                 healthCheck: settings.general?.healthCheck ?? defaults.general.healthCheck,
-                javaHome: settings.general?.javaHome || defaults.general.javaHome
+                javaHome: settings.general?.javaHome ?? defaults.general.javaHome
             },
             author: {
                 port: settings.author?.port || defaults.author.port,
                 runmode: settings.author?.runmode || defaults.author.runmode,
                 jvmOpts: settings.author?.jvmOpts || defaults.author.jvmOpts,
                 debugJvmOpts: settings.author?.debugJvmOpts || defaults.author.debugJvmOpts,
-                healthCheckPath: settings.author?.healthCheckPath || defaults.author.healthCheckPath
+                healthCheckPath: settings.author?.healthCheckPath ?? defaults.author.healthCheckPath
             },
             publisher: {
                 port: settings.publisher?.port || defaults.publisher.port,
                 runmode: settings.publisher?.runmode || defaults.publisher.runmode,
                 jvmOpts: settings.publisher?.jvmOpts || defaults.publisher.jvmOpts,
                 debugJvmOpts: settings.publisher?.debugJvmOpts || defaults.publisher.debugJvmOpts,
-                healthCheckPath: settings.publisher?.healthCheckPath || defaults.publisher.healthCheckPath
+                healthCheckPath: settings.publisher?.healthCheckPath ?? defaults.publisher.healthCheckPath
             },
             dispatcher: {
                 port: settings.dispatcher?.port || defaults.dispatcher.port,
-                config: settings.dispatcher?.config || defaults.dispatcher.config,
-                healthCheckPath: settings.dispatcher?.healthCheckPath || defaults.dispatcher.healthCheckPath
+                config: settings.dispatcher?.config ?? defaults.dispatcher.config,
+                healthCheckPath: settings.dispatcher?.healthCheckPath ?? defaults.dispatcher.healthCheckPath
             },
             https: {
                 enabled: settings.https?.enabled ?? defaults.https.enabled,
                 port: settings.https?.port ?? defaults.https.port
             },
             dev: {
-                path: settings.dev?.path || defaults.dev.path,
-                editor: settings.dev?.editor || defaults.dev.editor,
-                customEditorPath: settings.dev?.customEditorPath || defaults.dev.customEditorPath
+                path: settings.dev?.path ?? defaults.dev.path,
+                editor: settings.dev?.editor ?? defaults.dev.editor,
+                customEditorPath: settings.dev?.customEditorPath ?? defaults.dev.customEditorPath
             }
         };
     }
