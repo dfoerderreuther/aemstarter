@@ -246,11 +246,11 @@ export const DispatcherView = ({
     <>
       <Stack gap="0" style={{ height: '100%' }}>
         <Box p="xs" style={{ borderBottom: '1px solid #2C2E33', margin: 0 }}>
-          <Group justify="space-between" align="center">
+          <Group justify="space-between" align="center" wrap="nowrap" style={{ width: '100%' }}>
             <Text size="xs" fw={700} c="dimmed">
               DISPATCHER
             </Text>
-            <Group gap="xs" align="center">
+            <Box style={{ flex: 1 }} />
                 <TextInput
                   placeholder="Filter logs..."
                   value={filterText}
@@ -309,7 +309,6 @@ export const DispatcherView = ({
                     }
                   }}
                 />
-            </Group>
           </Group>
         </Box>
 
