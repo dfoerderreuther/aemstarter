@@ -89,8 +89,6 @@ export const OakRunMenu = ({
     }
   };
 
-  console.log('OakRunMenu render - isOakJarAvailable:', isOakJarAvailable, 'isRunning:', isRunning);
-
   return (
     <Menu shadow="md" width={200} onOpen={handleMenuOpen}>
       <Menu.Target>

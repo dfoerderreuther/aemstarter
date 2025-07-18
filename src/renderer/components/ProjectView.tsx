@@ -46,8 +46,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
     <Stack 
       gap={0} 
       style={{ 
-        height: 'calc(100vh - 55px)', // Subtract header height
-        minHeight: 'calc(100vh - 55px)',
+        height: 'calc(100vh - 55px)', 
         backgroundColor: '#1A1B1E'
       }}
     >
@@ -61,10 +60,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
       <Tabs 
         defaultValue="author" 
         style={{ 
-          flex: 1, 
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column'
+          height: 'calc(100vh - 146px)', 
+          overflow: 'hidden'
         }}
         value={activeTab || 'author'}
         onChange={setActiveTab}

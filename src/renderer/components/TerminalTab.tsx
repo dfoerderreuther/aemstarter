@@ -79,7 +79,7 @@ export const TerminalTab = ({
 
   return (
     <>
-      <Stack gap="0" style={{ height: '100%' }}>
+      <Stack gap="0" style={{ height: 'calc(100vh - 146px)' }}>
         <Box p="xs" style={{ borderBottom: '1px solid #2C2E33', margin: 0 }}>
           <Group justify="space-between" align="center" wrap="nowrap" style={{ width: '100%' }}>
             <Text size="xs" fw={700} c="dimmed" style={{ whiteSpace: 'nowrap' }}>
@@ -196,7 +196,7 @@ export const TerminalTab = ({
           <Box style={{ 
             flex: 1,
             overflow: 'hidden',
-            minHeight: 0,
+            height: 'calc(100vh - 246px)',
             display: 'flex',
             flexDirection: 'column', 
             backgroundColor: '#1A1A1A'
