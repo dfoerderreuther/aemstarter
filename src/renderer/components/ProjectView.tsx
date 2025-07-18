@@ -37,6 +37,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
 
 
   const handleColumnsToggleCollapse = () => {
+    console.log('handleColumnsToggleCollapse', isColumnsCollapsed);
     setIsColumnsCollapsed(!isColumnsCollapsed);
   };
 
@@ -159,8 +160,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
                 project={project} 
                 visible={activeTab === 'instances'} 
                 viewMode={viewMode}
-                isCollapsed={viewMode === 'columns' ? isColumnsCollapsed : undefined}
-                onToggleCollapse={viewMode === 'columns' ? handleColumnsToggleCollapse : undefined}
+                isCollapsed={isColumnsCollapsed}
+                onToggleCollapse={handleColumnsToggleCollapse}
               />
             </div>
             <div
@@ -177,8 +178,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
                 project={project} 
                 visible={activeTab === 'instances'} 
                 viewMode={viewMode}
-                isCollapsed={viewMode === 'columns' ? isColumnsCollapsed : undefined}
-                onToggleCollapse={viewMode === 'columns' ? handleColumnsToggleCollapse : undefined}
+                isCollapsed={isColumnsCollapsed}
+                onToggleCollapse={handleColumnsToggleCollapse}
               />
             </div>
             <div
@@ -193,8 +194,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
                 project={project} 
                 visible={activeTab === 'instances'} 
                 viewMode={viewMode}
-                isCollapsed={viewMode === 'columns' ? isColumnsCollapsed : undefined}
-                onToggleCollapse={viewMode === 'columns' ? handleColumnsToggleCollapse : undefined}
+                isCollapsed={isColumnsCollapsed}
+                onToggleCollapse={handleColumnsToggleCollapse}
               />
             </div>
           </div>
@@ -206,6 +207,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
             project={project} 
             visible={activeTab === 'author'}
             viewMode={viewMode}
+            isCollapsed={isColumnsCollapsed}
+            onToggleCollapse={handleColumnsToggleCollapse}
           />
         </Tabs.Panel>
 
@@ -215,6 +218,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
             project={project} 
             visible={activeTab === 'publisher'}
             viewMode={viewMode}
+            isCollapsed={isColumnsCollapsed}
+            onToggleCollapse={handleColumnsToggleCollapse}
           />
         </Tabs.Panel>
 
@@ -223,6 +228,8 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
             project={project} 
             visible={activeTab === 'dispatcher'}
             viewMode={viewMode}
+            isCollapsed={isColumnsCollapsed}
+            onToggleCollapse={handleColumnsToggleCollapse}
           />
         </Tabs.Panel>
 
