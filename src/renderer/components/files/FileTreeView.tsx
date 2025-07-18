@@ -166,7 +166,7 @@ const FileTreeEntry: React.FC<FileTreeEntryProps> = ({
       
       {entry.isDirectory && (
         <Collapse in={isOpen}>
-          <Box pl={indent}>
+          <Box>
             {children.map((child) => (
               <FileTreeEntry 
                 key={child.path} 
