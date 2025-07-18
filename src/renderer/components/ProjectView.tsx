@@ -234,7 +234,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
         </Tabs.Panel>
 
         <Tabs.Panel value="files" p="md">
-                      <FilesView rootPath={project.folderPath} project={project} />
+          <FilesView visible={activeTab === 'files'} rootPath={project.folderPath} project={project} />
         </Tabs.Panel>
 
         <Tabs.Panel value="terminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -246,7 +246,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
         </Tabs.Panel>
 
         <Tabs.Panel value="devfiles" p="md">
-                      <FilesView rootPath={project.settings?.dev?.path || ''} project={project} />
+          <FilesView visible={activeTab === 'devfiles'} rootPath={project.settings?.dev?.path || ''} project={project} />
         </Tabs.Panel>
 
         <Tabs.Panel value="devterminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

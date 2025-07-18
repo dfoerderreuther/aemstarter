@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Grid } from '@mantine/core';
 import { FileTreeView, FileTreeViewRef } from './FileTreeView';
 import { EditorView } from './EditorView';
@@ -8,9 +8,10 @@ import { Project } from '../../../types/Project';
 interface FilesViewProps {
   rootPath: string;
   project?: Project;
+  visible?: boolean;
 }
 
-export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project }) => {
+export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project, visible }) => {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isBinaryFile, setIsBinaryFile] = useState<boolean>(false);
@@ -97,6 +98,12 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project }) => {
       await readFileContent(selectedFile);
     }
   };
+
+  useEffect(() => {
+    if (visible) {
+      fileTreeRef.current?.refresh();
+    }
+  }, [visible]);
 
   return (
     <Grid style={{ height: '100%', margin: 0 }}>
