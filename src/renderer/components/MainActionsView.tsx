@@ -356,12 +356,16 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
   const sectionStyles = {
     padding: '12px',
     background: 'none',
+    minWidth: 'fit-content',
+    flexShrink: 0,
   };
 
   const disabledSectionStyles = {
     padding: '12px',
     background: 'none',
     opacity: 0.5,
+    minWidth: 'fit-content',
+    flexShrink: 0,
   };
 
   const buttonStyles = {
@@ -381,13 +385,13 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
 
   return (
     <>
-      <Group align="flex-start" gap="md" style={{ marginTop: '4px' }}>
+      <Group align="flex-start" gap="md" style={{ marginTop: '4px', flexWrap: 'nowrap', overflowX: 'auto', overflowY: 'hidden', width: '100%' }}>
         
         <Paper style={sectionStyles}>
           <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">All</Text>
-            <Group>
-            <Button.Group>
+                      <Group style={{ flexWrap: 'nowrap' }}>
+          <Button.Group>
               <Tooltip label="Start all">
                 <Button 
                   color="green" 
@@ -455,7 +459,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
               </Badge>
 
             </Group>
-            <Group gap="xs">
+            <Group gap="xs" style={{ flexWrap: 'nowrap' }}>
               <Button.Group>
                 <Tooltip label="Start author">
                   <Button 
@@ -525,7 +529,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                 {isPublisherRunning && publisherPid ? ` PID: ${publisherPid}` : " STOPPED"}
               </Badge>
             </Group>
-            <Group gap="xs">
+            <Group gap="xs" style={{ flexWrap: 'nowrap' }}>
               <Button.Group>
                 <Tooltip label="Start publisher">
                   <Button 
@@ -595,7 +599,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                 {isDispatcherRunning ? "Running" : "Stopped"}
               </Badge>
             </Group>
-            <Group gap="xs">
+            <Group gap="xs" style={{ flexWrap: 'nowrap' }}>
               <Button.Group>
                 <Tooltip label="Start dispatcher">
                   <Button 
@@ -646,7 +650,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
           <Paper style={sectionStyles}>
             <Stack gap="xs">
               <Text size="sm" fw={500} c="dimmed">SSL Proxy</Text>
-              <Group gap="xs">
+              <Group gap="xs" style={{ flexWrap: 'nowrap' }}>
                 <Button.Group>
                   <Tooltip label="Start SSL Proxy">
                     <Button 
@@ -683,7 +687,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
         <Paper style={sectionStyles}>
           <Stack gap="xs">
             <Text size="sm" fw={500} c="dimmed">Other</Text>
-            <Group gap="xs">
+            <Group gap="xs" style={{ flexWrap: 'nowrap' }}>
               <Button.Group>
                 <Tooltip label="Settings">
                   <Button 
