@@ -6,7 +6,7 @@
 ### release: 
 
 1. Regular commits → Only builds (no release)
-2. Create tag (git tag v1.0.7 && git push --tags) → Builds + Creates Release
+2. Create tag (git tag v1.0.8 && git push --tags) → Builds + Creates Release
 3. Pull requests → Only builds (no release)
 
 ## Build
