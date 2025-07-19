@@ -196,7 +196,7 @@ export const TerminalTab = ({
           <Box style={{ 
             flex: 1,
             overflow: 'hidden',
-            height: 'calc(100vh - 246px)',
+            height: 'calc(100vh - 252px)',
             display: 'flex',
             flexDirection: 'column', 
             backgroundColor: '#1A1A1A'
