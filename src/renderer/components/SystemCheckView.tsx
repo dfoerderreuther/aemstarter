@@ -151,28 +151,43 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, stric
   const getOverallStatus = () => {
     if (!results) return 'unknown';
     
+    // Critical system requirements (Java, Docker)
     const criticalChecks = [
       results.javaAvailable,
       results.dockerAvailable,
       results.dockerDaemonRunning
     ];
     
-    // In strict mode, also consider port availability as critical
-    if (strict) {
-      criticalChecks.push(
-        results.portDispatcherAvailable[1],
-        results.portAuthorAvailable[1],
-        results.portPublisherAvailable[1]
-      );
+    // Check if any critical requirements are missing
+    if (!criticalChecks.every(check => check)) {
+      return 'issues';
     }
     
-    return criticalChecks.every(check => check) ? 'healthy' : 'issues';
+    // All critical requirements are met, now check ports
+    const portChecks = [
+      results.portDispatcherAvailable[1],
+      results.portAuthorAvailable[1],
+      results.portPublisherAvailable[1]
+    ];
+    
+    // In strict mode, blocked ports are treated as issues
+    if (strict) {
+      return portChecks.every(check => check) ? 'healthy' : 'issues';
+    }
+    
+    // In non-strict mode, blocked ports are a warning
+    if (portChecks.every(check => check)) {
+      return 'healthy';
+    } else {
+      return 'ports_blocked';
+    }
   };
 
   const getStatusColor = () => {
     const status = getOverallStatus();
     switch (status) {
       case 'healthy': return 'green';
+      case 'ports_blocked': return 'yellow';
       case 'issues': return 'red';
       default: return 'gray';
     }
@@ -182,7 +197,8 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, stric
     const status = getOverallStatus();
     switch (status) {
       case 'healthy': return 'System Ready';
-      case 'issues': return 'Issues Detected';
+      case 'ports_blocked': return 'Ports Blocked';
+      case 'issues': return 'Issues';
       default: return 'Checking...';
     }
   };
