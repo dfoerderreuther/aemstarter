@@ -215,11 +215,25 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, stric
     } else {
       // Second click - actually kill
       try {
+        // Kill AEM instances (works without project since it kills all quickstart processes)
         if (project) {
           await window.electronAPI.killAllAemInstances(project);
           await window.electronAPI.killDispatcher(project);
-          await runSystemCheck();
+        } else {
+          // Create a default project just to call the kill function
+          // The kill function doesn't actually use project-specific data
+          const defaultProject = { 
+            id: 'temp', 
+            name: 'temp', 
+            folderPath: '', 
+            settings: getProjectSettings() 
+          } as Project;
+          await window.electronAPI.killAllAemInstances(defaultProject);
+          await window.electronAPI.killDispatcher(defaultProject);
         }
+
+
+        await runSystemCheck();
         setKillButtonState('initial');
       } catch (error) {
         console.error('Failed to kill all instances:', error);
