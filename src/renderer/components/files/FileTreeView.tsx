@@ -269,18 +269,18 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
           </Group>
         </Group>
       </Box>
+      <Box style={{ overflow: 'auto', flex: 1 }}>
         <Tree
             ref={treeApi}
             data={treeData}
             openByDefault={false}
-            width={600}
+            width="100%"
             height={1000}
             indent={24}
             rowHeight={32}
             disableEdit={true}
             disableDrop={false}
             onActivate={async (node) => {
-                console.log('Node activated:', node.data.name, 'Level:', node.level, 'IsLeaf:', node.isLeaf);
                 if (node.isLeaf) {
                     onFileSelect && onFileSelect(node.data.path);
                 } else {
@@ -288,7 +288,6 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
                     if (!node.isOpen) {
                         // Load children before opening if they haven't been loaded yet
                         if (node.data.children && node.data.children.length === 0) {
-                            console.log('Loading children for:', node.data.name);
                             await loadChildren(node);
                         }
                     }
@@ -314,8 +313,6 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
 
                     const sourcePath = node.data.path;
                     const destinationPath = `${parentNode.data.path}/${node.data.name}`;
-
-                    console.log(`Moving ${sourcePath} to ${destinationPath}`);
                     
                     const result = await window.electronAPI.fileTreeMove(project, sourcePath, destinationPath);
 
@@ -364,13 +361,11 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {node.data.name}
                         </span>
-                        <span style={{ fontSize: '10px', color: '#666', marginLeft: 'auto' }}>
-                            L{node.level}
-                        </span>
                     </Group>
                 </div>
             )}
         </Tree>
+      </Box>
         <Menu opened={!!contextMenuNode} onClose={() => setContextMenuNode(null)} shadow="md" width={200}>
             {contextMenuNode && contextMenuPosition && (
                 <Menu.Dropdown

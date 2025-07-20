@@ -35,9 +35,6 @@ export class FileTreeService {
     const treeData: TreeData = {};
     
     try {
-      console.log(`FileTreeService: Reading directory tree for ${dirPath}`);
-      console.log(`FileTreeService: Show hidden files: ${showHidden}`);
-      
       // Check if path exists and is accessible
       try {
         await fs.promises.access(dirPath, fs.constants.R_OK);
@@ -46,8 +43,6 @@ export class FileTreeService {
       }
 
       const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
-      console.log(`FileTreeService: Found ${entries.length} entries in root directory`);
-      
       const children: string[] = [];
       const currentStats = await fs.promises.stat(dirPath);
 
@@ -189,9 +184,6 @@ export class FileTreeService {
           updatedAt: currentStats.mtime.toISOString()
         }
       };
-
-      console.log(`FileTreeService: Built tree with ${Object.keys(treeData).length} items`);
-      console.log(`FileTreeService: Root has ${children.length} direct children`);
       
     } catch (error) {
       console.error('FileTreeService: Error reading directory tree:', error);
