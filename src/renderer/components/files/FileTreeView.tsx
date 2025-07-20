@@ -7,6 +7,7 @@ import { Project } from '../../../types/Project';
 
 export interface FileTreeState {
   selectedFile: string | null;
+  expandedDirectories: Set<string>;
 }
 
 interface FileTreeViewProps {
@@ -32,6 +33,7 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   const [isLoading, setIsLoading] = useState(true);
   const [showHidden, setShowHidden] = useState(false);
   const [treeData, setTreeData] = useState<NodeData[]>([]);
+  const [expandedDirectories, setExpandedDirectories] = useState<Set<string>>(new Set());
   const treeApi = React.useRef<TreeApi<NodeData>>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showCreateFileModal, setShowCreateFileModal] = useState(false);
@@ -110,10 +112,103 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
         };
         return updateNodeChildren(prevData);
       });
+
+      return true; // Return success
     } catch (error) {
       console.error('Error loading children:', error);
+      return false;
     }
   }, [project, showHidden]);
+
+  // Recursively restore expanded directories with lazy loading
+  const restoreExpandedDirectories = useCallback(async (expandedPaths: Set<string>) => {
+    if (!treeApi.current || expandedPaths.size === 0) {
+      console.log('🔄 No tree API or no expanded paths to restore');
+      return;
+    }
+
+    console.log('🔄 Restoring expanded directories:', Array.from(expandedPaths));
+
+    // Sort paths by depth (shorter paths first) to ensure parents are expanded before children
+    const sortedPaths = Array.from(expandedPaths).sort((a, b) => {
+      const depthA = a.split('/').length;
+      const depthB = b.split('/').length;
+      return depthA - depthB;
+    });
+
+    console.log('🔄 Sorted paths by depth:', sortedPaths);
+
+    for (const dirPath of sortedPaths) {
+      console.log(`🔄 Processing directory: ${dirPath}`);
+      
+      // Wait for the node to be available in the tree
+      let node = treeApi.current.get(dirPath);
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (!node && attempts < maxAttempts) {
+        console.log(`🔄 Node not found for ${dirPath}, waiting... (attempt ${attempts + 1})`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        node = treeApi.current.get(dirPath);
+        attempts++;
+      }
+      
+      if (!node) {
+        console.log(`🔄 Node not found for path after ${maxAttempts} attempts: ${dirPath}`);
+        continue;
+      }
+      
+      console.log(`🔄 Found node: ${node.data.name}, isInternal: ${node.isInternal}, isOpen: ${node.isOpen}`);
+      
+      if (node.isInternal && !node.isOpen) {
+        // Load children if not loaded yet
+        if (node.data.children && node.data.children.length === 0) {
+          console.log(`🔄 Loading children for: ${node.data.name}`);
+          const loaded = await loadChildren(node);
+          console.log(`🔄 Children loaded successfully: ${loaded}`);
+          
+          if (!loaded) {
+            console.log(`🔄 Failed to load children for: ${node.data.name}`);
+            continue; // Skip if loading failed
+          }
+          
+          // Wait for the tree data to update after loading children
+          await new Promise(resolve => {
+            const checkUpdate = () => {
+              const updatedNode = treeApi.current?.get(dirPath);
+              if (updatedNode && updatedNode.data.children && updatedNode.data.children.length > 0) {
+                console.log(`🔄 Children are now available for: ${updatedNode.data.name}`);
+                resolve(void 0);
+              } else {
+                setTimeout(checkUpdate, 50);
+              }
+            };
+            checkUpdate();
+          });
+        }
+        
+        console.log(`🔄 Opening directory: ${node.data.name}`);
+        // Open the directory
+        node.open();
+        
+        // Wait for the directory to actually open
+        await new Promise(resolve => {
+          const checkOpen = () => {
+            const updatedNode = treeApi.current?.get(dirPath);
+            if (updatedNode && updatedNode.isOpen) {
+              console.log(`🔄 Directory is now open: ${updatedNode.data.name}`);
+              resolve(void 0);
+            } else {
+              setTimeout(checkOpen, 50);
+            }
+          };
+          checkOpen();
+        });
+      }
+    }
+    
+    console.log('🔄 Finished processing all directories');
+  }, [loadChildren]);
 
   useEffect(() => {
     loadTreeData();
@@ -121,13 +216,47 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
 
   useImperativeHandle(ref, () => ({
     refresh: loadTreeData,
-    saveState: () => ({ selectedFile: treeApi.current?.focusedNode?.data.path || null }),
-    restoreState: (state: FileTreeState) => {
-      if (state.selectedFile) {
-        treeApi.current?.focus(state.selectedFile);
+    saveState: () => ({ 
+      selectedFile: treeApi.current?.focusedNode?.data.path || null,
+      expandedDirectories: new Set(expandedDirectories)
+    }),
+    restoreState: async (state: FileTreeState) => {
+      console.log('🔄 Restoring file tree state:', state);
+      console.log('🔄 Expanded directories:', state.expandedDirectories);
+      
+      if (state.expandedDirectories && state.expandedDirectories.size > 0) {
+        setExpandedDirectories(new Set(state.expandedDirectories));
+        console.log('🔄 Set expanded directories, starting restoration...');
+        
+        // Wait for tree to be fully loaded before starting restoration
+        await new Promise(resolve => {
+          const checkTreeLoaded = () => {
+            if (treeApi.current && treeData.length > 0) {
+              console.log('🔄 Tree is loaded, proceeding with restoration');
+              resolve(void 0);
+            } else {
+              setTimeout(checkTreeLoaded, 50);
+            }
+          };
+          checkTreeLoaded();
+        });
+        
+        // Restore expanded directories
+        console.log('🔄 Starting restoration of expanded directories');
+        await restoreExpandedDirectories(state.expandedDirectories);
+        console.log('🔄 Finished restoring expanded directories');
+        
+        // Restore selected file after tree is fully expanded
+        if (state.selectedFile && treeApi.current) {
+          console.log('🔄 Restoring selected file:', state.selectedFile);
+          treeApi.current.focus(state.selectedFile);
+        }
+      } else if (state.selectedFile && treeApi.current) {
+        console.log('🔄 Only restoring selected file:', state.selectedFile);
+        treeApi.current.focus(state.selectedFile);
       }
     }
-  }));
+  }), [loadTreeData, expandedDirectories, restoreExpandedDirectories, treeData]);
 
   const handleContextMenu = useCallback((event: React.MouseEvent, node: NodeApi<NodeData>) => {
     event.preventDefault();
@@ -290,16 +419,37 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
                         if (node.data.children && node.data.children.length === 0) {
                             await loadChildren(node);
                         }
+                        // Add to expanded directories
+                        setExpandedDirectories(prev => new Set(prev).add(node.data.path));
+                    } else {
+                        // Remove from expanded directories
+                        setExpandedDirectories(prev => {
+                            const newSet = new Set(prev);
+                            newSet.delete(node.data.path);
+                            return newSet;
+                        });
                     }
                     node.toggle();
                     node.select();
                 }
             }}
             onToggle={async (id: string) => {
-                // Load children when a directory is opened for the first time
                 const node = treeApi.current?.get(id);
-                if (node && node.isInternal && node.isOpen && node.data.children && node.data.children.length === 0) {
-                    await loadChildren(node);
+                if (node && node.isInternal) {
+                  // Update expanded directories state
+                  setExpandedDirectories(prev => {
+                    const newSet = new Set(prev);
+                    if (node.isOpen) {
+                      newSet.add(node.data.path);
+                      // Load children when a directory is opened for the first time
+                      if (node.data.children && node.data.children.length === 0) {
+                        loadChildren(node);
+                      }
+                    } else {
+                      newSet.delete(node.data.path);
+                    }
+                    return newSet;
+                  });
                 }
             }}
             onMove={async ({ dragIds, parentId, index }) => {
