@@ -1,22 +1,12 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Group, Text, Box, Loader, ActionIcon, Divider, Menu, Modal, TextInput, Button } from '@mantine/core';
 import { IconFolder, IconRefresh, IconEye, IconEyeOff, IconCode, IconPlus, IconEdit, IconTrash, IconFile, IconFolderPlus, IconCut, IconClipboard } from '@tabler/icons-react';
-import { 
-  UncontrolledTreeEnvironment, 
-  Tree, 
-  StaticTreeDataProvider,
-  TreeItem,
-  TreeItemIndex,
-  TreeDataProvider
-} from 'react-complex-tree';
-import 'react-complex-tree/lib/style-modern.css';
-// import './FileTreeView.css';
+import { Tree, TreeApi, NodeApi } from 'react-arborist';
+import './FileTreeView.css';
 import { Project } from '../../../types/Project';
 
 export interface FileTreeState {
   selectedFile: string | null;
-  expandedDirectories: Set<string>;
-  treeData: any;
 }
 
 interface FileTreeViewProps {
@@ -31,346 +21,182 @@ export interface FileTreeViewRef {
   restoreState: (state: FileTreeState) => void;
 }
 
-interface TreeItemData {
+interface NodeData {
+  id: string;
   name: string;
   path: string;
-  isDirectory: boolean;
-  isFile: boolean;
-  size?: number;
-  updatedAt?: string;
+  children?: NodeData[];
 }
-
 
 export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ rootPath, onFileSelect, project }, ref) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showHidden, setShowHidden] = useState(false);
-  const [treeData, setTreeData] = useState<Record<TreeItemIndex, TreeItem<TreeItemData>>>({});
-  const [dataProvider, setDataProvider] = useState<StaticTreeDataProvider<TreeItemData>>(new StaticTreeDataProvider({}));
-  const [contextMenuItem, setContextMenuItem] = useState<TreeItem<TreeItemData> | null>(null);
-  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
-  const [showContextMenu, setShowContextMenu] = useState(false);
-  
-  // Modal states for input dialogs
+  const [treeData, setTreeData] = useState<NodeData[]>([]);
+  const treeApi = React.useRef<TreeApi<NodeData>>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showCreateFileModal, setShowCreateFileModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const [createParentPath, setCreateParentPath] = useState<string | null>(null);
-  const [renameItem, setRenameItem] = useState<TreeItem<TreeItemData> | null>(null);
-
-  // Cut/paste functionality
-  const [cutItem, setCutItem] = useState<TreeItem<TreeItemData> | null>(null);
-
-  const convertBackendDataToTreeFormat = useCallback((backendData: any): Record<TreeItemIndex, TreeItem<TreeItemData>> => {
-    console.log('Converting backend data:', backendData);
-    const convertedData: Record<TreeItemIndex, TreeItem<TreeItemData>> = {};
-    
-    Object.entries(backendData).forEach(([key, value]: [string, any]) => {
-      convertedData[key] = {
-        index: key,
-        children: value.isFolder ? value.children : undefined,
-        data: value.data,
-        isFolder: value.isFolder,
-        canMove: true,
-        canRename: true,
-      };
-    });
-
-    return convertedData;
-  }, []);
+  const [createParentNode, setCreateParentNode] = useState<NodeApi<NodeData> | null>(null);
+  const [renameNode, setRenameNode] = useState<NodeApi<NodeData> | null>(null);
+  const [contextMenuNode, setContextMenuNode] = useState<NodeApi<NodeData> | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
   const loadTreeData = useCallback(async () => {
-    if (!rootPath || rootPath.trim() === '' || !project) {
-      console.log('Missing required data:', { rootPath, project: !!project });
+    if (!rootPath || !project) {
       setIsLoading(false);
       return;
     }
-
-    console.log('Loading tree data for:', rootPath);
     setIsLoading(true);
-    
     try {
-      const result = await window.electronAPI.fileTreeRead(project, rootPath, showHidden);
-      console.log('Backend result:', result);
+      // Only load the root level initially
+      const result = await window.electronAPI.readDirectory(rootPath, showHidden);
       
       if ('error' in result) {
-        console.error('Failed to load directory tree:', result.error);
-        setIsLoading(false);
+        console.error('Failed to load root directory:', result.error);
+        setTreeData([]);
         return;
       }
 
-      const convertedData = convertBackendDataToTreeFormat(result);
-      console.log('Setting tree data with keys:', Object.keys(convertedData));
-      setTreeData(convertedData);
-      
-      // Use standard StaticTreeDataProvider 
-      setDataProvider(new StaticTreeDataProvider(convertedData));
-      
+      // Convert flat directory listing to tree nodes
+      const treeNodes: NodeData[] = result.map(item => ({
+        id: item.path,
+        name: item.name,
+        path: item.path,
+        children: item.isDirectory ? [] : undefined, // Empty array for directories, undefined for files
+      }));
+
+      setTreeData(treeNodes);
     } catch (error) {
       console.error('Error loading tree data:', error);
+      setTreeData([]);
     } finally {
       setIsLoading(false);
     }
-  }, [rootPath, showHidden, project, convertBackendDataToTreeFormat]);
+  }, [rootPath, showHidden, project]);
+
+  // Load children for a specific directory
+  const loadChildren = useCallback(async (node: NodeApi<NodeData>) => {
+    if (!project || node.isLeaf) return;
+    
+    try {
+      const result = await window.electronAPI.readDirectory(node.data.path, showHidden);
+      
+      if ('error' in result) {
+        console.error('Failed to load directory children:', result.error);
+        return;
+      }
+
+      // Convert to tree nodes
+      const childNodes: NodeData[] = result.map(item => ({
+        id: item.path,
+        name: item.name,
+        path: item.path,
+        children: item.isDirectory ? [] : undefined,
+      }));
+
+      // Update the tree data by replacing this node's children
+      setTreeData(prevData => {
+        const updateNodeChildren = (nodes: NodeData[]): NodeData[] => {
+          return nodes.map(n => {
+            if (n.id === node.data.id) {
+              return { ...n, children: childNodes };
+            }
+            if (n.children) {
+              return { ...n, children: updateNodeChildren(n.children) };
+            }
+            return n;
+          });
+        };
+        return updateNodeChildren(prevData);
+      });
+    } catch (error) {
+      console.error('Error loading children:', error);
+    }
+  }, [project, showHidden]);
 
   useEffect(() => {
     loadTreeData();
   }, [loadTreeData]);
 
-  // Close context menu when clicking elsewhere
+  useImperativeHandle(ref, () => ({
+    refresh: loadTreeData,
+    saveState: () => ({ selectedFile: treeApi.current?.focusedNode?.data.path || null }),
+    restoreState: (state: FileTreeState) => {
+      if (state.selectedFile) {
+        treeApi.current?.focus(state.selectedFile);
+      }
+    }
+  }));
+
+  const handleContextMenu = useCallback((event: React.MouseEvent, node: NodeApi<NodeData>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenuNode(node);
+    setContextMenuPosition({ x: event.clientX, y: event.clientY });
+  }, []);
+
   useEffect(() => {
-    const handleClickOutside = () => {
-      setShowContextMenu(false);
-    };
-    
-    if (showContextMenu) {
+    const handleClickOutside = () => setContextMenuNode(null);
+    if (contextMenuNode) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [showContextMenu]);
+  }, [contextMenuNode]);
 
-  const handleItemClick = useCallback((items: TreeItemIndex[]) => {
-    const itemId = items[0];
-    if (itemId && treeData[itemId]) {
-      const item = treeData[itemId];
-      console.log('Item clicked:', item);
-      if (item.isFolder) {
-        console.log('Folder clicked - children:', item.children);
-      } else if (onFileSelect) {
-        onFileSelect(item.data.path);
-      }
+  const handleCreateFolder = useCallback(async () => {
+    if (!project || !inputValue.trim() || !createParentNode) return;
+    const newPath = `${createParentNode.data.path}/${inputValue}`;
+    const result = await window.electronAPI.fileTreeCreateDirectory(project, newPath);
+    if ('error' in result) {
+      console.error('Create folder failed:', result.error);
+      alert(`Create folder failed: ${result.error}`);
+    } else {
+      loadTreeData();
     }
-  }, [treeData, onFileSelect]);
+    setShowCreateFolderModal(false);
+  }, [project, inputValue, createParentNode, loadTreeData]);
 
-  const startRename = useCallback((item: TreeItem<TreeItemData>) => {
-    setRenameItem(item);
-    setInputValue(item.data.name);
-    setShowRenameModal(true);
-  }, []);
-
-  const handleRename = useCallback(async (item: TreeItem<TreeItemData>, name: string) => {
-    if (!project) return;
-
-    console.log('Renaming item:', item.data.path, 'to', name);
-    try {
-      const oldPath = item.data.path;
-      const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
-      const newPath = `${parentPath}/${name}`;
-
-      const result = await window.electronAPI.fileTreeRename(project, oldPath, newPath);
-      
-      if ('error' in result) {
-        console.error('Rename failed:', result.error);
-        alert(`Rename failed: ${result.error}`);
-        return;
-      }
-
-      console.log('Rename successful, refreshing tree');
-      await loadTreeData(); // Refresh the tree
-      
-    } catch (error) {
-      console.error('Error renaming item:', error);
-      alert(`Error renaming: ${error}`);
+  const handleCreateFile = useCallback(async () => {
+    if (!project || !inputValue.trim() || !createParentNode) return;
+    const newPath = `${createParentNode.data.path}/${inputValue}`;
+    const result = await window.electronAPI.fileTreeCreateFile(project, newPath);
+    if ('error' in result) {
+      console.error('Create file failed:', result.error);
+      alert(`Create file failed: ${result.error}`);
+    } else {
+      loadTreeData();
     }
-  }, [project, loadTreeData]);
+    setShowCreateFileModal(false);
+  }, [project, inputValue, createParentNode, loadTreeData]);
 
-  const confirmRename = useCallback(async () => {
-    if (!project || !inputValue.trim() || !renameItem) return;
-
-    await handleRename(renameItem, inputValue);
+  const handleRename = useCallback(async () => {
+    if (!project || !inputValue.trim() || !renameNode) return;
+    const oldPath = renameNode.data.path;
+    const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
+    const newPath = `${parentPath}/${inputValue}`;
+    const result = await window.electronAPI.fileTreeRename(project, oldPath, newPath);
+    if ('error' in result) {
+      console.error('Rename failed:', result.error);
+      alert(`Rename failed: ${result.error}`);
+    } else {
+      loadTreeData();
+    }
     setShowRenameModal(false);
-  }, [project, inputValue, renameItem, handleRename]);
+  }, [project, inputValue, renameNode, loadTreeData]);
 
-  const handleCut = useCallback((item: TreeItem<TreeItemData>) => {
-    setCutItem(item);
-    console.log('Cut item:', item.data.path);
-  }, []);
-
-  const handlePaste = useCallback(async (targetItem: TreeItem<TreeItemData>) => {
-    if (!project || !cutItem || !targetItem.isFolder) return;
-
-    const sourcePath = cutItem.data.path;
-    const targetPath = targetItem.data.path;
-    const fileName = cutItem.data.name;
-    const destinationPath = `${targetPath}/${fileName}`;
-
-    console.log(`Pasting ${sourcePath} to ${destinationPath}`);
-
-    try {
-      const result = await window.electronAPI.fileTreeMove(project, sourcePath, destinationPath);
-      
-      if ('error' in result) {
-        console.error('Move failed:', result.error);
-        alert(`Move failed: ${result.error}`);
-        return;
-      }
-
-      console.log('Move successful, refreshing tree');
-      setCutItem(null); // Clear cut item
-      await loadTreeData(); // Refresh the tree
-      
-    } catch (error) {
-      console.error('Error moving item:', error);
-      alert(`Error moving item: ${error}`);
-    }
-  }, [project, cutItem, loadTreeData]);
-
-
-
-  const handleDelete = useCallback(async (itemPath: string) => {
-    if (!project || !itemPath) return;
-
-    if (!confirm(`Are you sure you want to delete ${itemPath.split('/').pop()}?`)) {
-      return;
-    }
-
-    console.log('Deleting item:', itemPath);
-    try {
-      const result = await window.electronAPI.fileTreeDelete(project, itemPath);
-      
+  const handleDelete = useCallback(async (node: NodeApi<NodeData>) => {
+    if (!project) return;
+    if (confirm(`Are you sure you want to delete ${node.data.name}?`)) {
+      const result = await window.electronAPI.fileTreeDelete(project, node.data.path);
       if ('error' in result) {
         console.error('Delete failed:', result.error);
         alert(`Delete failed: ${result.error}`);
-        return;
+      } else {
+        loadTreeData();
       }
-
-      console.log('Delete successful, refreshing tree');
-      await loadTreeData(); // Refresh the tree
-      
-    } catch (error) {
-      console.error('Error deleting item:', error);
-      alert(`Error deleting: ${error}`);
     }
   }, [project, loadTreeData]);
-
-  const handleCreateFolder = useCallback((parentPath?: string) => {
-    if (!project) return;
-    
-    setCreateParentPath(parentPath || rootPath);
-    setInputValue('');
-    setShowCreateFolderModal(true);
-  }, [project, rootPath]);
-
-  const confirmCreateFolder = useCallback(async () => {
-    if (!project || !inputValue.trim() || !createParentPath) return;
-
-    console.log('Creating folder:', inputValue, 'in', createParentPath);
-    try {
-      const newPath = `${createParentPath}/${inputValue}`;
-      const result = await window.electronAPI.fileTreeCreateDirectory(project, newPath);
-      
-      if ('error' in result) {
-        console.error('Create folder failed:', result.error);
-        alert(`Create folder failed: ${result.error}`);
-        return;
-      }
-
-      console.log('Create folder successful, refreshing tree');
-      setShowCreateFolderModal(false);
-      await loadTreeData(); // Refresh the tree
-      
-    } catch (error) {
-      console.error('Error creating folder:', error);
-      alert(`Error creating folder: ${error}`);
-    }
-  }, [project, inputValue, createParentPath, loadTreeData]);
-
-  const handleCreateFile = useCallback((parentPath?: string) => {
-    if (!project) return;
-    
-    setCreateParentPath(parentPath || rootPath);
-    setInputValue('');
-    setShowCreateFileModal(true);
-  }, [project, rootPath]);
-
-  const confirmCreateFile = useCallback(async () => {
-    if (!project || !inputValue.trim() || !createParentPath) return;
-
-    console.log('Creating file:', inputValue, 'in', createParentPath);
-    try {
-      const newPath = `${createParentPath}/${inputValue}`;
-      const result = await window.electronAPI.fileTreeCreateFile(project, newPath);
-      
-      if ('error' in result) {
-        console.error('Create file failed:', result.error);
-        alert(`Create file failed: ${result.error}`);
-        return;
-      }
-
-      console.log('Create file successful, refreshing tree');
-      setShowCreateFileModal(false);
-      await loadTreeData(); // Refresh the tree
-      
-    } catch (error) {
-      console.error('Error creating file:', error);
-      alert(`Error creating file: ${error}`);
-    }
-  }, [project, inputValue, createParentPath, loadTreeData]);
-
-  const handleContextMenu = useCallback((e: React.MouseEvent, item: TreeItem<TreeItemData>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log('Context menu for:', item.data.path);
-    setContextMenuItem(item);
-    setContextMenuPosition({ x: e.clientX, y: e.clientY });
-    setShowContextMenu(true);
-  }, []);
-
-  // Keyboard shortcuts
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!project) return;
-
-    switch (e.key) {
-      case 'F2':
-        e.preventDefault();
-        if (contextMenuItem) {
-          startRename(contextMenuItem);
-        }
-        break;
-      case 'Delete':
-        e.preventDefault();
-        if (contextMenuItem) {
-          handleDelete(contextMenuItem.data.path);
-        }
-        break;
-      case 'n':
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          const parentPath = contextMenuItem?.isFolder ? contextMenuItem.data.path : rootPath;
-          handleCreateFile(parentPath);
-        }
-        break;
-      case 'N':
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          const parentPath = contextMenuItem?.isFolder ? contextMenuItem.data.path : rootPath;
-          handleCreateFolder(parentPath);
-        }
-        break;
-    }
-  }, [project, contextMenuItem, startRename, handleDelete, handleCreateFile, handleCreateFolder, rootPath]);
-
-  const saveState = useCallback((): FileTreeState => {
-    return {
-      selectedFile: null,
-      expandedDirectories: new Set(),
-      treeData: treeData
-    };
-  }, [treeData]);
-
-  const restoreState = useCallback((state: FileTreeState) => {
-    if (state.treeData) {
-      setTreeData(state.treeData);
-      setDataProvider(new StaticTreeDataProvider(state.treeData));
-    }
-  }, []);
-
-  useImperativeHandle(ref, () => ({
-    refresh: loadTreeData,
-    saveState,
-    restoreState
-  }));
 
   if (isLoading) {
     return (
@@ -381,13 +207,8 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
     );
   }
 
-  const hasData = Object.keys(treeData).length > 0;
-  const rootItem = treeData[rootPath];
-
-  console.log('Render state:', { hasData, rootItem: !!rootItem, rootPath, treeDataKeys: Object.keys(treeData) });
-
   return (
-    <>
+    <Box>
       <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
         <Group justify="space-between" align="center">
           <Text size="xs" fw={700} c="dimmed">FILE TREE</Text>
@@ -410,7 +231,7 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
 
             <ActionIcon 
               variant="subtle"
-              onClick={() => handleCreateFolder()}
+              onClick={() => treeApi.current?.create({ parentId: null, type: "internal" })}
               title="Create new folder"
             >
               <IconFolderPlus size={16} />
@@ -418,7 +239,7 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
 
             <ActionIcon 
               variant="subtle"
-              onClick={() => handleCreateFile()}
+              onClick={() => treeApi.current?.create({ parentId: null, type: "leaf" })}
               title="Create new file"
             >
               <IconPlus size={16} />
@@ -448,344 +269,155 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
           </Group>
         </Group>
       </Box>
-
-      <Box 
-        style={{ height: 'calc(100vh - 235px)', overflowY: 'auto', position: 'relative' }}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-      >
-        {!hasData ? (
-          <Box p="md">
-            <Text size="sm" c="dimmed">No files found</Text>
-          </Box>
-        ) : !rootItem ? (
-          <Box p="md">
-            <Text size="sm" c="red">Root directory not found in data</Text>
-            <Text size="xs" c="dimmed">Root path: {rootPath}</Text>
-            <Text size="xs" c="dimmed">Available keys: {Object.keys(treeData).join(', ')}</Text>
-          </Box>
-        ) : (
-          <UncontrolledTreeEnvironment
-            dataProvider={dataProvider}
-            getItemTitle={(item) => item.data.name}
-            viewState={{
-              'file-tree': {
-                
-              }
-            }}
-            onSelectItems={handleItemClick}
-            onFocusItem={(item: TreeItem<TreeItemData>) => {
-              setContextMenuItem(item);
-            }}
-            onExpandItem={(item) => {
-              console.log('Item expanded:', item.data.name, 'with', item.children?.length || 0, 'children');
-            }}
-            onCollapseItem={(item) => {
-              console.log('Item collapsed:', item.data.name);
-            }}
-            canDragAndDrop={true}
-            canDropOnFolder={true}
-            canReorderItems={true}
-            onRenameItem={handleRename}
-            onDrop={async (items, target) => {
-              if (!project) return;
-              
-              console.log('Drag and drop:', items, 'to', target);
-              
-              let targetPath: string;
-              if (target.targetType === 'item') {
-                const targetItem = treeData[target.targetItem];
-                if (!targetItem?.isFolder) return;
-                targetPath = targetItem.data.path;
-              } else if (target.targetType === 'between-items') {
-                const parentItem = treeData[target.parentItem];
-                if (!parentItem?.isFolder) return;
-                targetPath = parentItem.data.path;
-              } else {
-                targetPath = rootPath;
-              }
-
-              for (const draggedItem of items) {
-                const sourcePath = draggedItem.data.path;
-                const fileName = draggedItem.data.name;
-                const destinationPath = `${targetPath}/${fileName}`;
-
-                console.log(`Moving: ${fileName} → ${targetPath}`);
-
-                try {
-                  const result = await window.electronAPI.fileTreeMove(project, sourcePath, destinationPath);
-                  
-                  if ('error' in result) {
-                    console.error('File system move failed:', result.error);
-                    alert(`Move failed: ${result.error}`);
-                    return;
-                  }
-                } catch (error) {
-                  console.error('Error during file system move:', error);
-                  alert(`Error moving item: ${error}`);
-                  return;
+        <Tree
+            ref={treeApi}
+            data={treeData}
+            openByDefault={false}
+            width={600}
+            height={1000}
+            indent={24}
+            rowHeight={32}
+            disableEdit={true}
+            disableDrop={false}
+            onActivate={async (node) => {
+                console.log('Node activated:', node.data.name, 'Level:', node.level, 'IsLeaf:', node.isLeaf);
+                if (node.isLeaf) {
+                    onFileSelect && onFileSelect(node.data.path);
+                } else {
+                    // For directories, toggle and load children if needed
+                    if (!node.isOpen) {
+                        // Load children before opening if they haven't been loaded yet
+                        if (node.data.children && node.data.children.length === 0) {
+                            console.log('Loading children for:', node.data.name);
+                            await loadChildren(node);
+                        }
+                    }
+                    node.toggle();
+                    node.select();
                 }
-              }
-
-              await loadTreeData();
             }}
-            renderItemTitle={({ title, item }) => (
-              <div 
-                style={{ opacity: cutItem?.data.path === item.data.path ? 0.5 : 1 }}
-                onContextMenu={(e) => handleContextMenu(e, item)}
-              >
-                {title}
-              </div>
-            )}
-          >
-            <Tree treeId="file-tree" rootItem={rootPath} treeLabel="File Tree" />
-          </UncontrolledTreeEnvironment>
-        )}
-
-        {/* Context Menu */}
-        {showContextMenu && contextMenuItem && contextMenuPosition && (
-          <Box
-            style={{
-              position: 'fixed',
-              left: contextMenuPosition.x,
-              top: contextMenuPosition.y,
-              zIndex: 1000,
-              background: '#2C2E33',
-              border: '1px solid #495057',
-              borderRadius: '6px',
-              minWidth: '160px',
-              boxShadow: '0 10px 38px -10px rgba(22, 23, 24, 0.35), 0 10px 20px -15px rgba(22, 23, 24, 0.2)',
-              padding: '4px',
+            onToggle={async (id: string) => {
+                // Load children when a directory is opened for the first time
+                const node = treeApi.current?.get(id);
+                if (node && node.isInternal && node.isOpen && node.data.children && node.data.children.length === 0) {
+                    await loadChildren(node);
+                }
             }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {contextMenuItem.isFolder && (
-              <>
-                <Box
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '6px 12px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    color: '#c9c9c9',
-                    fontSize: '14px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3B5BBC'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  onClick={() => {
-                    handleCreateFolder(contextMenuItem.data.path);
-                    setShowContextMenu(false);
-                  }}
-                >
-                  <IconFolderPlus size={16} />
-                  New Folder
-                </Box>
-                <Box
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '6px 12px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    color: '#c9c9c9',
-                    fontSize: '14px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3B5BBC'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  onClick={() => {
-                    handleCreateFile(contextMenuItem.data.path);
-                    setShowContextMenu(false);
-                  }}
-                >
-                  <IconPlus size={16} />
-                  New File
-                </Box>
-                <div style={{ height: '1px', background: '#495057', margin: '4px 0' }} />
-                {cutItem && (
-                  <Box
+            onMove={async ({ dragIds, parentId, index }) => {
+                if (!project) return;
+                const parentNode = treeApi.current?.get(parentId);
+                if (!parentNode) return;
+
+                for (const id of dragIds) {
+                    const node = treeApi.current?.get(id);
+                    if (!node) continue;
+
+                    const sourcePath = node.data.path;
+                    const destinationPath = `${parentNode.data.path}/${node.data.name}`;
+
+                    console.log(`Moving ${sourcePath} to ${destinationPath}`);
+                    
+                    const result = await window.electronAPI.fileTreeMove(project, sourcePath, destinationPath);
+
+                    if ('error' in result) {
+                        console.error('Move failed:', result.error);
+                        alert(`Move failed: ${result.error}`);
+                        loadTreeData();
+                        break; 
+                    }
+                }
+                loadTreeData();
+            }}
+        >
+            {({ node, style, dragHandle }) => (
+                <div
+                    ref={dragHandle}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '6px 12px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      color: '#51cf66',
-                      fontSize: '14px'
+                        ...style,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        backgroundColor: node.isSelected ? '#3b5bdb' : 'transparent',
+                        transition: 'background-color 0.1s ease-in-out',
+                        // Don't override positioning - let react-arborist handle indentation
+                        position: style.position,
+                        left: style.left,
+                        top: style.top,
+                        width: style.width,
+                        height: style.height,
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#51cf66'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    onClick={() => {
-                      handlePaste(contextMenuItem);
-                      setShowContextMenu(false);
+                    onMouseEnter={(e) => {
+                        if (!node.isSelected) {
+                            e.currentTarget.style.backgroundColor = '#2c2e33';
+                        }
                     }}
-                  >
-                    <IconClipboard size={16} />
-                    Paste "{cutItem.data.name}"
-                  </Box>
-                )}
-              </>
+                    onMouseLeave={(e) => {
+                        if (!node.isSelected) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                    }}
+                    onContextMenu={(e) => handleContextMenu(e, node)}
+                >
+                    <Group gap="xs" style={{ width: '100%', paddingLeft: node.level * 24 }}>
+                        {node.isLeaf ? <IconFile size={16} /> : <IconFolder size={16} />}
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {node.data.name}
+                        </span>
+                        <span style={{ fontSize: '10px', color: '#666', marginLeft: 'auto' }}>
+                            L{node.level}
+                        </span>
+                    </Group>
+                </div>
             )}
-            <Box
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 12px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                color: '#c9c9c9',
-                fontSize: '14px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3B5BBC'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              onClick={() => {
-                startRename(contextMenuItem);
-                setShowContextMenu(false);
-              }}
-            >
-              <IconEdit size={16} />
-              Rename
-            </Box>
-            <Box
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 12px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                color: '#ffd43b',
-                fontSize: '14px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ffd43b'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              onClick={() => {
-                handleCut(contextMenuItem);
-                setShowContextMenu(false);
-              }}
-            >
-              <IconCut size={16} />
-              Cut
-            </Box>
-            <div style={{ height: '1px', background: '#495057', margin: '4px 0' }} />
-            <Box
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 12px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                color: '#fa5252',
-                fontSize: '14px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fa5252'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              onClick={() => {
-                handleDelete(contextMenuItem.data.path);
-                setShowContextMenu(false);
-              }}
-            >
-              <IconTrash size={16} />
-              Delete
-            </Box>
-          </Box>
-        )}
-
-        {/* Create Folder Modal */}
-        <Modal
-          opened={showCreateFolderModal}
-          onClose={() => setShowCreateFolderModal(false)}
-          title="Create New Folder"
-          size="sm"
-        >
-          <TextInput
-            label="Folder name"
-            placeholder="Enter folder name"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                confirmCreateFolder();
-              }
-            }}
-            data-autofocus
-          />
-          <Group mt="md" justify="flex-end">
-            <Button variant="subtle" onClick={() => setShowCreateFolderModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmCreateFolder} disabled={!inputValue.trim()}>
-              Create
-            </Button>
-          </Group>
+        </Tree>
+        <Menu opened={!!contextMenuNode} onClose={() => setContextMenuNode(null)} shadow="md" width={200}>
+            {contextMenuNode && contextMenuPosition && (
+                <Menu.Dropdown
+                    style={{
+                        position: 'absolute',
+                        left: contextMenuPosition.x,
+                        top: contextMenuPosition.y,
+                    }}
+                >
+                    <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => {
+                        setRenameNode(contextMenuNode);
+                        setInputValue(contextMenuNode.data.name);
+                        setShowRenameModal(true);
+                    }}>
+                    Rename
+                    </Menu.Item>
+                    <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={() => handleDelete(contextMenuNode)}>
+                    Delete
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item leftSection={<IconFolderPlus size={14} />} onClick={() => {
+                        setCreateParentNode(contextMenuNode.isLeaf ? contextMenuNode.parent : contextMenuNode);
+                        setShowCreateFolderModal(true);
+                    }}>
+                    New Folder
+                    </Menu.Item>
+                    <Menu.Item leftSection={<IconPlus size={14} />} onClick={() => {
+                        setCreateParentNode(contextMenuNode.isLeaf ? contextMenuNode.parent : contextMenuNode);
+                        setShowCreateFileModal(true);
+                    }}>
+                    New File
+                    </Menu.Item>
+                </Menu.Dropdown>
+            )}
+        </Menu>
+        <Modal opened={showCreateFolderModal} onClose={() => setShowCreateFolderModal(false)} title="Create New Folder">
+            <TextInput label="Folder Name" value={inputValue} onChange={(e) => setInputValue(e.currentTarget.value)} />
+            <Button mt="md" onClick={handleCreateFolder}>Create</Button>
         </Modal>
-
-        {/* Create File Modal */}
-        <Modal
-          opened={showCreateFileModal}
-          onClose={() => setShowCreateFileModal(false)}
-          title="Create New File"
-          size="sm"
-        >
-          <TextInput
-            label="File name"
-            placeholder="Enter file name"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                confirmCreateFile();
-              }
-            }}
-            data-autofocus
-          />
-          <Group mt="md" justify="flex-end">
-            <Button variant="subtle" onClick={() => setShowCreateFileModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmCreateFile} disabled={!inputValue.trim()}>
-              Create
-            </Button>
-          </Group>
+        <Modal opened={showCreateFileModal} onClose={() => setShowCreateFileModal(false)} title="Create New File">
+            <TextInput label="File Name" value={inputValue} onChange={(e) => setInputValue(e.currentTarget.value)} />
+            <Button mt="md" onClick={handleCreateFile}>Create</Button>
         </Modal>
-
-        {/* Rename Modal */}
-        <Modal
-          opened={showRenameModal}
-          onClose={() => setShowRenameModal(false)}
-          title="Rename Item"
-          size="sm"
-        >
-          <TextInput
-            label="New name"
-            placeholder="Enter new name"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                confirmRename();
-              }
-            }}
-            data-autofocus
-          />
-          <Group mt="md" justify="flex-end">
-            <Button variant="subtle" onClick={() => setShowRenameModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmRename} disabled={!inputValue.trim()}>
-              Rename
-            </Button>
-          </Group>
+        <Modal opened={showRenameModal} onClose={() => setShowRenameModal(false)} title="Rename Item">
+            <TextInput label="New Name" value={inputValue} onChange={(e) => setInputValue(e.currentTarget.value)} />
+            <Button mt="md" onClick={handleRename}>Rename</Button>
         </Modal>
-      </Box>
-    </>
+    </Box>
   );
 }); 

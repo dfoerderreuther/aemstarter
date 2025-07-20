@@ -1,0 +1,56 @@
+/* Basic styling for react-arborist to match the app theme */
+.react-arborist-container {
+    background-color: #1a1b1e;
+    color: #c1c2c5;
+}
+
+/* Try multiple possible class names for hover effects */
+.react-arborist-node-row {
+    cursor: pointer;
+    background-color: transparent;
+    transition: background-color 0.1s ease-in-out;
+}
+
+.react-arborist-node-row:hover {
+    background-color: #2c2e33 !important;
+}
+
+/* Alternative class names that might be used */
+.react-arborist-node:hover {
+    background-color: #2c2e33 !important;
+}
+
+.arborist-node:hover {
+    background-color: #2c2e33 !important;
+}
+
+.arborist-row:hover {
+    background-color: #2c2e33 !important;
+}
+
+/* Style the actual content div */
+.react-arborist-node-row > div:hover {
+    background-color: #2c2e33 !important;
+}
+
+/* Our custom node content */
+[data-arborist-node]:hover {
+    background-color: #2c2e33 !important;
+}
+
+.react-arborist-node-row-selected {
+    background-color: #3b5bdb;
+}
+
+.react-arborist-node-row-focused {
+    outline: 1px solid #3b5bdb;
+    outline-offset: -1px;
+}
+
+.react-arborist-drop-cursor {
+    background-color: #3b5bdb;
+}
+
+.react-arborist-drop-target {
+    background-color: rgba(59, 91, 219, 0.2);
+} 
