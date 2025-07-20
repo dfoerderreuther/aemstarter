@@ -61,6 +61,22 @@ contextBridge.exposeInMainWorld(
     writeFile: (filePath: string, content: string) =>
       ipcRenderer.invoke('write-file', filePath, content),
 
+    // File Tree operations
+    fileTreeRead: (project: Project, dirPath: string, showHidden = false) =>
+      ipcRenderer.invoke('file-tree-read', project, dirPath, showHidden),
+    fileTreeCreateFile: (project: Project, filePath: string, content = '') =>
+      ipcRenderer.invoke('file-tree-create-file', project, filePath, content),
+    fileTreeCreateDirectory: (project: Project, dirPath: string) =>
+      ipcRenderer.invoke('file-tree-create-directory', project, dirPath),
+    fileTreeRename: (project: Project, oldPath: string, newPath: string) =>
+      ipcRenderer.invoke('file-tree-rename', project, oldPath, newPath),
+    fileTreeMove: (project: Project, sourcePath: string, destinationPath: string) =>
+      ipcRenderer.invoke('file-tree-move', project, sourcePath, destinationPath),
+    fileTreeDelete: (project: Project, targetPath: string) =>
+      ipcRenderer.invoke('file-tree-delete', project, targetPath),
+    fileTreeGetInfo: (project: Project, targetPath: string) =>
+      ipcRenderer.invoke('file-tree-get-info', project, targetPath),
+
     // AEM Installation
     installAEM: (project: Project) =>
       ipcRenderer.invoke('install-aem', project),
