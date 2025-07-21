@@ -34,7 +34,7 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   const [showHidden, setShowHidden] = useState(false);
   const [treeData, setTreeData] = useState<NodeData[]>([]);
   const [expandedDirectories, setExpandedDirectories] = useState<Set<string>>(new Set());
-  const [pendingStateRestore, setPendingStateRestore] = useState<Set<string> | null>(null);
+
   const treeApi = React.useRef<TreeApi<NodeData>>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showCreateFileModal, setShowCreateFileModal] = useState(false);
@@ -115,6 +115,25 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
         return updateNodeChildren(prevData);
       });
 
+      // After updating tree data, restore expanded state for child directories
+      setTimeout(() => {
+        if (treeApi.current) {
+          childNodes.forEach(childNode => {
+            if (childNode.children) {
+              setExpandedDirectories(currentExpanded => {
+                if (currentExpanded.has(childNode.path)) {
+                  const treeNode = treeApi.current?.get(childNode.path);
+                  if (treeNode && !treeNode.isOpen) {
+                    treeNode.open();
+                  }
+                }
+                return currentExpanded;
+              });
+            }
+          });
+        }
+      }, 50);
+
       return true; // Return success
     } catch (error) {
       console.error('Error loading children:', error);
@@ -182,17 +201,21 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
     loadTreeData();
   }, [loadTreeData]);
 
-  // Handle state restoration when tree data is loaded
+  // Restore expanded state after full tree reloads
   useEffect(() => {
-    if (treeData.length > 0 && pendingStateRestore && treeApi.current) {
-      console.log('🔄 Tree data loaded, restoring expanded state');
-      const restore = async () => {
-        await restoreExpandedDirectories(pendingStateRestore);
-        setPendingStateRestore(null);
-      };
-      restore();
+    if (treeData.length > 0 && treeApi.current && expandedDirectories.size > 0) {
+      setTimeout(() => {
+        if (treeApi.current) {
+          expandedDirectories.forEach(dirPath => {
+            const node = treeApi.current?.get(dirPath);
+            if (node && node.isInternal && !node.isOpen) {
+              node.open();
+            }
+          });
+        }
+      }, 100);
     }
-  }, [treeData, pendingStateRestore, restoreExpandedDirectories]);
+  }, [treeData]);
 
   useImperativeHandle(ref, () => ({
     refresh: loadTreeData,
@@ -218,8 +241,9 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
             treeApi.current.focus(state.selectedFile);
           }
         } else {
-          console.log('🔄 Tree not yet loaded, setting pending restoration');
-          setPendingStateRestore(new Set(state.expandedDirectories));
+          console.log('🔄 Tree not yet loaded, will restore when loaded');
+          // Note: We'll just set the expanded directories and let the tree expand naturally
+          // when nodes are accessed, since we no longer do full reloads
         }
       } else if (state.selectedFile && treeApi.current) {
         console.log('🔄 Only restoring selected file:', state.selectedFile);
@@ -246,9 +270,6 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   const handleCreateFolder = useCallback(async () => {
     if (!project || !inputValue.trim() || !createParentNode) return;
     
-    // Save current expanded state for restoration after reload
-    const currentExpandedDirs = new Set(expandedDirectories);
-    
     const newPath = `${createParentNode.data.path}/${inputValue}`;
     const result = await window.electronAPI.fileTreeCreateDirectory(project, newPath);
     
@@ -256,20 +277,23 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
       console.error('Create folder failed:', result.error);
       alert(`Create folder failed: ${result.error}`);
     } else {
-      // Set pending restoration before reload
-      if (currentExpandedDirs.size > 0) {
-        setPendingStateRestore(currentExpandedDirs);
+      // Instead of reloading entire tree, just refresh the parent node
+      if (createParentNode.data.path === rootPath) {
+        // If creating in root, reload the tree
+        await loadTreeData();
+      } else {
+        // Find the parent node and reload its children
+        const parentNode = treeApi.current?.get(createParentNode.data.path);
+        if (parentNode) {
+          await loadChildren(parentNode);
+        }
       }
-      await loadTreeData();
     }
     setShowCreateFolderModal(false);
-  }, [project, inputValue, createParentNode, loadTreeData, expandedDirectories]);
+  }, [project, inputValue, createParentNode, loadTreeData, loadChildren, rootPath]);
 
   const handleCreateFile = useCallback(async () => {
     if (!project || !inputValue.trim() || !createParentNode) return;
-    
-    // Save current expanded state for restoration after reload
-    const currentExpandedDirs = new Set(expandedDirectories);
     
     const newPath = `${createParentNode.data.path}/${inputValue}`;
     const result = await window.electronAPI.fileTreeCreateFile(project, newPath);
@@ -278,59 +302,100 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
       console.error('Create file failed:', result.error);
       alert(`Create file failed: ${result.error}`);
     } else {
-      // Set pending restoration before reload
-      if (currentExpandedDirs.size > 0) {
-        setPendingStateRestore(currentExpandedDirs);
+      // Instead of reloading entire tree, just refresh the parent node
+      if (createParentNode.data.path === rootPath) {
+        // If creating in root, reload the tree
+        await loadTreeData();
+      } else {
+        // Find the parent node and reload its children
+        const parentNode = treeApi.current?.get(createParentNode.data.path);
+        if (parentNode) {
+          await loadChildren(parentNode);
+        }
       }
-      await loadTreeData();
     }
     setShowCreateFileModal(false);
-  }, [project, inputValue, createParentNode, loadTreeData, expandedDirectories]);
+  }, [project, inputValue, createParentNode, loadTreeData, loadChildren, rootPath]);
 
   const handleRename = useCallback(async () => {
     if (!project || !inputValue.trim() || !renameNode) return;
     
-    // Save current expanded state for restoration after reload
-    const currentExpandedDirs = new Set(expandedDirectories);
-    
     const oldPath = renameNode.data.path;
     const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
     const newPath = `${parentPath}/${inputValue}`;
+    
+    // If renaming changed the path of an expanded directory, update the expanded state
+    const updatedExpandedDirs = new Set(expandedDirectories);
+    if (updatedExpandedDirs.has(oldPath)) {
+      updatedExpandedDirs.delete(oldPath);
+      updatedExpandedDirs.add(newPath);
+    }
+    
     const result = await window.electronAPI.fileTreeRename(project, oldPath, newPath);
     
     if ('error' in result) {
       console.error('Rename failed:', result.error);
       alert(`Rename failed: ${result.error}`);
     } else {
-      // Set pending restoration before reload
-      if (currentExpandedDirs.size > 0) {
-        setPendingStateRestore(currentExpandedDirs);
+      // Update expanded directories if needed
+      if (updatedExpandedDirs !== expandedDirectories) {
+        setExpandedDirectories(updatedExpandedDirs);
       }
-      await loadTreeData();
+      
+      // Instead of reloading entire tree, just refresh the parent node
+      if (parentPath === rootPath) {
+        // If parent is root, reload the tree
+        await loadTreeData();
+      } else {
+        // Find the parent node and reload its children
+        const parentNode = treeApi.current?.get(parentPath);
+        if (parentNode) {
+          await loadChildren(parentNode);
+        }
+      }
     }
     setShowRenameModal(false);
-  }, [project, inputValue, renameNode, loadTreeData, expandedDirectories]);
+  }, [project, inputValue, renameNode, loadTreeData, loadChildren, rootPath, expandedDirectories]);
 
   const handleDelete = useCallback(async (node: NodeApi<NodeData>) => {
     if (!project) return;
     if (confirm(`Are you sure you want to delete ${node.data.name}?`)) {
-      // Save current expanded state for restoration after reload
-      const currentExpandedDirs = new Set(expandedDirectories);
+      const deletePath = node.data.path;
+      const parentPath = deletePath.substring(0, deletePath.lastIndexOf('/'));
       
-      const result = await window.electronAPI.fileTreeDelete(project, node.data.path);
+      // Remove the deleted path and any child paths from expanded directories
+      const updatedExpandedDirs = new Set(expandedDirectories);
+      Array.from(updatedExpandedDirs).forEach(path => {
+        if (path === deletePath || path.startsWith(deletePath + '/')) {
+          updatedExpandedDirs.delete(path);
+        }
+      });
+      
+      const result = await window.electronAPI.fileTreeDelete(project, deletePath);
       
       if ('error' in result) {
         console.error('Delete failed:', result.error);
         alert(`Delete failed: ${result.error}`);
       } else {
-        // Set pending restoration before reload
-        if (currentExpandedDirs.size > 0) {
-          setPendingStateRestore(currentExpandedDirs);
+        // Update expanded directories
+        if (updatedExpandedDirs.size !== expandedDirectories.size) {
+          setExpandedDirectories(updatedExpandedDirs);
         }
-        await loadTreeData();
+        
+        // Instead of reloading entire tree, just refresh the parent node
+        if (parentPath === rootPath || parentPath === '') {
+          // If parent is root, reload the tree
+          await loadTreeData();
+        } else {
+          // Find the parent node and reload its children
+          const parentNode = treeApi.current?.get(parentPath);
+          if (parentNode) {
+            await loadChildren(parentNode);
+          }
+        }
       }
     }
-  }, [project, loadTreeData, expandedDirectories]);
+  }, [project, loadTreeData, loadChildren, rootPath, expandedDirectories]);
 
   if (isLoading) {
     return (
@@ -486,35 +551,54 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
                 const parentNode = treeApi.current?.get(parentId);
                 if (!parentNode) return;
 
-                // Save current expanded state for restoration after reload
-                const currentExpandedDirs = new Set(expandedDirectories);
+                const updatedExpandedDirs = new Set(expandedDirectories);
+                const parentsToRefresh = new Set<string>();
 
                 for (const id of dragIds) {
                     const node = treeApi.current?.get(id);
                     if (!node) continue;
 
                     const sourcePath = node.data.path;
+                    const sourceParentPath = sourcePath.substring(0, sourcePath.lastIndexOf('/'));
                     const destinationPath = `${parentNode.data.path}/${node.data.name}`;
+                    
+                    // Update expanded directories if the moved item was expanded
+                    if (updatedExpandedDirs.has(sourcePath)) {
+                        updatedExpandedDirs.delete(sourcePath);
+                        updatedExpandedDirs.add(destinationPath);
+                    }
                     
                     const result = await window.electronAPI.fileTreeMove(project, sourcePath, destinationPath);
 
                     if ('error' in result) {
                         console.error('Move failed:', result.error);
                         alert(`Move failed: ${result.error}`);
-                        // Set pending restoration before reload even on failure
-                        if (currentExpandedDirs.size > 0) {
-                            setPendingStateRestore(currentExpandedDirs);
-                        }
+                        // On failure, just reload everything
                         await loadTreeData();
-                        break; 
+                        return;
                     }
+                    
+                    // Track which parent directories need refreshing
+                    parentsToRefresh.add(sourceParentPath);
+                    parentsToRefresh.add(parentNode.data.path);
                 }
                 
-                // Set pending restoration before reload
-                if (currentExpandedDirs.size > 0) {
-                    setPendingStateRestore(currentExpandedDirs);
+                // Update expanded directories
+                if (updatedExpandedDirs.size !== expandedDirectories.size) {
+                    setExpandedDirectories(updatedExpandedDirs);
                 }
-                await loadTreeData();
+                
+                // Refresh all affected parent directories
+                for (const parentPath of parentsToRefresh) {
+                    if (parentPath === rootPath || parentPath === '') {
+                        await loadTreeData();
+                    } else {
+                        const parent = treeApi.current?.get(parentPath);
+                        if (parent) {
+                            await loadChildren(parent);
+                        }
+                    }
+                }
             }}
         >
             {({ node, style, dragHandle }) => (
@@ -579,12 +663,14 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
                     <Menu.Divider />
                     <Menu.Item leftSection={<IconFolderPlus size={14} />} onClick={() => {
                         setCreateParentNode(contextMenuNode.isLeaf ? contextMenuNode.parent : contextMenuNode);
+                        setInputValue('');
                         setShowCreateFolderModal(true);
                     }}>
                     New Folder
                     </Menu.Item>
                     <Menu.Item leftSection={<IconPlus size={14} />} onClick={() => {
                         setCreateParentNode(contextMenuNode.isLeaf ? contextMenuNode.parent : contextMenuNode);
+                        setInputValue('');
                         setShowCreateFileModal(true);
                     }}>
                     New File
@@ -593,15 +679,45 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
             )}
         </Menu>
         <Modal opened={showCreateFolderModal} onClose={() => setShowCreateFolderModal(false)} title="Create New Folder">
-            <TextInput label="Folder Name" value={inputValue} onChange={(e) => setInputValue(e.currentTarget.value)} />
+            <TextInput 
+              label="Folder Name" 
+              value={inputValue} 
+              onChange={(e) => setInputValue(e.currentTarget.value)} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inputValue.trim()) {
+                  handleCreateFolder();
+                }
+              }}
+              data-autofocus 
+            />
             <Button mt="md" onClick={handleCreateFolder}>Create</Button>
         </Modal>
         <Modal opened={showCreateFileModal} onClose={() => setShowCreateFileModal(false)} title="Create New File">
-            <TextInput label="File Name" value={inputValue} onChange={(e) => setInputValue(e.currentTarget.value)} />
+            <TextInput 
+              label="File Name" 
+              value={inputValue} 
+              onChange={(e) => setInputValue(e.currentTarget.value)} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inputValue.trim()) {
+                  handleCreateFile();
+                }
+              }}
+              data-autofocus 
+            />
             <Button mt="md" onClick={handleCreateFile}>Create</Button>
         </Modal>
         <Modal opened={showRenameModal} onClose={() => setShowRenameModal(false)} title="Rename Item">
-            <TextInput label="New Name" value={inputValue} onChange={(e) => setInputValue(e.currentTarget.value)} />
+            <TextInput 
+              label="New Name" 
+              value={inputValue} 
+              onChange={(e) => setInputValue(e.currentTarget.value)} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inputValue.trim()) {
+                  handleRename();
+                }
+              }}
+              data-autofocus 
+            />
             <Button mt="md" onClick={handleRename}>Rename</Button>
         </Modal>
     </Box>
