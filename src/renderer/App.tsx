@@ -239,7 +239,7 @@ const App: React.FC = () => {
               </Title>
             </Group>
             <Group align="center" gap={8}>
-              <SystemCheckView project={selectedProject || undefined} strict={true} />
+              <SystemCheckView project={selectedProject || undefined} />
               <Button
                 leftSection={<IconPlus size={16} />}
                 onClick={handleCheckAndOpenNewProject}
