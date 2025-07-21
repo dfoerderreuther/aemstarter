@@ -20,6 +20,7 @@ import { TerminalService } from './main/services/TerminalService';
 import { AemProcessManager } from './main/services/AemProcessManager';
 import { HttpsServiceRegister } from './main/HttpsServiceRegister';
 import { JavaService } from './main/services/JavaService';
+import { FileTreeService } from './main/services/FileTreeService';
 import { spawn } from 'child_process';
 
 // Set the app name immediately (this affects dock/taskbar display)
@@ -388,6 +389,92 @@ ipcMain.handle('write-file', async (_, filePath, content) => {
     return {};
   } catch (error) {
     console.error('Error writing file:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+// File Tree operations
+const fileTreeServices = new Map<string, FileTreeService>();
+
+const getFileTreeService = (project: Project): FileTreeService => {
+  if (!fileTreeServices.has(project.id)) {
+    fileTreeServices.set(project.id, new FileTreeService(project));
+  }
+  return fileTreeServices.get(project.id)!;
+};
+
+ipcMain.handle('file-tree-read', async (_, project: Project, dirPath: string, showHidden = false) => {
+  try {
+    const service = getFileTreeService(project);
+    return await service.readDirectoryTree(dirPath, showHidden);
+  } catch (error) {
+    console.error('Error reading directory tree:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle('file-tree-create-file', async (_, project: Project, filePath: string, content = '') => {
+  try {
+    const service = getFileTreeService(project);
+    await service.createFile(filePath, content);
+    return { success: true };
+  } catch (error) {
+    console.error('Error creating file:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle('file-tree-create-directory', async (_, project: Project, dirPath: string) => {
+  try {
+    const service = getFileTreeService(project);
+    await service.createDirectory(dirPath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error creating directory:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle('file-tree-rename', async (_, project: Project, oldPath: string, newPath: string) => {
+  try {
+    const service = getFileTreeService(project);
+    await service.rename(oldPath, newPath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error renaming:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle('file-tree-move', async (_, project: Project, sourcePath: string, destinationPath: string) => {
+  try {
+    const service = getFileTreeService(project);
+    await service.move(sourcePath, destinationPath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error moving:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle('file-tree-delete', async (_, project: Project, targetPath: string) => {
+  try {
+    const service = getFileTreeService(project);
+    await service.delete(targetPath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle('file-tree-get-info', async (_, project: Project, targetPath: string) => {
+  try {
+    const service = getFileTreeService(project);
+    const info = await service.getInfo(targetPath);
+    return { info };
+  } catch (error) {
+    console.error('Error getting file info:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });

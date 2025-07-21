@@ -47,6 +47,38 @@ declare global {
         isSymlink: boolean;
       }>>;
 
+      // File Tree operations
+      fileTreeRead: (project: Project, dirPath: string, showHidden?: boolean) => Promise<{
+        [key: string]: {
+          index: string;
+          isFolder: boolean;
+          children?: string[];
+          data: {
+            name: string;
+            path: string;
+            isDirectory: boolean;
+            isFile: boolean;
+            size?: number;
+            updatedAt?: string;
+          };
+        };
+      } | { error: string }>;
+      fileTreeCreateFile: (project: Project, filePath: string, content?: string) => Promise<{ success: boolean } | { error: string }>;
+      fileTreeCreateDirectory: (project: Project, dirPath: string) => Promise<{ success: boolean } | { error: string }>;
+      fileTreeRename: (project: Project, oldPath: string, newPath: string) => Promise<{ success: boolean } | { error: string }>;
+      fileTreeMove: (project: Project, sourcePath: string, destinationPath: string) => Promise<{ success: boolean } | { error: string }>;
+      fileTreeDelete: (project: Project, targetPath: string) => Promise<{ success: boolean } | { error: string }>;
+      fileTreeGetInfo: (project: Project, targetPath: string) => Promise<{
+        info: {
+          name: string;
+          path: string;
+          isDirectory: boolean;
+          isFile: boolean;
+          size?: number;
+          updatedAt?: string;
+        };
+      } | { error: string }>;
+
       // AEM Installation
       installAEM: (project: Project) => Promise<boolean>;
 

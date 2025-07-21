@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Grid } from '@mantine/core';
-import { FileTreeView, FileTreeViewRef } from './FileTreeView';
+import { FileTreeView, FileTreeViewRef, FileTreeState } from './FileTreeView';
 import { EditorView } from './EditorView';
 import { isBinaryFileByExtension, isBinaryContent } from '../../utils/fileUtils';
 import { Project } from '../../../types/Project';
@@ -15,6 +15,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project, visible
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isBinaryFile, setIsBinaryFile] = useState<boolean>(false);
+  const [savedTreeState, setSavedTreeState] = useState<FileTreeState | null>(null);
   const fileTreeRef = useRef<FileTreeViewRef>(null);
 
   const readFileContent = async (filePath: string) => {
@@ -100,10 +101,42 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project, visible
   };
 
   useEffect(() => {
-    if (visible) {
-      fileTreeRef.current?.refresh();
-    }
-  }, [visible]);
+    const handleVisibilityChange = async () => {
+      if (visible) {
+        // Component became visible - refresh and restore state if we have it
+        console.log('📂 FilesView became visible, refreshing tree');
+        
+        if (fileTreeRef.current) {
+          await fileTreeRef.current.refresh();
+          
+          // Restore saved state after tree is loaded
+          if (savedTreeState) {
+            console.log('📂 Restoring saved tree state:', savedTreeState);
+            await fileTreeRef.current.restoreState(savedTreeState);
+          }
+        }
+      } else if (fileTreeRef.current) {
+        // Component became invisible - save current state
+        console.log('📂 FilesView became invisible, saving tree state');
+        const currentState = fileTreeRef.current.saveState();
+        console.log('📂 Saved tree state:', currentState);
+        setSavedTreeState(currentState);
+      }
+    };
+
+    handleVisibilityChange();
+  }, [visible]); // Removed savedTreeState from dependencies to prevent infinite loop
+
+  // Save state when component unmounts
+  useEffect(() => {
+    return () => {
+      if (fileTreeRef.current) {
+        console.log('📂 FilesView unmounting, saving tree state');
+        const currentState = fileTreeRef.current.saveState();
+        setSavedTreeState(currentState);
+      }
+    };
+  }, []);
 
   return (
     <Grid style={{ height: '100%', margin: 0 }}>

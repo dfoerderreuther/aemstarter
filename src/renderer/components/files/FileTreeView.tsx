@@ -1,34 +1,13 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Collapse, Group, Text, Box, Stack, Loader, UnstyledButton, ActionIcon, Divider } from '@mantine/core';
-import { IconFolder, IconFolderOpen, IconFile, IconChevronRight, IconChevronDown, IconRefresh, IconEye, IconEyeOff, IconPhoto, IconFileZip, IconMusic, IconVideo, IconFileText, IconCode } from '@tabler/icons-react';
-import { isBinaryFileByExtension, getFileExtension } from '../../utils/fileUtils';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { Group, Text, Box, Loader, ActionIcon, Divider, Menu, Modal, TextInput, Button } from '@mantine/core';
+import { IconFolder, IconRefresh, IconEye, IconEyeOff, IconCode, IconPlus, IconEdit, IconTrash, IconFile, IconFolderPlus, IconCut, IconClipboard } from '@tabler/icons-react';
+import { Tree, TreeApi, NodeApi } from 'react-arborist';
+import './FileTreeView.css';
 import { Project } from '../../../types/Project';
 
-export interface FileSystemEntry {
-  name: string;
-  path: string;
-  isDirectory: boolean;
-  isFile: boolean;
-  isSymlink: boolean;
-}
-
-// Add interface for saving/restoring state
 export interface FileTreeState {
   selectedFile: string | null;
   expandedDirectories: Set<string>;
-  directoryContents: Map<string, FileSystemEntry[]>;
-}
-
-interface FileTreeEntryProps {
-  entry: FileSystemEntry;
-  level: number;
-  showHidden: boolean;
-  selectedFile: string | null;
-  expandedDirectories: Set<string>;
-  directoryContents: Map<string, FileSystemEntry[]>;
-  onSelect: (path: string) => void;
-  onToggleDirectory: (path: string, isExpanded: boolean) => void;
-  onDirectoryLoaded: (path: string, contents: FileSystemEntry[]) => void;
 }
 
 interface FileTreeViewProps {
@@ -43,331 +22,704 @@ export interface FileTreeViewRef {
   restoreState: (state: FileTreeState) => void;
 }
 
-const FileTreeEntry: React.FC<FileTreeEntryProps> = ({ 
-  entry, 
-  level, 
-  showHidden, 
-  selectedFile, 
-  expandedDirectories,
-  directoryContents,
-  onSelect,
-  onToggleDirectory,
-  onDirectoryLoaded
-}) => {
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const indent = level * 16;
-  const isOpen = expandedDirectories.has(entry.path);
-  const children = directoryContents.get(entry.path) || [];
-  
-  const toggleDirectory = async () => {
-    if (!entry.isDirectory) {
-      onSelect(entry.path);
-      return;
-    }
-    
-    if (!isOpen) {
-      // Load directory contents if not already loaded
-      if (!directoryContents.has(entry.path)) {
-        setIsLoading(true);
-        try {
-          const entries = await window.electronAPI.readDirectory(entry.path, showHidden);
-          // Sort directories first, then files alphabetically
-          entries.sort((a, b) => {
-            if (a.isDirectory && !b.isDirectory) return -1;
-            if (!a.isDirectory && b.isDirectory) return 1;
-            return a.name.localeCompare(b.name);
-          });
-          onDirectoryLoaded(entry.path, entries);
-        } catch (error) {
-          console.error('Error reading directory:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    }
-    
-    onToggleDirectory(entry.path, !isOpen);
-  };
-  
-  const isHiddenFile = entry.name.startsWith('.');
-  const isSelected = selectedFile === entry.path;
-  const isBinary = !entry.isDirectory && isBinaryFileByExtension(entry.path);
-  
-  const getFileIcon = () => {
-    if (entry.isDirectory) {
-      return isOpen ? <IconFolderOpen size={18} /> : <IconFolder size={18} />;
-    }
-    
-    // Return different icons based on file type
-    if (isBinary) {
-      const ext = getFileExtension(entry.path);
-      
-      // Images
-      if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'svg', 'ico', 'icns'].includes(ext)) {
-        return <IconPhoto size={18} />;
-      }
-      
-      // Archives
-      if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'jar', 'war', 'ear'].includes(ext)) {
-        return <IconFileZip size={18} />;
-      }
-      
-      // Audio
-      if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a'].includes(ext)) {
-        return <IconMusic size={18} />;
-      }
-      
-      // Video
-      if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'm4v', '3gp'].includes(ext)) {
-        return <IconVideo size={18} />;
-      }
-      
-      // Default binary file icon
-      return <IconFile size={18} style={{ opacity: 0.6 }} />;
-    }
-    
-    // Text files
-    return <IconFileText size={18} />;
-  };
-  
-  return (
-    <>
-      <UnstyledButton 
-        onClick={toggleDirectory}
-        style={{ 
-          width: '100%',
-          padding: '4px 8px',
-          borderRadius: '4px',
-          backgroundColor: isSelected ? '#3B5BBC' : 'transparent',
-          ':hover': {
-            backgroundColor: isSelected ? '#3B5BBC' : '#2C2E33'
-          }
-        }}
-      >
-        <Group gap="xs" wrap="nowrap">
-          <Box style={{ width: indent }} />
-          <Box style={{ width: 20 }}>
-            {entry.isDirectory && (
-              isOpen ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />
-            )}
-          </Box>
-          {getFileIcon()}
-          <Text size="sm" style={{ 
-            opacity: isHiddenFile ? 0.6 : isBinary ? 0.8 : 1,
-            fontStyle: isHiddenFile ? 'italic' : 'normal',
-            color: isBinary ? '#868e96' : undefined
-          }}>
-            {entry.name}
-          </Text>
-          {isLoading && <Loader size="xs" />}
-        </Group>
-      </UnstyledButton>
-      
-      {entry.isDirectory && (
-        <Collapse in={isOpen}>
-          <Box>
-            {children.map((child) => (
-              <FileTreeEntry 
-                key={child.path} 
-                entry={child} 
-                level={level + 1} 
-                showHidden={showHidden}
-                selectedFile={selectedFile}
-                expandedDirectories={expandedDirectories}
-                directoryContents={directoryContents}
-                onSelect={onSelect}
-                onToggleDirectory={onToggleDirectory}
-                onDirectoryLoaded={onDirectoryLoaded}
-              />
-            ))}
-          </Box>
-        </Collapse>
-      )}
-    </>
-  );
-};
+interface NodeData {
+  id: string;
+  name: string;
+  path: string;
+  children?: NodeData[];
+}
 
 export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ rootPath, onFileSelect, project }, ref) => {
-  const [rootEntries, setRootEntries] = useState<FileSystemEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
+  const [treeData, setTreeData] = useState<NodeData[]>([]);
   const [expandedDirectories, setExpandedDirectories] = useState<Set<string>>(new Set());
-  const [directoryContents, setDirectoryContents] = useState<Map<string, FileSystemEntry[]>>(new Map());
-  
-  // Custom sorting function for root level entries
-  const sortRootEntries = (entries: FileSystemEntry[]) => {
-    const priorityFolders = ['author', 'publisher', 'dispatcher', 'install'];
-    
-    return entries.sort((a, b) => {
-      // First, separate directories from files
-      if (a.isDirectory && !b.isDirectory) return -1;
-      if (!a.isDirectory && b.isDirectory) return 1;
-      
-      // If both are directories, apply priority ordering
-      if (a.isDirectory && b.isDirectory) {
-        const aPriority = priorityFolders.indexOf(a.name);
-        const bPriority = priorityFolders.indexOf(b.name);
-        
-        // If both have priority, sort by priority order
-        if (aPriority !== -1 && bPriority !== -1) {
-          return aPriority - bPriority;
-        }
-        
-        // If only one has priority, it comes first
-        if (aPriority !== -1 && bPriority === -1) return -1;
-        if (aPriority === -1 && bPriority !== -1) return 1;
-        
-        // If neither has priority, sort alphabetically
-        return a.name.localeCompare(b.name);
-      }
-      
-      // If both are files, sort alphabetically
-      return a.name.localeCompare(b.name);
-    });
-  };
-  
-  const loadRootEntries = async () => {
-    if (!rootPath || rootPath.trim() === '') {
-      setRootEntries([]);
+
+  const treeApi = React.useRef<TreeApi<NodeData>>(null);
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  const [showCreateFileModal, setShowCreateFileModal] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [createParentNode, setCreateParentNode] = useState<NodeApi<NodeData> | null>(null);
+  const [renameNode, setRenameNode] = useState<NodeApi<NodeData> | null>(null);
+  const [contextMenuNode, setContextMenuNode] = useState<NodeApi<NodeData> | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+
+  const loadTreeData = useCallback(async () => {
+    if (!rootPath || !project) {
       setIsLoading(false);
       return;
     }
     
     setIsLoading(true);
     try {
-      const entries = await window.electronAPI.readDirectory(rootPath, showHidden);
-      // Apply custom sorting for root level
-      const sortedEntries = sortRootEntries(entries);
-      setRootEntries(sortedEntries);
-      // Store root entries in directory contents
-      setDirectoryContents(prev => new Map(prev).set(rootPath, sortedEntries));
+      // Only load the root level initially
+      const result = await window.electronAPI.readDirectory(rootPath, showHidden);
+      
+      if ('error' in result) {
+        console.error('Failed to load root directory:', result.error);
+        setTreeData([]);
+        return;
+      }
+
+      // Convert flat directory listing to tree nodes
+      const treeNodes: NodeData[] = result.map(item => ({
+        id: item.path,
+        name: item.name,
+        path: item.path,
+        children: item.isDirectory ? [] : undefined, // Empty array for directories, undefined for files
+      }));
+
+      setTreeData(treeNodes);
     } catch (error) {
-      console.error('Error reading root directory:', error);
+      console.error('Error loading tree data:', error);
+      setTreeData([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [rootPath, showHidden, project]);
 
-  const handleToggleDirectory = (path: string, isExpanded: boolean) => {
-    setExpandedDirectories(prev => {
-      const newSet = new Set(prev);
-      if (isExpanded) {
-        newSet.add(path);
-      } else {
-        newSet.delete(path);
+  // Load children for a specific directory
+  const loadChildren = useCallback(async (node: NodeApi<NodeData>) => {
+    if (!project || node.isLeaf) return;
+    
+    try {
+      const result = await window.electronAPI.readDirectory(node.data.path, showHidden);
+      
+      if ('error' in result) {
+        console.error('Failed to load directory children:', result.error);
+        return;
       }
-      return newSet;
+
+      // Convert to tree nodes
+      const childNodes: NodeData[] = result.map(item => ({
+        id: item.path,
+        name: item.name,
+        path: item.path,
+        children: item.isDirectory ? [] : undefined,
+      }));
+
+      // Update the tree data by replacing this node's children
+      setTreeData(prevData => {
+        const updateNodeChildren = (nodes: NodeData[]): NodeData[] => {
+          return nodes.map(n => {
+            if (n.id === node.data.id) {
+              return { ...n, children: childNodes };
+            }
+            if (n.children) {
+              return { ...n, children: updateNodeChildren(n.children) };
+            }
+            return n;
+          });
+        };
+        return updateNodeChildren(prevData);
+      });
+
+      // After updating tree data, restore expanded state for child directories
+      setTimeout(() => {
+        if (treeApi.current) {
+          childNodes.forEach(childNode => {
+            if (childNode.children) {
+              setExpandedDirectories(currentExpanded => {
+                if (currentExpanded.has(childNode.path)) {
+                  const treeNode = treeApi.current?.get(childNode.path);
+                  if (treeNode && !treeNode.isOpen) {
+                    treeNode.open();
+                  }
+                }
+                return currentExpanded;
+              });
+            }
+          });
+        }
+      }, 50);
+
+      return true; // Return success
+    } catch (error) {
+      console.error('Error loading children:', error);
+      return false;
+    }
+  }, [project, showHidden]);
+
+  // Recursively restore expanded directories with lazy loading
+  const restoreExpandedDirectories = useCallback(async (expandedPaths: Set<string>) => {
+    if (!treeApi.current || expandedPaths.size === 0) {
+      console.log('🔄 No tree API or no expanded paths to restore');
+      return;
+    }
+
+    console.log('🔄 Restoring expanded directories:', Array.from(expandedPaths));
+
+    // Sort paths by depth (shorter paths first) to ensure parents are expanded before children
+    const sortedPaths = Array.from(expandedPaths).sort((a, b) => {
+      const depthA = a.split('/').length;
+      const depthB = b.split('/').length;
+      return depthA - depthB;
     });
-  };
 
-  const handleDirectoryLoaded = (path: string, contents: FileSystemEntry[]) => {
-    setDirectoryContents(prev => new Map(prev).set(path, contents));
-  };
+    console.log('🔄 Sorted paths by depth:', sortedPaths);
 
-  const saveState = (): FileTreeState => {
-    return {
-      selectedFile,
-      expandedDirectories: new Set(expandedDirectories),
-      directoryContents: new Map(directoryContents)
-    };
-  };
+    for (const dirPath of sortedPaths) {
+      console.log(`🔄 Processing directory: ${dirPath}`);
+      
+      // Get the node - it should be immediately available for local file system
+      const node = treeApi.current.get(dirPath);
+      
+      if (!node) {
+        console.log(`🔄 Node not found for path: ${dirPath}`);
+        continue;
+      }
+      
+      console.log(`🔄 Found node: ${node.data.name}, isInternal: ${node.isInternal}, isOpen: ${node.isOpen}`);
+      
+      if (node.isInternal && !node.isOpen) {
+        // Load children if not loaded yet
+        if (node.data.children && node.data.children.length === 0) {
+          console.log(`🔄 Loading children for: ${node.data.name}`);
+          const loaded = await loadChildren(node);
+          console.log(`🔄 Children loaded successfully: ${loaded}`);
+          
+          if (!loaded) {
+            console.log(`🔄 Failed to load children for: ${node.data.name}`);
+            continue; // Skip if loading failed
+          }
+          
+          // Small delay to allow React to re-render after loading children
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        
+        console.log(`🔄 Opening directory: ${node.data.name}`);
+        // Open the directory - should be immediate for local file system
+        node.open();
+      }
+    }
+    
+    console.log('🔄 Finished processing all directories');
+  }, [loadChildren]);
 
-  const restoreState = (state: FileTreeState) => {
-    setSelectedFile(state.selectedFile);
-    setExpandedDirectories(new Set(state.expandedDirectories));
-    setDirectoryContents(new Map(state.directoryContents));
-  };
+  useEffect(() => {
+    loadTreeData();
+  }, [loadTreeData]);
+
+  // Restore expanded state after full tree reloads
+  useEffect(() => {
+    if (treeData.length > 0 && treeApi.current && expandedDirectories.size > 0) {
+      setTimeout(() => {
+        if (treeApi.current) {
+          expandedDirectories.forEach(dirPath => {
+            const node = treeApi.current?.get(dirPath);
+            if (node && node.isInternal && !node.isOpen) {
+              node.open();
+            }
+          });
+        }
+      }, 100);
+    }
+  }, [treeData]);
 
   useImperativeHandle(ref, () => ({
-    refresh: loadRootEntries,
-    saveState,
-    restoreState
-  }));
-  
-  useEffect(() => {
-    loadRootEntries();
-  }, [rootPath, showHidden]);
-  
-  const handleFileSelect = (filePath: string) => {
-    // Always update selected file and trigger callback, even if it's the same file
-    setSelectedFile(filePath);
-    if (onFileSelect) {
-      onFileSelect(filePath);
+    refresh: loadTreeData,
+    saveState: () => ({ 
+      selectedFile: treeApi.current?.focusedNode?.data.path || null,
+      expandedDirectories: new Set(expandedDirectories)
+    }),
+    restoreState: async (state: FileTreeState) => {
+      console.log('🔄 Restoring file tree state:', state);
+      console.log('🔄 Expanded directories:', state.expandedDirectories);
+      
+      if (state.expandedDirectories && state.expandedDirectories.size > 0) {
+        setExpandedDirectories(new Set(state.expandedDirectories));
+        console.log('🔄 Set expanded directories, starting restoration...');
+        
+        if (treeApi.current && treeData.length > 0) {
+          console.log('🔄 Tree is loaded, proceeding with restoration');
+          await restoreExpandedDirectories(state.expandedDirectories);
+          
+          // Restore selected file after tree is fully expanded
+          if (state.selectedFile && treeApi.current) {
+            console.log('🔄 Restoring selected file:', state.selectedFile);
+            treeApi.current.focus(state.selectedFile);
+          }
+        } else {
+          console.log('🔄 Tree not yet loaded, will restore when loaded');
+          // Note: We'll just set the expanded directories and let the tree expand naturally
+          // when nodes are accessed, since we no longer do full reloads
+        }
+      } else if (state.selectedFile && treeApi.current) {
+        console.log('🔄 Only restoring selected file:', state.selectedFile);
+        treeApi.current.focus(state.selectedFile);
+      }
     }
-  };
-  
+  }), [loadTreeData, expandedDirectories, restoreExpandedDirectories, treeData]);
+
+  const handleContextMenu = useCallback((event: React.MouseEvent, node: NodeApi<NodeData>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenuNode(node);
+    setContextMenuPosition({ x: event.clientX, y: event.clientY });
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenuNode(null);
+    if (contextMenuNode) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenuNode]);
+
+  const handleCreateFolder = useCallback(async () => {
+    if (!project || !inputValue.trim() || !createParentNode) return;
+    
+    const newPath = `${createParentNode.data.path}/${inputValue}`;
+    const result = await window.electronAPI.fileTreeCreateDirectory(project, newPath);
+    
+    if ('error' in result) {
+      console.error('Create folder failed:', result.error);
+      alert(`Create folder failed: ${result.error}`);
+    } else {
+      // Instead of reloading entire tree, just refresh the parent node
+      if (createParentNode.data.path === rootPath) {
+        // If creating in root, reload the tree
+        await loadTreeData();
+      } else {
+        // Find the parent node and reload its children
+        const parentNode = treeApi.current?.get(createParentNode.data.path);
+        if (parentNode) {
+          await loadChildren(parentNode);
+        }
+      }
+    }
+    setShowCreateFolderModal(false);
+  }, [project, inputValue, createParentNode, loadTreeData, loadChildren, rootPath]);
+
+  const handleCreateFile = useCallback(async () => {
+    if (!project || !inputValue.trim() || !createParentNode) return;
+    
+    const newPath = `${createParentNode.data.path}/${inputValue}`;
+    const result = await window.electronAPI.fileTreeCreateFile(project, newPath);
+    
+    if ('error' in result) {
+      console.error('Create file failed:', result.error);
+      alert(`Create file failed: ${result.error}`);
+    } else {
+      // Instead of reloading entire tree, just refresh the parent node
+      if (createParentNode.data.path === rootPath) {
+        // If creating in root, reload the tree
+        await loadTreeData();
+      } else {
+        // Find the parent node and reload its children
+        const parentNode = treeApi.current?.get(createParentNode.data.path);
+        if (parentNode) {
+          await loadChildren(parentNode);
+        }
+      }
+    }
+    setShowCreateFileModal(false);
+  }, [project, inputValue, createParentNode, loadTreeData, loadChildren, rootPath]);
+
+  const handleRename = useCallback(async () => {
+    if (!project || !inputValue.trim() || !renameNode) return;
+    
+    const oldPath = renameNode.data.path;
+    const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
+    const newPath = `${parentPath}/${inputValue}`;
+    
+    // If renaming changed the path of an expanded directory, update the expanded state
+    const updatedExpandedDirs = new Set(expandedDirectories);
+    if (updatedExpandedDirs.has(oldPath)) {
+      updatedExpandedDirs.delete(oldPath);
+      updatedExpandedDirs.add(newPath);
+    }
+    
+    const result = await window.electronAPI.fileTreeRename(project, oldPath, newPath);
+    
+    if ('error' in result) {
+      console.error('Rename failed:', result.error);
+      alert(`Rename failed: ${result.error}`);
+    } else {
+      // Update expanded directories if needed
+      if (updatedExpandedDirs !== expandedDirectories) {
+        setExpandedDirectories(updatedExpandedDirs);
+      }
+      
+      // Instead of reloading entire tree, just refresh the parent node
+      if (parentPath === rootPath) {
+        // If parent is root, reload the tree
+        await loadTreeData();
+      } else {
+        // Find the parent node and reload its children
+        const parentNode = treeApi.current?.get(parentPath);
+        if (parentNode) {
+          await loadChildren(parentNode);
+        }
+      }
+    }
+    setShowRenameModal(false);
+  }, [project, inputValue, renameNode, loadTreeData, loadChildren, rootPath, expandedDirectories]);
+
+  const handleDelete = useCallback(async (node: NodeApi<NodeData>) => {
+    if (!project) return;
+    if (confirm(`Are you sure you want to delete ${node.data.name}?`)) {
+      const deletePath = node.data.path;
+      const parentPath = deletePath.substring(0, deletePath.lastIndexOf('/'));
+      
+      // Remove the deleted path and any child paths from expanded directories
+      const updatedExpandedDirs = new Set(expandedDirectories);
+      Array.from(updatedExpandedDirs).forEach(path => {
+        if (path === deletePath || path.startsWith(deletePath + '/')) {
+          updatedExpandedDirs.delete(path);
+        }
+      });
+      
+      const result = await window.electronAPI.fileTreeDelete(project, deletePath);
+      
+      if ('error' in result) {
+        console.error('Delete failed:', result.error);
+        alert(`Delete failed: ${result.error}`);
+      } else {
+        // Update expanded directories
+        if (updatedExpandedDirs.size !== expandedDirectories.size) {
+          setExpandedDirectories(updatedExpandedDirs);
+        }
+        
+        // Instead of reloading entire tree, just refresh the parent node
+        if (parentPath === rootPath || parentPath === '') {
+          // If parent is root, reload the tree
+          await loadTreeData();
+        } else {
+          // Find the parent node and reload its children
+          const parentNode = treeApi.current?.get(parentPath);
+          if (parentNode) {
+            await loadChildren(parentNode);
+          }
+        }
+      }
+    }
+  }, [project, loadTreeData, loadChildren, rootPath, expandedDirectories]);
+
   if (isLoading) {
     return (
       <Box p="md">
+        <Text size="sm" c="dimmed" mb="xs">Loading file tree...</Text>
         <Loader size="sm" />
       </Box>
     );
   }
-  
-  return (
-    <>
-    <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
-      <Group justify="space-between" align="center">
-        <Text size="xs" fw={700} c="dimmed">FILE TREE</Text>
-        <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
-        <ActionIcon 
-            variant="subtle" 
-            onClick={loadRootEntries}
-            title="Refresh directory"
-          >
-            <IconRefresh size={16} />
-          </ActionIcon>
 
-          <ActionIcon 
+  return (
+    <Box>
+      <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
+        <Group justify="space-between" align="center">
+          <Text size="xs" fw={700} c="dimmed">FILE TREE</Text>
+          <Group gap="xs" align="center" style={{ height: '24px', overflow: 'hidden', margin: '-4px 0' }}>
+            <ActionIcon 
+              variant="subtle" 
+              onClick={loadTreeData}
+              title="Refresh directory"
+            >
+              <IconRefresh size={16} />
+            </ActionIcon>
+
+            <ActionIcon 
               variant="subtle"
               onClick={() => setShowHidden(!showHidden)}
               title={showHidden ? "Hide hidden files" : "Show hidden files"}
             >
               {showHidden ? <IconEye size={16} /> : <IconEyeOff size={16} />}
-          </ActionIcon>
+            </ActionIcon>
 
-          <Divider orientation='vertical' />
-
-          <ActionIcon 
-            variant="subtle"
-            onClick={() => rootPath && rootPath.trim() !== '' && window.electronAPI.openInFinder(rootPath)}
-            title="Open in Finder"
-            disabled={!rootPath || rootPath.trim() === ''}
-          >
-            <IconFolder size={16} />
-          </ActionIcon>
-
-          {project && project.settings?.dev?.editor && (
             <ActionIcon 
               variant="subtle"
-              onClick={() => rootPath && rootPath.trim() !== '' && window.electronAPI.openInEditor(rootPath, project)}
-              title={`Open in ${project.settings.dev.editor === 'code' ? 'VS Code' : project.settings.dev.editor === 'cursor' ? 'Cursor' : project.settings.dev.editor === 'idea' ? 'IntelliJ IDEA' : 'Editor'}`}
+              onClick={() => {
+                // Create folder in root directory - use a virtual root node
+                const virtualRootNode = {
+                  data: {
+                    path: rootPath,
+                    name: 'root'
+                  }
+                } as NodeApi<NodeData>;
+                
+                setCreateParentNode(virtualRootNode);
+                setInputValue('');
+                setShowCreateFolderModal(true);
+              }}
+              title="Create new folder"
+            >
+              <IconFolderPlus size={16} />
+            </ActionIcon>
+
+            <ActionIcon 
+              variant="subtle"
+              onClick={() => {
+                // Create file in root directory - use a virtual root node
+                const virtualRootNode = {
+                  data: {
+                    path: rootPath,
+                    name: 'root'
+                  }
+                } as NodeApi<NodeData>;
+                
+                setCreateParentNode(virtualRootNode);
+                setInputValue('');
+                setShowCreateFileModal(true);
+              }}
+              title="Create new file"
+            >
+              <IconPlus size={16} />
+            </ActionIcon>
+
+            <Divider orientation='vertical' />
+
+            <ActionIcon 
+              variant="subtle"
+              onClick={() => rootPath && rootPath.trim() !== '' && window.electronAPI.openInFinder(rootPath)}
+              title="Open in Finder"
               disabled={!rootPath || rootPath.trim() === ''}
             >
-              <IconCode size={16} />
+              <IconFolder size={16} />
             </ActionIcon>
-          )}
+
+            {project && project.settings?.dev?.editor && (
+              <ActionIcon 
+                variant="subtle"
+                onClick={() => rootPath && rootPath.trim() !== '' && window.electronAPI.openInEditor(rootPath, project)}
+                title={`Open in ${project.settings.dev.editor === 'code' ? 'VS Code' : project.settings.dev.editor === 'cursor' ? 'Cursor' : project.settings.dev.editor === 'idea' ? 'IntelliJ IDEA' : 'Editor'}`}
+                disabled={!rootPath || rootPath.trim() === ''}
+              >
+                <IconCode size={16} />
+              </ActionIcon>
+            )}
+          </Group>
         </Group>
-      </Group>
       </Box>
-      <Stack gap={0} style={{ height: 'calc(100vh - 235px)', overflowY: 'scroll' }}>
-      {rootEntries.map((entry) => (
-        <FileTreeEntry 
-          key={entry.path} 
-          entry={entry} 
-          level={0} 
-          showHidden={showHidden}
-          selectedFile={selectedFile}
-          expandedDirectories={expandedDirectories}
-          directoryContents={directoryContents}
-          onSelect={handleFileSelect}
-          onToggleDirectory={handleToggleDirectory}
-          onDirectoryLoaded={handleDirectoryLoaded}
-        />
-      ))}
-    </Stack>
-    </>
+      <Box style={{ overflow: 'auto', flex: 1 }}>
+        <Tree
+            ref={treeApi}
+            data={treeData}
+            openByDefault={false}
+            width="100%"
+            height={1000}
+            indent={24}
+            rowHeight={32}
+            disableEdit={true}
+            disableDrop={false}
+            onActivate={async (node) => {
+                if (node.isLeaf) {
+                    onFileSelect && onFileSelect(node.data.path);
+                } else {
+                    // For directories, toggle and load children if needed
+                    if (!node.isOpen) {
+                        // Load children before opening if they haven't been loaded yet
+                        if (node.data.children && node.data.children.length === 0) {
+                            await loadChildren(node);
+                        }
+                        // Add to expanded directories
+                        setExpandedDirectories(prev => new Set(prev).add(node.data.path));
+                    } else {
+                        // Remove from expanded directories
+                        setExpandedDirectories(prev => {
+                            const newSet = new Set(prev);
+                            newSet.delete(node.data.path);
+                            return newSet;
+                        });
+                    }
+                    node.toggle();
+                    node.select();
+                }
+            }}
+            onToggle={async (id: string) => {
+                const node = treeApi.current?.get(id);
+                if (node && node.isInternal) {
+                  // Update expanded directories state
+                  setExpandedDirectories(prev => {
+                    const newSet = new Set(prev);
+                    if (node.isOpen) {
+                      newSet.add(node.data.path);
+                      // Load children when a directory is opened for the first time
+                      if (node.data.children && node.data.children.length === 0) {
+                        loadChildren(node);
+                      }
+                    } else {
+                      newSet.delete(node.data.path);
+                    }
+                    return newSet;
+                  });
+                }
+            }}
+            onMove={async ({ dragIds, parentId, index }) => {
+                if (!project) return;
+                const parentNode = treeApi.current?.get(parentId);
+                if (!parentNode) return;
+
+                const updatedExpandedDirs = new Set(expandedDirectories);
+                const parentsToRefresh = new Set<string>();
+
+                for (const id of dragIds) {
+                    const node = treeApi.current?.get(id);
+                    if (!node) continue;
+
+                    const sourcePath = node.data.path;
+                    const sourceParentPath = sourcePath.substring(0, sourcePath.lastIndexOf('/'));
+                    const destinationPath = `${parentNode.data.path}/${node.data.name}`;
+                    
+                    // Update expanded directories if the moved item was expanded
+                    if (updatedExpandedDirs.has(sourcePath)) {
+                        updatedExpandedDirs.delete(sourcePath);
+                        updatedExpandedDirs.add(destinationPath);
+                    }
+                    
+                    const result = await window.electronAPI.fileTreeMove(project, sourcePath, destinationPath);
+
+                    if ('error' in result) {
+                        console.error('Move failed:', result.error);
+                        alert(`Move failed: ${result.error}`);
+                        // On failure, just reload everything
+                        await loadTreeData();
+                        return;
+                    }
+                    
+                    // Track which parent directories need refreshing
+                    parentsToRefresh.add(sourceParentPath);
+                    parentsToRefresh.add(parentNode.data.path);
+                }
+                
+                // Update expanded directories
+                if (updatedExpandedDirs.size !== expandedDirectories.size) {
+                    setExpandedDirectories(updatedExpandedDirs);
+                }
+                
+                // Refresh all affected parent directories
+                for (const parentPath of parentsToRefresh) {
+                    if (parentPath === rootPath || parentPath === '') {
+                        await loadTreeData();
+                    } else {
+                        const parent = treeApi.current?.get(parentPath);
+                        if (parent) {
+                            await loadChildren(parent);
+                        }
+                    }
+                }
+            }}
+        >
+            {({ node, style, dragHandle }) => (
+                <div
+                    ref={dragHandle}
+                    style={{
+                        ...style,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        backgroundColor: node.isSelected ? '#3b5bdb' : 'transparent',
+                        transition: 'background-color 0.1s ease-in-out',
+                        // Don't override positioning - let react-arborist handle indentation
+                        position: style.position,
+                        left: style.left,
+                        top: style.top,
+                        width: style.width,
+                        height: style.height,
+                    }}
+                    onMouseEnter={(e) => {
+                        if (!node.isSelected) {
+                            e.currentTarget.style.backgroundColor = '#2c2e33';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!node.isSelected) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                    }}
+                    onContextMenu={(e) => handleContextMenu(e, node)}
+                >
+                    <Group gap="xs" style={{ width: '100%', paddingLeft: node.level * 24 }}>
+                        {node.isLeaf ? <IconFile size={16} /> : <IconFolder size={16} />}
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {node.data.name}
+                        </span>
+                    </Group>
+                </div>
+            )}
+        </Tree>
+      </Box>
+        <Menu opened={!!contextMenuNode} onClose={() => setContextMenuNode(null)} shadow="md" width={200}>
+            {contextMenuNode && contextMenuPosition && (
+                <Menu.Dropdown
+                    style={{
+                        position: 'absolute',
+                        left: contextMenuPosition.x,
+                        top: contextMenuPosition.y,
+                    }}
+                >
+                    <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => {
+                        setRenameNode(contextMenuNode);
+                        setInputValue(contextMenuNode.data.name);
+                        setShowRenameModal(true);
+                    }}>
+                    Rename
+                    </Menu.Item>
+                    <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={() => handleDelete(contextMenuNode)}>
+                    Delete
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item leftSection={<IconFolderPlus size={14} />} onClick={() => {
+                        setCreateParentNode(contextMenuNode.isLeaf ? contextMenuNode.parent : contextMenuNode);
+                        setInputValue('');
+                        setShowCreateFolderModal(true);
+                    }}>
+                    New Folder
+                    </Menu.Item>
+                    <Menu.Item leftSection={<IconPlus size={14} />} onClick={() => {
+                        setCreateParentNode(contextMenuNode.isLeaf ? contextMenuNode.parent : contextMenuNode);
+                        setInputValue('');
+                        setShowCreateFileModal(true);
+                    }}>
+                    New File
+                    </Menu.Item>
+                </Menu.Dropdown>
+            )}
+        </Menu>
+        <Modal opened={showCreateFolderModal} onClose={() => setShowCreateFolderModal(false)} title="Create New Folder">
+            <TextInput 
+              label="Folder Name" 
+              value={inputValue} 
+              onChange={(e) => setInputValue(e.currentTarget.value)} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inputValue.trim()) {
+                  handleCreateFolder();
+                }
+              }}
+              data-autofocus 
+            />
+            <Button mt="md" onClick={handleCreateFolder}>Create</Button>
+        </Modal>
+        <Modal opened={showCreateFileModal} onClose={() => setShowCreateFileModal(false)} title="Create New File">
+            <TextInput 
+              label="File Name" 
+              value={inputValue} 
+              onChange={(e) => setInputValue(e.currentTarget.value)} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inputValue.trim()) {
+                  handleCreateFile();
+                }
+              }}
+              data-autofocus 
+            />
+            <Button mt="md" onClick={handleCreateFile}>Create</Button>
+        </Modal>
+        <Modal opened={showRenameModal} onClose={() => setShowRenameModal(false)} title="Rename Item">
+            <TextInput 
+              label="New Name" 
+              value={inputValue} 
+              onChange={(e) => setInputValue(e.currentTarget.value)} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inputValue.trim()) {
+                  handleRename();
+                }
+              }}
+              data-autofocus 
+            />
+            <Button mt="md" onClick={handleRename}>Rename</Button>
+        </Modal>
+    </Box>
   );
 }); 
