@@ -34,6 +34,7 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   const [showHidden, setShowHidden] = useState(false);
   const [treeData, setTreeData] = useState<NodeData[]>([]);
   const [expandedDirectories, setExpandedDirectories] = useState<Set<string>>(new Set());
+  const [pendingStateRestore, setPendingStateRestore] = useState<Set<string> | null>(null);
   const treeApi = React.useRef<TreeApi<NodeData>>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showCreateFileModal, setShowCreateFileModal] = useState(false);
@@ -49,6 +50,7 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
       setIsLoading(false);
       return;
     }
+    
     setIsLoading(true);
     try {
       // Only load the root level initially
@@ -141,20 +143,11 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
     for (const dirPath of sortedPaths) {
       console.log(`🔄 Processing directory: ${dirPath}`);
       
-      // Wait for the node to be available in the tree
-      let node = treeApi.current.get(dirPath);
-      let attempts = 0;
-      const maxAttempts = 10;
-      
-      while (!node && attempts < maxAttempts) {
-        console.log(`🔄 Node not found for ${dirPath}, waiting... (attempt ${attempts + 1})`);
-        await new Promise(resolve => setTimeout(resolve, 100));
-        node = treeApi.current.get(dirPath);
-        attempts++;
-      }
+      // Get the node - it should be immediately available for local file system
+      const node = treeApi.current.get(dirPath);
       
       if (!node) {
-        console.log(`🔄 Node not found for path after ${maxAttempts} attempts: ${dirPath}`);
+        console.log(`🔄 Node not found for path: ${dirPath}`);
         continue;
       }
       
@@ -172,38 +165,13 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
             continue; // Skip if loading failed
           }
           
-          // Wait for the tree data to update after loading children
-          await new Promise(resolve => {
-            const checkUpdate = () => {
-              const updatedNode = treeApi.current?.get(dirPath);
-              if (updatedNode && updatedNode.data.children && updatedNode.data.children.length > 0) {
-                console.log(`🔄 Children are now available for: ${updatedNode.data.name}`);
-                resolve(void 0);
-              } else {
-                setTimeout(checkUpdate, 50);
-              }
-            };
-            checkUpdate();
-          });
+          // Small delay to allow React to re-render after loading children
+          await new Promise(resolve => setTimeout(resolve, 10));
         }
         
         console.log(`🔄 Opening directory: ${node.data.name}`);
-        // Open the directory
+        // Open the directory - should be immediate for local file system
         node.open();
-        
-        // Wait for the directory to actually open
-        await new Promise(resolve => {
-          const checkOpen = () => {
-            const updatedNode = treeApi.current?.get(dirPath);
-            if (updatedNode && updatedNode.isOpen) {
-              console.log(`🔄 Directory is now open: ${updatedNode.data.name}`);
-              resolve(void 0);
-            } else {
-              setTimeout(checkOpen, 50);
-            }
-          };
-          checkOpen();
-        });
       }
     }
     
@@ -213,6 +181,18 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   useEffect(() => {
     loadTreeData();
   }, [loadTreeData]);
+
+  // Handle state restoration when tree data is loaded
+  useEffect(() => {
+    if (treeData.length > 0 && pendingStateRestore && treeApi.current) {
+      console.log('🔄 Tree data loaded, restoring expanded state');
+      const restore = async () => {
+        await restoreExpandedDirectories(pendingStateRestore);
+        setPendingStateRestore(null);
+      };
+      restore();
+    }
+  }, [treeData, pendingStateRestore, restoreExpandedDirectories]);
 
   useImperativeHandle(ref, () => ({
     refresh: loadTreeData,
@@ -228,28 +208,18 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
         setExpandedDirectories(new Set(state.expandedDirectories));
         console.log('🔄 Set expanded directories, starting restoration...');
         
-        // Wait for tree to be fully loaded before starting restoration
-        await new Promise(resolve => {
-          const checkTreeLoaded = () => {
-            if (treeApi.current && treeData.length > 0) {
-              console.log('🔄 Tree is loaded, proceeding with restoration');
-              resolve(void 0);
-            } else {
-              setTimeout(checkTreeLoaded, 50);
-            }
-          };
-          checkTreeLoaded();
-        });
-        
-        // Restore expanded directories
-        console.log('🔄 Starting restoration of expanded directories');
-        await restoreExpandedDirectories(state.expandedDirectories);
-        console.log('🔄 Finished restoring expanded directories');
-        
-        // Restore selected file after tree is fully expanded
-        if (state.selectedFile && treeApi.current) {
-          console.log('🔄 Restoring selected file:', state.selectedFile);
-          treeApi.current.focus(state.selectedFile);
+        if (treeApi.current && treeData.length > 0) {
+          console.log('🔄 Tree is loaded, proceeding with restoration');
+          await restoreExpandedDirectories(state.expandedDirectories);
+          
+          // Restore selected file after tree is fully expanded
+          if (state.selectedFile && treeApi.current) {
+            console.log('🔄 Restoring selected file:', state.selectedFile);
+            treeApi.current.focus(state.selectedFile);
+          }
+        } else {
+          console.log('🔄 Tree not yet loaded, setting pending restoration');
+          setPendingStateRestore(new Set(state.expandedDirectories));
         }
       } else if (state.selectedFile && treeApi.current) {
         console.log('🔄 Only restoring selected file:', state.selectedFile);
@@ -275,57 +245,92 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
 
   const handleCreateFolder = useCallback(async () => {
     if (!project || !inputValue.trim() || !createParentNode) return;
+    
+    // Save current expanded state for restoration after reload
+    const currentExpandedDirs = new Set(expandedDirectories);
+    
     const newPath = `${createParentNode.data.path}/${inputValue}`;
     const result = await window.electronAPI.fileTreeCreateDirectory(project, newPath);
+    
     if ('error' in result) {
       console.error('Create folder failed:', result.error);
       alert(`Create folder failed: ${result.error}`);
     } else {
-      loadTreeData();
+      // Set pending restoration before reload
+      if (currentExpandedDirs.size > 0) {
+        setPendingStateRestore(currentExpandedDirs);
+      }
+      await loadTreeData();
     }
     setShowCreateFolderModal(false);
-  }, [project, inputValue, createParentNode, loadTreeData]);
+  }, [project, inputValue, createParentNode, loadTreeData, expandedDirectories]);
 
   const handleCreateFile = useCallback(async () => {
     if (!project || !inputValue.trim() || !createParentNode) return;
+    
+    // Save current expanded state for restoration after reload
+    const currentExpandedDirs = new Set(expandedDirectories);
+    
     const newPath = `${createParentNode.data.path}/${inputValue}`;
     const result = await window.electronAPI.fileTreeCreateFile(project, newPath);
+    
     if ('error' in result) {
       console.error('Create file failed:', result.error);
       alert(`Create file failed: ${result.error}`);
     } else {
-      loadTreeData();
+      // Set pending restoration before reload
+      if (currentExpandedDirs.size > 0) {
+        setPendingStateRestore(currentExpandedDirs);
+      }
+      await loadTreeData();
     }
     setShowCreateFileModal(false);
-  }, [project, inputValue, createParentNode, loadTreeData]);
+  }, [project, inputValue, createParentNode, loadTreeData, expandedDirectories]);
 
   const handleRename = useCallback(async () => {
     if (!project || !inputValue.trim() || !renameNode) return;
+    
+    // Save current expanded state for restoration after reload
+    const currentExpandedDirs = new Set(expandedDirectories);
+    
     const oldPath = renameNode.data.path;
     const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
     const newPath = `${parentPath}/${inputValue}`;
     const result = await window.electronAPI.fileTreeRename(project, oldPath, newPath);
+    
     if ('error' in result) {
       console.error('Rename failed:', result.error);
       alert(`Rename failed: ${result.error}`);
     } else {
-      loadTreeData();
+      // Set pending restoration before reload
+      if (currentExpandedDirs.size > 0) {
+        setPendingStateRestore(currentExpandedDirs);
+      }
+      await loadTreeData();
     }
     setShowRenameModal(false);
-  }, [project, inputValue, renameNode, loadTreeData]);
+  }, [project, inputValue, renameNode, loadTreeData, expandedDirectories]);
 
   const handleDelete = useCallback(async (node: NodeApi<NodeData>) => {
     if (!project) return;
     if (confirm(`Are you sure you want to delete ${node.data.name}?`)) {
+      // Save current expanded state for restoration after reload
+      const currentExpandedDirs = new Set(expandedDirectories);
+      
       const result = await window.electronAPI.fileTreeDelete(project, node.data.path);
+      
       if ('error' in result) {
         console.error('Delete failed:', result.error);
         alert(`Delete failed: ${result.error}`);
       } else {
-        loadTreeData();
+        // Set pending restoration before reload
+        if (currentExpandedDirs.size > 0) {
+          setPendingStateRestore(currentExpandedDirs);
+        }
+        await loadTreeData();
       }
     }
-  }, [project, loadTreeData]);
+  }, [project, loadTreeData, expandedDirectories]);
 
   if (isLoading) {
     return (
@@ -360,7 +365,19 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
 
             <ActionIcon 
               variant="subtle"
-              onClick={() => treeApi.current?.create({ parentId: null, type: "internal" })}
+              onClick={() => {
+                // Create folder in root directory - use a virtual root node
+                const virtualRootNode = {
+                  data: {
+                    path: rootPath,
+                    name: 'root'
+                  }
+                } as NodeApi<NodeData>;
+                
+                setCreateParentNode(virtualRootNode);
+                setInputValue('');
+                setShowCreateFolderModal(true);
+              }}
               title="Create new folder"
             >
               <IconFolderPlus size={16} />
@@ -368,7 +385,19 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
 
             <ActionIcon 
               variant="subtle"
-              onClick={() => treeApi.current?.create({ parentId: null, type: "leaf" })}
+              onClick={() => {
+                // Create file in root directory - use a virtual root node
+                const virtualRootNode = {
+                  data: {
+                    path: rootPath,
+                    name: 'root'
+                  }
+                } as NodeApi<NodeData>;
+                
+                setCreateParentNode(virtualRootNode);
+                setInputValue('');
+                setShowCreateFileModal(true);
+              }}
               title="Create new file"
             >
               <IconPlus size={16} />
@@ -457,6 +486,9 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
                 const parentNode = treeApi.current?.get(parentId);
                 if (!parentNode) return;
 
+                // Save current expanded state for restoration after reload
+                const currentExpandedDirs = new Set(expandedDirectories);
+
                 for (const id of dragIds) {
                     const node = treeApi.current?.get(id);
                     if (!node) continue;
@@ -469,11 +501,20 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
                     if ('error' in result) {
                         console.error('Move failed:', result.error);
                         alert(`Move failed: ${result.error}`);
-                        loadTreeData();
+                        // Set pending restoration before reload even on failure
+                        if (currentExpandedDirs.size > 0) {
+                            setPendingStateRestore(currentExpandedDirs);
+                        }
+                        await loadTreeData();
                         break; 
                     }
                 }
-                loadTreeData();
+                
+                // Set pending restoration before reload
+                if (currentExpandedDirs.size > 0) {
+                    setPendingStateRestore(currentExpandedDirs);
+                }
+                await loadTreeData();
             }}
         >
             {({ node, style, dragHandle }) => (

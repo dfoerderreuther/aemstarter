@@ -125,7 +125,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project, visible
     };
 
     handleVisibilityChange();
-  }, [visible, savedTreeState]);
+  }, [visible]); // Removed savedTreeState from dependencies to prevent infinite loop
 
   // Save state when component unmounts
   useEffect(() => {

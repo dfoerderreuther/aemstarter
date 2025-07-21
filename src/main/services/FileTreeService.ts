@@ -64,7 +64,7 @@ export class FileTreeService {
             isDirectory = linkStats.isDirectory();
             isFile = linkStats.isFile();
           } catch (error) {
-            console.warn(`FileTreeService: Could not stat symlink target for ${entryPath}:`, error);
+            console.warn(`[FileTreeService] Could not stat symlink target for ${entryPath}:`, error);
             continue;
           }
         }
@@ -74,7 +74,7 @@ export class FileTreeService {
         try {
           entryStats = await fs.promises.stat(entryPath);
         } catch (error) {
-          console.warn(`FileTreeService: Could not stat ${entryPath}:`, error);
+          console.warn(`[FileTreeService] Could not stat ${entryPath}:`, error);
           continue;
         }
         
@@ -130,7 +130,7 @@ export class FileTreeService {
                     subIsDirectory = linkStats.isDirectory();
                     subIsFile = linkStats.isFile();
                   } catch (error) {
-                    console.warn(`FileTreeService: Could not stat symlink target for ${subEntryPath}:`, error);
+                    console.warn(`[FileTreeService] Could not stat symlink target for ${subEntryPath}:`, error);
                     continue;
                   }
                 }
@@ -140,7 +140,7 @@ export class FileTreeService {
                 try {
                   subStats = await fs.promises.stat(subEntryPath);
                 } catch (error) {
-                  console.warn(`FileTreeService: Could not stat ${subEntryPath}:`, error);
+                  console.warn(`[FileTreeService] Could not stat ${subEntryPath}:`, error);
                   continue;
                 }
 
@@ -164,7 +164,7 @@ export class FileTreeService {
             treeItem.children = directoryChildren.sort();
             
           } catch (error) {
-            console.warn(`FileTreeService: Could not read subdirectory ${entryPath}:`, error);
+            console.warn(`[FileTreeService] Could not read subdirectory ${entryPath}:`, error);
             treeItem.children = []; // Empty array for unreadable directories
           }
         }
@@ -186,7 +186,7 @@ export class FileTreeService {
       };
       
     } catch (error) {
-      console.error('FileTreeService: Error reading directory tree:', error);
+      console.error('[FileTreeService] Error reading directory tree:', error);
       throw error;
     }
 
@@ -220,7 +220,7 @@ export class FileTreeService {
       // Create file
       await fs.promises.writeFile(filePath, content, 'utf-8');
     } catch (error) {
-      console.error('Error creating file:', error);
+      console.error('[FileTreeService] Error creating file:', error);
       throw error;
     }
   }
@@ -232,7 +232,7 @@ export class FileTreeService {
     try {
       await fs.promises.mkdir(dirPath, { recursive: true });
     } catch (error) {
-      console.error('Error creating directory:', error);
+      console.error('[FileTreeService] Error creating directory:', error);
       throw error;
     }
   }
@@ -253,7 +253,7 @@ export class FileTreeService {
 
       await fs.promises.rename(oldPath, newPath);
     } catch (error) {
-      console.error('Error renaming:', error);
+      console.error('[FileTreeService] Error renaming:', error);
       throw error;
     }
   }
@@ -265,7 +265,8 @@ export class FileTreeService {
     try {
       // Check if target already exists
       if (await this.exists(destinationPath)) {
-        throw new Error(`Target path already exists: ${destinationPath}`);
+        console.log(`[FileTreeService] Target path already exists: ${destinationPath}`);
+        return;
       }
 
       // Ensure parent directory exists
@@ -275,7 +276,7 @@ export class FileTreeService {
       // Use rename for moving (works across directories on same filesystem)
       await fs.promises.rename(sourcePath, destinationPath);
     } catch (error) {
-      console.error('Error moving:', error);
+      console.error('[FileTreeService] Error moving:', error);
       throw error;
     }
   }
@@ -295,7 +296,7 @@ export class FileTreeService {
         await fs.promises.unlink(targetPath);
       }
     } catch (error) {
-      console.error('Error deleting:', error);
+      console.error('[FileTreeService] Error deleting:', error);
       throw error;
     }
   }
@@ -329,7 +330,7 @@ export class FileTreeService {
         updatedAt: stats.mtime.toISOString()
       };
     } catch (error) {
-      console.error('Error getting file info:', error);
+      console.error('[FileTreeService] Error getting file info:', error);
       throw error;
     }
   }
