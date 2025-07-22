@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
+import svgr from 'vite-plugin-svgr';
 
 // https://vitejs.dev/config
 export default defineConfig({
+  plugins: [svgr()],
   build: {
     rollupOptions: {
       output: {
@@ -14,6 +16,8 @@ export default defineConfig({
           terminal: ['@xterm/xterm', '@xterm/addon-fit', 'xterm', 'xterm-addon-fit'],
           // Separate React and related
           react: ['react', 'react-dom'],
+          // Keep react-arborist in its own chunk and untouched by aggressive minification
+          arborist: ['react-arborist'],
           // Separate emotion styling
           emotion: ['@emotion/react', '@emotion/styled'],
           // Separate utility libraries
@@ -26,5 +30,8 @@ export default defineConfig({
     // Enable source maps for better debugging
     sourcemap: true
   },
-  publicDir: 'public'
+  publicDir: 'public',
+  optimizeDeps: {
+    include: ['react-arborist']
+  }
 });
