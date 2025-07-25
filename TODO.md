@@ -10,6 +10,10 @@ Change from Author + Publisher package to only Author package. Installation on b
 
 How to reopen the window?
 
+## Font size in TerminalTab
+
+Increase of font size removes sidebar
+
 ## Features
 
 ### Split health check in screenshot + health check
@@ -26,3 +30,5 @@ http://localhost:4502/systemalive
 ### README.md as a start tab
 
 Having the README.md as a first tab for easy project documentation.
+
+## Environment Variables

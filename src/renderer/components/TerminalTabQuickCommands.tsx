@@ -124,9 +124,9 @@ export const TerminalTabQuickCommands = ({
         { command: 'aio aem:rde:logs -s publish', name: 'Follow RDE Publish Logs' }
       ]
     },
-    'AEM Starter Logging': {
+    'AEM-Starter Logging': {
       items: [
-        { command: 'tail -f ~/Library/Application\\ Support/AEM-Starter/logs/main.log', name: 'Watch AEM Starter Logs' }
+        { command: 'tail -n 100 -f ~/Library/Application\\ Support/AEM-Starter/logs/main.log', name: 'Watch AEM-Starter Logs' }
       ]
     }
   };

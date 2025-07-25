@@ -53,7 +53,17 @@ Open AEM-Starter from your applications and click "Create Project".
 
 Enter a project name and select the Cloud SDK. The top bar shows whether system requirements are fulfilled.
 
-Click "Create" and select an empty folder for your installation.
+Click "Create" and select an empty folder for your installation. 
+
+🚨 **IMPORTANT:** No Spaces in Project Paths
+
+**Project paths cannot contain spaces or special characters** (causes AEM startup failures).
+
+❌ `/Users/name/My AEM SDK/`
+
+✅ `/Users/name/My-AEM-SDK/`
+
+---
 
 ![Initial run and setup](doc/screenshots/howtostart4.png)
 
