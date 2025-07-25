@@ -2,19 +2,11 @@
 
 ## Issues
 
+## Features
+
 ### Package Manager
 
 Change from Author + Publisher package to only Author package. Installation on both is OK.
-
-### Closed Application window / not closed application
-
-How to reopen the window?
-
-## Font size in TerminalTab
-
-Increase of font size removes sidebar
-
-## Features
 
 ### Split health check in screenshot + health check
 
