@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Stack, TextInput, Group, Button, Anchor, Checkbox } from '@mantine/core';
+import { Modal, Stack, TextInput, Group, Button, Anchor, Checkbox, ActionIcon, Text } from '@mantine/core';
+import { IconFolder, IconAlertTriangle } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { SystemCheckView } from './SystemCheckView';
 import { JavaHomeSelector } from './JavaHomeSelector';
@@ -16,6 +17,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   onProjectCreated,
 }) => {
   const [newProjectName, setNewProjectName] = useState('');
+  const [projectPath, setProjectPath] = useState('');
   const [creating, setCreating] = useState(false);
   const [aemSdkPath, setAemSdkPath] = useState('');
   const [licensePath, setLicensePath] = useState('');
@@ -30,6 +32,25 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     const parts = path.split(/[/\\]/);
     return parts[parts.length - 1];
   };
+
+  // Helper function to check for special characters and spaces
+  const getPathWarnings = (path: string) => {
+    if (!path) return [];
+    const warnings = [];
+    
+    
+    // Check for special characters (excluding common path separators and drive letters)
+    const specialChars = /[^a-zA-Z0-9\-_./\\:]/;
+    if (path.includes(' ')) {
+      warnings.push('Path contains spaces');
+    } else if (specialChars.test(path)) {
+      warnings.push('Path contains special characters');
+    }
+    
+    return warnings;
+  };
+
+  const pathWarnings = getPathWarnings(projectPath);
 
   // Load global settings when opening the modal
   useEffect(() => {
@@ -50,6 +71,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
 
   const handleClose = () => {
     setNewProjectName('');
+    setProjectPath('');
     setAemSdkPath('');
     setLicensePath('');
     setRunFirstStartSetup(true);
@@ -70,58 +92,62 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     }
   };
 
+  const handleSelectProjectPath = async () => {
+    const result = await window.electronAPI.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Select Project Folder',
+      buttonLabel: 'Select Folder',
+      message: 'Select a folder for your project or create a new one'
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      setProjectPath(result.filePaths[0]);
+    }
+  };
+
   const handleCreateProject = async () => {
-    if (!newProjectName.trim() || !aemSdkPath) return;
+    if (!newProjectName.trim() || !projectPath || !aemSdkPath) return;
     if (classic && !classicQuickstartPath) return;
     if (classic && !licensePath) return;
     setCreating(true);
     
     try {
-      const result = await window.electronAPI.showOpenDialog({
-        properties: ['openDirectory', 'createDirectory'],
-        title: 'Select Project Folder',
-        buttonLabel: 'Select Folder',
-        message: 'Select a folder for your project or create a new one'
-      });
-      if (!result.canceled && result.filePaths.length > 0) {
-        const project = await window.electronAPI.createProject(
-          newProjectName,
-          result.filePaths[0],
-          aemSdkPath,
-          licensePath,
-          classic,
-          classicQuickstartPath
-        );
-        
-        // Update project settings with the selected Java home
-        if (javaHome) {
-          const updatedSettings = {
-            ...project.settings,
-            general: {
-              ...project.settings.general,
-              javaHome: javaHome
-            }
-          };
-          await window.electronAPI.saveProjectSettings(project, updatedSettings);
-        }
-        
-        // Start the installation procedure and wait for it to complete
-        try {
-          console.log('[NewProjectModal] Starting AEM installation...');
-          await window.electronAPI.installAEM(project);
-          console.log('[NewProjectModal] AEM installation completed');
-        } catch (error) {
-          console.error('Failed to install AEM:', error);
-          // Don't proceed with automation if installation failed
-          onProjectCreated(project, false);
-          handleClose();
-          return;
-        }
-
-        console.log('[NewProjectModal] Project created, shouldRunAutomation:', runFirstStartSetup);
-        onProjectCreated(project, runFirstStartSetup);
-        handleClose();
+      const project = await window.electronAPI.createProject(
+        newProjectName,
+        projectPath,
+        aemSdkPath,
+        licensePath,
+        classic,
+        classicQuickstartPath
+      );
+      
+      // Update project settings with the selected Java home
+      if (javaHome) {
+        const updatedSettings = {
+          ...project.settings,
+          general: {
+            ...project.settings.general,
+            javaHome: javaHome
+          }
+        };
+        await window.electronAPI.saveProjectSettings(project, updatedSettings);
       }
+      
+      // Start the installation procedure and wait for it to complete
+      try {
+        console.log('[NewProjectModal] Starting AEM installation...');
+        await window.electronAPI.installAEM(project);
+        console.log('[NewProjectModal] AEM installation completed');
+      } catch (error) {
+        console.error('Failed to install AEM:', error);
+        // Don't proceed with automation if installation failed
+        onProjectCreated(project, false);
+        handleClose();
+        return;
+      }
+
+      console.log('[NewProjectModal] Project created, shouldRunAutomation:', runFirstStartSetup);
+      onProjectCreated(project, runFirstStartSetup);
+      handleClose();
     } catch (error) {
       // Show error message to user
       console.error('Failed to create project:', error);
@@ -199,16 +225,44 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     >
       <Stack gap="md">
         <SystemCheckView strict={true} />
-        <TextInput
-          label="Project Name"
-          placeholder="Enter project name"
-          value={newProjectName}
-          onChange={(e) => setNewProjectName(e.target.value)}
-          size="md"
-          required
-          autoFocus
-          disabled={creating}
-        />
+                  <TextInput
+            label="Project Name"
+            placeholder="Enter project name"
+            value={newProjectName}
+            onChange={(e) => setNewProjectName(e.target.value)}
+            size="md"
+            required
+            autoFocus
+            disabled={creating}
+          />
+          <Group gap="xs" align="end">
+            <TextInput
+              label="Project Folder"
+              description="Select the folder where your project will be created"
+              placeholder="Select project folder"
+              value={projectPath}
+              onChange={(e) => setProjectPath(e.target.value)}
+              style={{ flex: 1 }}
+              required
+              disabled={creating}
+            />
+            <ActionIcon
+              variant="filled"
+              onClick={handleSelectProjectPath}
+              size="lg"
+              disabled={creating}
+            >
+              <IconFolder size={16} />
+            </ActionIcon>
+          </Group>
+          {pathWarnings.length > 0 && (
+            <Group gap="xs" align="center">
+              <IconAlertTriangle size={14} color="orange" />
+              <Text size="sm" c="orange">
+                Warning: {pathWarnings.join(', ')}
+              </Text>
+            </Group>
+          )}
         <JavaHomeSelector value={javaHome} onChange={(value: string) => setJavaHome(value)} />
         <Group>
           <Checkbox
@@ -334,7 +388,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           <Button 
             onClick={handleCreateProject} 
             loading={creating}
-            disabled={!newProjectName.trim() || !aemSdkPath || (classic && !classicQuickstartPath) || (classic && !licensePath)}
+            disabled={!newProjectName.trim() || !projectPath || !javaHome || !aemSdkPath || (classic && !classicQuickstartPath) || (classic && !licensePath)}
           >
             Create
           </Button>
