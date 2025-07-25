@@ -32,7 +32,14 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     resize: () => {
       if (fitAddonRef.current && xtermRef.current) {
         try {
-          fitAddonRef.current.fit();
+          // First, temporarily reduce terminal size to measure true available space
+          xtermRef.current.resize(1, 1);
+          // Now measure the available space
+          setTimeout(() => {
+            if (fitAddonRef.current) {
+              fitAddonRef.current.fit();
+            }
+          }, 10);
         } catch (error) {
           console.warn('Failed to fit terminal:', error);
         }
@@ -62,7 +69,13 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
       xtermRef.current.options.fontSize = fontSize;
       try {
         if (fitAddonRef.current) {
-          fitAddonRef.current.fit();
+          // Reset terminal size before fitting to ensure proper measurement
+          xtermRef.current.resize(1, 1);
+          setTimeout(() => {
+            if (fitAddonRef.current) {
+              fitAddonRef.current.fit();
+            }
+          }, 10);
         }
       } catch (error) {
         console.warn('Failed to fit terminal:', error);
@@ -188,8 +201,14 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     // Resize handler
     const handleResize = () => {
       try {
-        if (fitAddonRef.current) {
-          fitAddonRef.current.fit();
+        if (fitAddonRef.current && xtermRef.current) {
+          // Reset terminal size before fitting to ensure proper measurement
+          xtermRef.current.resize(1, 1);
+          setTimeout(() => {
+            if (fitAddonRef.current) {
+              fitAddonRef.current.fit();
+            }
+          }, 10);
         }
       } catch (error) {
         console.warn('Failed to fit terminal:', error);
@@ -226,9 +245,15 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
 
   // Handle tab visibility changes
   useEffect(() => {
-    if (visible && fitAddonRef.current) {
+    if (visible && fitAddonRef.current && xtermRef.current) {
       try {
-        fitAddonRef.current.fit();
+        // Reset terminal size before fitting to ensure proper measurement
+        xtermRef.current.resize(1, 1);
+        setTimeout(() => {
+          if (fitAddonRef.current) {
+            fitAddonRef.current.fit();
+          }
+        }, 10);
       } catch (error) {
         console.warn('Failed to fit terminal on tab visibility change:', error);
       }

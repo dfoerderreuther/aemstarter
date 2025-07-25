@@ -127,7 +127,7 @@ export class TerminalService {
         return false;
       }
     } else {
-      console.log(`Cannot write to terminal ${terminalId}: session=${!!session}`);
+      console.log(`[TerminalService] Cannot write to terminal ${terminalId}: session=${!!session}`);
     }
     return false;
   }
@@ -137,10 +137,10 @@ export class TerminalService {
     if (session && session.ptyProcess) {
       try {
         session.ptyProcess.resize(cols, rows);
-        console.log(`Resized terminal ${terminalId} to ${cols}x${rows}`);
+        //console.log(`Resized terminal ${terminalId} to ${cols}x${rows}`);
         return true;
       } catch (error) {
-        console.error(`Error resizing PTY terminal ${terminalId}:`, error);
+        console.error(`[TerminalService] Error resizing PTY terminal ${terminalId}:`, error);
         return false;
       }
     }
@@ -153,10 +153,10 @@ export class TerminalService {
       try {
         session.ptyProcess.kill();
         this.terminals.delete(terminalId);
-        console.log(`Killed terminal ${terminalId}`);
+        console.log(`[TerminalService] Killed terminal ${terminalId}`);
         return true;
       } catch (error) {
-        console.error(`Error killing PTY terminal ${terminalId}:`, error);
+        console.error(`[TerminalService] Error killing PTY terminal ${terminalId}:`, error);
         // Still remove from map even if kill failed
         this.terminals.delete(terminalId);
         return false;
@@ -179,7 +179,7 @@ export class TerminalService {
       try {
         session.ptyProcess.kill();
       } catch (error) {
-        console.error(`Error cleaning up terminal ${terminalId}:`, error);
+        console.error(`[TerminalService] Error cleaning up terminal ${terminalId}:`, error);
       }
     }
     this.terminals.clear();
@@ -187,14 +187,14 @@ export class TerminalService {
 
   // Clear all terminals (used when switching projects)
   clearAllTerminals(): void {
-    console.log('Clearing all terminals for project switch');
+    console.log('[TerminalService] Clearing all terminals for project switch');
     // Kill all active terminal sessions
     for (const [terminalId, session] of this.terminals) {
       try {
         session.ptyProcess.kill();
-        console.log(`Cleared terminal ${terminalId}`);
+        console.log(`[TerminalService] Cleared terminal ${terminalId}`);
       } catch (error) {
-        console.error(`Error clearing terminal ${terminalId}:`, error);
+        console.error(`[TerminalService] Error clearing terminal ${terminalId}:`, error);
       }
     }
     this.terminals.clear();

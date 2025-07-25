@@ -59,6 +59,12 @@ export const TerminalTab = ({
   const handleFontSizeChange = (value: string | null) => {
     if (value) {
       setTerminalFontSize(parseInt(value));
+      // Trigger resize to apply the new font size properly
+      setTimeout(() => {
+        if (terminalComponentRef.current) {
+          terminalComponentRef.current.resize();
+        }
+      }, 10);
     }
   };
 

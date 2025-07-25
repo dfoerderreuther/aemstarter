@@ -21,6 +21,7 @@ import { AemProcessManager } from './main/services/AemProcessManager';
 import { HttpsServiceRegister } from './main/HttpsServiceRegister';
 import { JavaService } from './main/services/JavaService';
 import { FileTreeService } from './main/services/FileTreeService';
+import { AutoStartStopService } from './main/services/AutoStartStopService';
 import { spawn } from 'child_process';
 
 // Set the app name immediately (this affects dock/taskbar display)
@@ -1501,6 +1502,73 @@ const cleanupOrphanedProjects = () => {
   }
 };
 
+// Helper function to gracefully stop all running AEM applications
+const gracefullyStopAllApplications = async (): Promise<void> => {
+  console.log('[gracefulShutdown] Starting graceful shutdown of all AEM applications...');
+  
+  try {
+    const projectManager = ProjectManagerRegister.getManager();
+    const allProjects = projectManager.getAllProjects();
+    
+    // Filter out projects whose folders no longer exist
+    const validProjects = allProjects.filter(project => fs.existsSync(project.folderPath));
+    
+    if (validProjects.length === 0) {
+      console.log('[gracefulShutdown] No valid projects found');
+      return;
+    }
+    
+    // Check which projects have running instances and stop them
+    const stopPromises: Promise<void>[] = [];
+    
+    for (const project of validProjects) {
+      try {
+        // Check if project has any running instances
+        const runningCheck = await checkRunningInstancesForProject(project);
+        
+        if (runningCheck.hasRunning) {
+          console.log(`[gracefulShutdown] Found running instances in project "${project.name}":`, 
+            runningCheck.runningInstances.map(instance => `${instance.instanceType}:${instance.port}`).join(', '));
+          
+          // Use AutoStartStopService to gracefully stop all services for this project
+          const autoStartStopService = new AutoStartStopService(project);
+          stopPromises.push(
+            autoStartStopService.stop().catch(error => {
+              console.error(`[gracefulShutdown] Error stopping services for project "${project.name}":`, error);
+            })
+          );
+        }
+      } catch (error) {
+        console.error(`[gracefulShutdown] Error checking project "${project.name}":`, error);
+      }
+    }
+    
+    if (stopPromises.length > 0) {
+      console.log(`[gracefulShutdown] Stopping services for ${stopPromises.length} projects...`);
+      
+      // Set a timeout to ensure we don't block shutdown indefinitely
+      const timeout = new Promise<void>((resolve) => {
+        setTimeout(() => {
+          console.log('[gracefulShutdown] Timeout reached, proceeding with shutdown');
+          resolve();
+        }, 30000); // 30 second timeout
+      });
+      
+      // Wait for all stop operations to complete or timeout
+      await Promise.race([
+        Promise.all(stopPromises),
+        timeout
+      ]);
+      
+      console.log('[gracefulShutdown] All services stopped successfully');
+    } else {
+      console.log('[gracefulShutdown] No running instances found to stop');
+    }
+  } catch (error) {
+    console.error('[gracefulShutdown] Error during graceful shutdown:', error);
+  }
+};
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -1543,16 +1611,64 @@ app.on('ready', () => {
   }
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  // Clean up terminal sessions
-  if (terminalService) {
-    terminalService.cleanup();
+// Track if we're already shutting down to prevent multiple shutdown attempts
+let isShuttingDown = false;
+
+// Handle graceful shutdown when user tries to quit the app
+app.on('before-quit', async (event) => {
+  if (isShuttingDown) {
+    // If we're already shutting down, allow the quit to proceed
+    return;
   }
   
-  if (process.platform !== 'darwin') {
+  // Prevent the quit until we've cleaned up
+  event.preventDefault();
+  isShuttingDown = true;
+  
+  console.log('[app] before-quit: Starting graceful shutdown...');
+  
+  try {
+    // Gracefully stop all AEM applications first
+    await gracefullyStopAllApplications();
+    
+    // Clean up terminal sessions
+    if (terminalService) {
+      terminalService.cleanup();
+    }
+    
+    console.log('[app] before-quit: Graceful shutdown completed, quitting app');
+  } catch (error) {
+    console.error('[app] before-quit: Error during graceful shutdown:', error);
+  } finally {
+    // Force quit the app after cleanup (or if cleanup failed)
+    app.quit();
+  }
+});
+
+// Quit when all windows are closed on all platforms
+app.on('window-all-closed', async () => {
+  if (isShuttingDown) {
+    // If we're already shutting down via before-quit, just return
+    return;
+  }
+  
+  console.log('[app] window-all-closed: Starting graceful shutdown...');
+  isShuttingDown = true;
+  
+  try {
+    // Gracefully stop all AEM applications first
+    await gracefullyStopAllApplications();
+    
+    // Clean up terminal sessions
+    if (terminalService) {
+      terminalService.cleanup();
+    }
+    
+    console.log('[app] window-all-closed: Graceful shutdown completed');
+  } catch (error) {
+    console.error('[app] window-all-closed: Error during graceful shutdown:', error);
+  } finally {
+    // Always quit the app when all windows are closed
     app.quit();
   }
 });
