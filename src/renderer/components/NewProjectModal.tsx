@@ -121,6 +121,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
       );
       
       // Update project settings with the selected Java home
+      let finalProject = project;
       if (javaHome) {
         const updatedSettings = {
           ...project.settings,
@@ -129,24 +130,27 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             javaHome: javaHome
           }
         };
-        await window.electronAPI.saveProjectSettings(project, updatedSettings);
+        const updatedProject = await window.electronAPI.saveProjectSettings(project, updatedSettings);
+        if (updatedProject) {
+          finalProject = updatedProject;
+        }
       }
       
-      // Start the installation procedure and wait for it to complete
-      try {
-        console.log('[NewProjectModal] Starting AEM installation...');
-        await window.electronAPI.installAEM(project);
-        console.log('[NewProjectModal] AEM installation completed');
-      } catch (error) {
-        console.error('Failed to install AEM:', error);
-        // Don't proceed with automation if installation failed
-        onProjectCreated(project, false);
-        handleClose();
-        return;
-      }
+              // Start the installation procedure and wait for it to complete
+        try {
+          console.log('[NewProjectModal] Starting AEM installation...');
+          await window.electronAPI.installAEM(finalProject);
+          console.log('[NewProjectModal] AEM installation completed');
+        } catch (error) {
+          console.error('Failed to install AEM:', error);
+          // Don't proceed with automation if installation failed
+          onProjectCreated(finalProject, false);
+          handleClose();
+          return;
+        }
 
-      console.log('[NewProjectModal] Project created, shouldRunAutomation:', runFirstStartSetup);
-      onProjectCreated(project, runFirstStartSetup);
+        console.log('[NewProjectModal] Project created, shouldRunAutomation:', runFirstStartSetup);
+        onProjectCreated(finalProject, runFirstStartSetup);
       handleClose();
     } catch (error) {
       // Show error message to user
