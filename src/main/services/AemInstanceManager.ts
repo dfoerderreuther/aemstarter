@@ -107,7 +107,7 @@ export class AemInstanceManager {
 
       exec(cmd, (error, stdout) => {
         if (error || !stdout.trim()) {
-          console.log(`[AemInstanceManager] No LISTENING process found on port ${port}: ${error?.message || 'No output'}`);
+          //console.log(`[AemInstanceManager] No LISTENING process found on port ${port}: ${error?.message || 'No output'}`);
           resolve(null);
           return;
         }
