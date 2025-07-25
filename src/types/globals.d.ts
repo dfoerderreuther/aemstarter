@@ -36,6 +36,9 @@ declare global {
       // System Check
       runSystemCheck: (settings: ProjectSettings) => Promise<SystemCheckResults>;
       
+      // Platform detection
+      getPlatform: () => Promise<string>;
+      
       // File system operations
       readFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
       writeFile: (filePath: string, content: string) => Promise<{ error?: string }>;

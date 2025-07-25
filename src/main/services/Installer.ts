@@ -90,7 +90,7 @@ export class Installer {
             }
         }
 
-        console.log('Installation complete');
+        console.log('[Installer] Installation complete');
     }
 
     async installSdk(sdkPath: string) {
@@ -102,7 +102,7 @@ export class Installer {
             for (const file of existingFiles) {
                 if (file.startsWith('aem-sdk-') || file.match(/oak-run-.*\.jar$/)) {
                     const filePath = `${this.installDir}/${file}`;
-                    console.log('Deleting existing SDK file:', filePath);
+                    console.log('[Installer] Deleting existing SDK file:', filePath);
                     fs.rmSync(filePath, { force: true, recursive: true });
                 }
             }
@@ -116,7 +116,7 @@ export class Installer {
         const dispatcherScript = files.find(file => file.match(/aem-sdk-dispatcher-.*.sh/));
         const windowsDispatcherZip = files.find(file => file.match(/aem-sdk-dispatcher-.*.zip/));
         
-        console.log('SDK extracted with files:', {
+        console.log('[Installer] SDK extracted with files:', {
             quickstartFile,
             dispatcherScript,
             windowsDispatcherZip
@@ -126,7 +126,7 @@ export class Installer {
     async install() {
         this.validate();
         
-        console.log('Installing AEM for project:', this.project);
+        console.log('[Installer] Installing AEM for project:', this.project);
         await this.delete();
         
         await this.createFolders()
@@ -137,7 +137,7 @@ export class Installer {
             const jarFileName = path.basename(this.classicQuickstartPath);
             const targetPath = `${this.installDir}/${jarFileName}`;
             fs.copyFileSync(this.classicQuickstartPath, targetPath);
-            console.log(`Copied classic quickstart JAR to: ${targetPath}`);
+            console.log(`[Installer] Copied classic quickstart JAR to: ${targetPath}`);
         }
 
         // Find and copy the AEM SDK quickstart file
@@ -161,17 +161,17 @@ export class Installer {
         this.createSettings();
 
 
-        console.log('Installation complete');
+        console.log('[Installer] Installation complete');
     }
 
     private async delete() {
-        console.log('Deleting AEM for project:', this.project);
+        console.log('[Installer] Deleting AEM for project:', this.project);
         for (const folder of this.folders) {
             const folderPath = `${this.project.folderPath}/${folder}`;
             fs.rmSync(folderPath, { force: true, recursive: true });
         }
         fs.rmSync(`${this.project.folderPath}/screenshots`, { force: true, recursive: true });
-        console.log('Deletion complete');
+        console.log('[Installer] Deletion complete');
     }
 
     private validate() {
@@ -204,7 +204,7 @@ export class Installer {
     }
 
     private async installAemInstance(instanceDir: string, quickstartFile: string, type: string) {
-        console.log('installing aem instance for', process.platform, type, instanceDir, quickstartFile);
+        console.log('[Installer] installing aem instance for', process.platform, type, instanceDir, quickstartFile);
         if (fs.existsSync(this.licensePropertiesPath)) {
             fs.copyFileSync(this.licensePropertiesPath, `${instanceDir}/license.properties`);
         }
@@ -227,11 +227,18 @@ export class Installer {
                 JAVA_TOOL_OPTIONS: '-Djava.awt.headless=true'  // Additional headless enforcement
             }
         });
+        //if (process.platform !== 'win32') {
+        //    for (const command of ['start', 'stop', 'status']) {
+        //        await execAsync(`chmod +x crx-quickstart/bin/${command}`, { cwd: instanceDir });
+        //    }
+        //}
+
+        console.log('[Installer] aem instance installed', instanceDir);
     }
 
 
     private async installDispatcherWindows(installDir: string, dispatcherZip: string) {
-        console.log('installing dispatcher for windows', installDir, dispatcherZip);
+        console.log('[Installer] installing dispatcher for windows', installDir, dispatcherZip);
         process.chdir(installDir);
         await execAsync(`unzip ${dispatcherZip} -d dispatcher-sdk`, { cwd: installDir });
         
@@ -241,7 +248,7 @@ export class Installer {
 
     private async installDispatcherLinux(installDir: string, dispatcherScript: string) {
         // Change to dispatcher directory and execute script
-        console.log('installing dispatcher for linux', installDir, dispatcherScript);
+        console.log('[Installer] installing dispatcher for linux', installDir, dispatcherScript);
         process.chdir(installDir);
         if (dispatcherScript) {
 

@@ -349,6 +349,10 @@ contextBridge.exposeInMainWorld(
     runSystemCheck: (settings: ProjectSettings) =>
       ipcRenderer.invoke('run-system-check', settings),
 
+    // Platform detection
+    getPlatform: () =>
+      ipcRenderer.invoke('get-platform'),
+
     // Dispatcher Management
     startDispatcher: (project: Project) =>
       ipcRenderer.invoke('start-dispatcher', project),

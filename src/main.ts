@@ -1041,6 +1041,11 @@ ipcMain.handle('run-system-check', async (_, settings: ProjectSettings) => {
   }
 });
 
+// Platform detection IPC handler
+ipcMain.handle('get-platform', async () => {
+  return process.platform;
+});
+
 // Dev project utilities IPC handler
 ipcMain.handle('open-dev-project', async (_, project: Project, type: 'files' | 'terminal' | 'editor') => {
   try {

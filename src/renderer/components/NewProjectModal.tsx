@@ -25,6 +25,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [classic, setClassic] = useState(false);
   const [classicQuickstartPath, setClassicQuickstartPath] = useState('');
   const [javaHome, setJavaHome] = useState('');
+  const [platform, setPlatform] = useState<string>('');
 
   // Helper function to extract filename from path
   const getFileName = (path: string) => {
@@ -51,6 +52,18 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   };
 
   const pathWarnings = getPathWarnings(projectPath);
+  const isWindows = platform === 'win32';
+  const pathIssuesAreBlockers = !isWindows;
+  const hasPathBlockers = pathIssuesAreBlockers && pathWarnings.length > 0;
+
+  // Load platform information on component mount
+  useEffect(() => {
+    const loadPlatform = async () => {
+      const platformInfo = await window.electronAPI.getPlatform();
+      setPlatform(platformInfo);
+    };
+    loadPlatform();
+  }, []);
 
   // Load global settings when opening the modal
   useEffect(() => {
@@ -261,9 +274,9 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           </Group>
           {pathWarnings.length > 0 && (
             <Group gap="xs" align="center">
-              <IconAlertTriangle size={14} color="orange" />
-              <Text size="sm" c="orange">
-                Warning: {pathWarnings.join(', ')}
+              <IconAlertTriangle size={14} color={pathIssuesAreBlockers ? "red" : "orange"} />
+              <Text size="sm" c={pathIssuesAreBlockers ? "red" : "orange"}>
+                {pathIssuesAreBlockers ? "Error" : "Warning"}: {pathWarnings.join(', ')}
               </Text>
             </Group>
           )}
@@ -392,7 +405,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           <Button 
             onClick={handleCreateProject} 
             loading={creating}
-            disabled={!newProjectName.trim() || !projectPath || !javaHome || !aemSdkPath || (classic && !classicQuickstartPath) || (classic && !licensePath)}
+            disabled={!newProjectName.trim() || !projectPath || !javaHome || !aemSdkPath || (classic && !classicQuickstartPath) || (classic && !licensePath) || hasPathBlockers}
           >
             Create
           </Button>
