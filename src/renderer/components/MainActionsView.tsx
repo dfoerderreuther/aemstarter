@@ -717,7 +717,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                   variant="filled"
                   size="xs"
                   styles={secondButtonStyles}
-                  disabled={isAuthorRunning || isPublisherRunning || isDispatcherRunning}
                   onClick={() => setShowBackup(true)}
                 >
                   <IconDeviceFloppy size={16} />

@@ -27,7 +27,7 @@ export class BackupService {
         this.project = project;
     }
 
-    async backup(tarName: string, compress = true): Promise<void> {
+    public async backup(tarName: string, compress = true): Promise<void> {
         tarName = this.fixTarName(tarName, compress);
         
         for (const instance of ['author', 'publisher'] as const) {
@@ -50,13 +50,29 @@ export class BackupService {
         console.log(`[Backup] Backup done`);
     }
 
-    private listFiles(): string[] {
+    public async restore(tarName: string): Promise<void> {
+        await this.cleanBeforeRestore();
         const backupFolderPath = this.getBackupFolder();
-        const files = fs.readdirSync(backupFolderPath);
-        return files.filter(file => file.endsWith('.tar') || file.endsWith('.tar.gz'));
+        const backupPath = path.join(backupFolderPath, tarName);
+
+        const tarCommand = tarName.endsWith('.tar.gz') ? 'tar -xzf' : 'tar -xf';
+
+        const command = `${tarCommand} "${backupPath}"`;
+
+        console.log(`[Restore] Starting restore ${backupPath}`);
+        console.log(`[Restore] Command: ${command}`);
+        await execAsync(command, { cwd: this.project.folderPath });
+
+        console.log(`[Restore] Restore done`);
     }
 
-    async listBackups(): Promise<BackupInfo[]> {
+    public async deleteBackup(tarName: string): Promise<void> {
+        const backupFolderPath = this.getBackupFolder();
+        const backupPath = path.join(backupFolderPath, tarName);
+        fs.unlinkSync(backupPath);
+    }
+
+    public async listBackups(): Promise<BackupInfo[]> {
         const backupFiles = this.listFiles();
         const allBackupFiles = backupFiles;
         
@@ -89,6 +105,12 @@ export class BackupService {
         }).sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
         
         return backupInfo;
+    }
+
+    private listFiles(): string[] {
+        const backupFolderPath = this.getBackupFolder();
+        const files = fs.readdirSync(backupFolderPath);
+        return files.filter(file => file.endsWith('.tar') || file.endsWith('.tar.gz'));
     }
 
     private getCleanPaths(): string[] {
@@ -133,27 +155,7 @@ export class BackupService {
         }
     }
 
-    async restore(tarName: string): Promise<void> {
-        await this.cleanBeforeRestore();
-        const backupFolderPath = this.getBackupFolder();
-        const backupPath = path.join(backupFolderPath, tarName);
 
-        const tarCommand = tarName.endsWith('.tar.gz') ? 'tar -xzf' : 'tar -xf';
-
-        const command = `${tarCommand} "${backupPath}"`;
-
-        console.log(`[Restore] Starting restore ${backupPath}`);
-        console.log(`[Restore] Command: ${command}`);
-        await execAsync(command, { cwd: this.project.folderPath });
-
-        console.log(`[Restore] Restore done`);
-    }
-
-    async deleteBackup(tarName: string): Promise<void> {
-        const backupFolderPath = this.getBackupFolder();
-        const backupPath = path.join(backupFolderPath, tarName);
-        fs.unlinkSync(backupPath);
-    }
 
     private getBackupPaths(): string[] {
         const paths = [];
