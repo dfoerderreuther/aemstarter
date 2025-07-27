@@ -23,6 +23,7 @@ export interface ProjectSettings {
     runmode: string;
     jvmOpts: string;
     debugJvmOpts: string;
+    envVars: string;
     healthCheckPath: string;
   };
   publisher: {
@@ -30,6 +31,7 @@ export interface ProjectSettings {
     runmode: string;
     jvmOpts: string;
     debugJvmOpts: string;
+    envVars: string;
     healthCheckPath: string;
   };
   dispatcher: {

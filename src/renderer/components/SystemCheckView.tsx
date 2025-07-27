@@ -101,6 +101,7 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, stric
         runmode: "author,default",
         jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
         debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5005,suspend=n,server=y",
+        envVars: "",
         healthCheckPath: ""
       },
       publisher: {
@@ -108,6 +109,7 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, stric
         runmode: "publish,default",
         jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
         debugJvmOpts: " -server -Xdebug -agentlib:jdwp=transport=dt_socket,address=5006,suspend=n,server=y",
+        envVars: "",
         healthCheckPath: ""
       },
       dispatcher: {

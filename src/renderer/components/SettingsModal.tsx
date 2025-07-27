@@ -233,6 +233,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
             />
             
             <TextInput
+              label="Environment Variables"
+              description="Environment variables for the author instance"
+              value={settings.author.envVars}
+              onChange={(event) => updateAuthorSettings('envVars', event.currentTarget.value)}
+            />
+            
+            <TextInput
               label="Health Check Path"
               description="Path to the document the sytem should check for health and take screenshot of. Default is /."
               value={settings.author.healthCheckPath}
@@ -271,6 +278,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
               description="Additional JVM options for debugging"
               value={settings.publisher.debugJvmOpts}
               onChange={(event) => updatePublisherSettings('debugJvmOpts', event.currentTarget.value)}
+            />
+            
+            <TextInput
+              label="Environment Variables"
+              description="Environment variables for the publisher instance"
+              value={settings.publisher.envVars}
+              onChange={(event) => updatePublisherSettings('envVars', event.currentTarget.value)}
             />
             
             <TextInput

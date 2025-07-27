@@ -28,6 +28,65 @@ export class AemInstanceManager {
     this.healthChecker = new AemHealthChecker(project);
   }
 
+  /**
+   * Parse environment variables string with proper quote handling
+   * @param envVarsString - String containing environment variables in format "KEY1=value1 KEY2=\"quoted value\""
+   * @returns Object with environment variables as key-value pairs
+   */
+  private parseEnvVars(envVarsString: string): { [key: string]: string } {
+    const result: { [key: string]: string } = {};
+    let current = '';
+    let inQuotes = false;
+    let quoteChar = '';
+    let key = '';
+    let value = '';
+    let parsingKey = true;
+    
+    for (let i = 0; i < envVarsString.length; i++) {
+      const char = envVarsString[i];
+      
+      if (inQuotes) {
+        if (char === quoteChar) {
+          inQuotes = false;
+          quoteChar = '';
+        } else {
+          current += char;
+        }
+      } else {
+        if ((char === '"' || char === "'") && current.trim() === '') {
+          // Start of quoted value
+          inQuotes = true;
+          quoteChar = char;
+        } else if (char === '=' && parsingKey) {
+          // End of key, start of value
+          key = current.trim();
+          current = '';
+          parsingKey = false;
+        } else if (char === ' ' && !inQuotes) {
+          // End of current env var
+          if (key && current.trim()) {
+            value = current.trim();
+            result[key] = value;
+          }
+          key = '';
+          value = '';
+          current = '';
+          parsingKey = true;
+        } else {
+          current += char;
+        }
+      }
+    }
+    
+    // Handle the last env var
+    if (key && current.trim()) {
+      value = current.trim();
+      result[key] = value;
+    }
+    
+    return result;
+  }
+
   private sendLogData(instanceType: string, data: string) {
     // Send log data immediately to all windows
     const windows = BrowserWindow.getAllWindows();
@@ -406,8 +465,15 @@ export class AemInstanceManager {
     // can't use start script on windows as it goes crazy with opening multiple cmd windows
     if (hasCrxQuickstart && fs.existsSync(startScriptPath) && process.platform !== 'win32') {
       console.log('[AemInstanceManager] ### Starting AEM instance with crx-quickstart ###');
+      // Parse environment variables string into object
+      let envVarsObj: { [key: string]: string } = {};
+      if (instanceSettings.envVars) {
+        envVarsObj = this.parseEnvVars(instanceSettings.envVars);
+      }
+
       const env: { [key: string]: string | undefined } = {
         ...process.env,
+        ...envVarsObj,
         CQ_PORT: port.toString(),
         CQ_RUNMODE: runmode,
         CQ_JVM_OPTS: jvmOpts,

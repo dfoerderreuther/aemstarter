@@ -17,6 +17,7 @@ export class ProjectSettingsService {
                 runmode: "author,default",
                 jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
                 debugJvmOpts: " -server -agentlib:jdwp=transport=dt_socket,address=0.0.0.0:5005,suspend=n,server=y",
+                envVars: "",
                 healthCheckPath: ""
             },
             publisher: {
@@ -24,6 +25,7 @@ export class ProjectSettingsService {
                 runmode: "publish,default",
                 jvmOpts: "-server -Xmx4096m -Djava.awt.headless=true",
                 debugJvmOpts: " -server -agentlib:jdwp=transport=dt_socket,address=0.0.0.0:5006,suspend=n,server=y",
+                envVars: "",
                 healthCheckPath: ""
             },
             dispatcher: {
@@ -100,6 +102,7 @@ export class ProjectSettingsService {
                 runmode: settings.author?.runmode || defaults.author.runmode,
                 jvmOpts: settings.author?.jvmOpts || defaults.author.jvmOpts,
                 debugJvmOpts: settings.author?.debugJvmOpts || defaults.author.debugJvmOpts,
+                envVars: settings.author?.envVars || defaults.author.envVars,
                 healthCheckPath: settings.author?.healthCheckPath ?? defaults.author.healthCheckPath
             },
             publisher: {
@@ -107,6 +110,7 @@ export class ProjectSettingsService {
                 runmode: settings.publisher?.runmode || defaults.publisher.runmode,
                 jvmOpts: settings.publisher?.jvmOpts || defaults.publisher.jvmOpts,
                 debugJvmOpts: settings.publisher?.debugJvmOpts || defaults.publisher.debugJvmOpts,
+                envVars: settings.publisher?.envVars || defaults.publisher.envVars,
                 healthCheckPath: settings.publisher?.healthCheckPath ?? defaults.publisher.healthCheckPath
             },
             dispatcher: {
