@@ -177,8 +177,8 @@ contextBridge.exposeInMainWorld(
     runOakCompaction: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('run-oak-compaction', project, instanceType),
 
-    runBackupAll: (project: Project, tarName: string, compress?: boolean) =>
-      ipcRenderer.invoke('run-backup-all', project, tarName, compress),
+    runBackupAll: (project: Project, tarName: string, compress?: boolean, description?: string, selectedInstances?: { author: boolean; publisher: boolean; dispatcher: boolean }) =>
+      ipcRenderer.invoke('run-backup-all', project, tarName, compress, description, selectedInstances),
 
     runRestoreAll: (project: Project, tarName: string) =>
       ipcRenderer.invoke('run-restore-all', project, tarName),

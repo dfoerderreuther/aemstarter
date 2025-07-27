@@ -3,9 +3,20 @@ import path from 'node:path';
 import fs from 'fs';
 import { BackupInfo } from "../../types/BackupInfo";
 import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
+import { AutoStartStopService } from './AutoStartStopService';
+import { AemInstanceManagerRegister } from '../AemInstanceManagerRegister';
+import { DispatcherManagerRegister } from '../DispatcherManagerRegister';
+import { HttpsServiceRegister } from '../HttpsServiceRegister';
+import { AemInstanceManager } from './AemInstanceManager';
+import { DispatcherManager } from './DispatcherManager';
+import { HttpsService } from './HttpsService';
 
 export class BackupService {
     private project: Project;
+    private autoStartStopService: AutoStartStopService;
+    private aemInstanceManager: AemInstanceManager;
+    private dispatcherManager: DispatcherManager;
+    private httpsService: HttpsService;
 
     private static aemBackupPaths = [
         'crx-quickstart'
@@ -25,51 +36,223 @@ export class BackupService {
 
     constructor(project: Project) {
         this.project = project;
+        this.autoStartStopService = new AutoStartStopService(project);
+        this.aemInstanceManager = AemInstanceManagerRegister.getInstanceManager(project);
+        this.dispatcherManager = DispatcherManagerRegister.getManager(project);
+        this.httpsService = HttpsServiceRegister.getService(project);
     }
 
-    public async backup(tarName: string, compress = true): Promise<void> {
+    public async backup(tarName: string, compress = true, description?: string, selectedInstances?: { author: boolean; publisher: boolean; dispatcher: boolean }): Promise<void> {
         tarName = this.fixTarName(tarName, compress);
         
-        for (const instance of ['author', 'publisher'] as const) {
-            await this.compact(instance);
-            await this.deleteLogs(instance);
-        }
+        // Default to all instances if not specified (backwards compatibility)
+        const instances = selectedInstances || { author: true, publisher: true, dispatcher: true };
         
-        const backupFolderPath = this.getBackupFolder();
-        const backupPath = path.join(backupFolderPath, tarName); 
+        // Check which instances are currently running
+        const wasAuthorRunning = instances.author && this.aemInstanceManager.isInstanceRunning('author');
+        const wasPublisherRunning = instances.publisher && this.aemInstanceManager.isInstanceRunning('publisher');
+        const wasDispatcherRunning = instances.dispatcher && this.dispatcherManager.isDispatcherRunning();
+        
+        try {
+            // Stop running instances that will be backed up
+            const stopPromises: Promise<void>[] = [];
+            if (wasAuthorRunning) {
+                stopPromises.push(this.aemInstanceManager.stopInstance('author'));
+            }
+            if (wasPublisherRunning) {
+                stopPromises.push(this.aemInstanceManager.stopInstance('publisher'));
+            }
+            if (wasDispatcherRunning) {
+                stopPromises.push(this.dispatcherManager.stopDispatcher());
+            }
+            if (instances.author || instances.publisher || instances.dispatcher) {
+                if (this.project.settings?.https?.enabled) {
+                    stopPromises.push(this.httpsService.stopSslProxy());
+                }
+            }
+            
+            if (stopPromises.length > 0) {
+                console.log('[Backup] Stopping instances before backup...');
+                await Promise.all(stopPromises);
+                // Wait a bit for processes to fully stop
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            
+            // Compact and delete logs only for selected AEM instances
+            for (const instance of ['author', 'publisher'] as const) {
+                if (instances[instance]) {
+                    await this.compact(instance);
+                    await this.deleteLogs(instance);
+                }
+            }
+            
+            const backupFolderPath = this.getBackupFolder();
+            const backupPath = path.join(backupFolderPath, tarName); 
 
-        const paths = this.getBackupPaths();
+            const paths = this.getBackupPaths(instances);
 
-        const tarCommand = compress ? 'tar -czf' : 'tar -cf';
-        const command = `${tarCommand} "${backupPath}" ${paths.join(' ')}`;
+            const tarCommand = compress ? 'tar -czf' : 'tar -cf';
+            const command = `${tarCommand} "${backupPath}" ${paths.join(' ')}`;
 
-        console.log(`[Backup] Starting backup ${backupPath}`);
-        console.log(`[Backup] Command: ${command}`);
-        await execAsync(command, { cwd: this.project.folderPath });
+            console.log(`[Backup] Starting backup ${backupPath}`);
+            console.log(`[Backup] Command: ${command}`);
+            await execAsync(command, { cwd: this.project.folderPath });
 
-        console.log(`[Backup] Backup done`);
+            // Create metadata JSON file
+            await this.createBackupMetadata(tarName, description, instances, compress);
+
+            console.log(`[Backup] Backup done`);
+        } finally {
+            // Restart instances that were running before backup
+            const startPromises: Promise<void>[] = [];
+            if (wasAuthorRunning) {
+                startPromises.push(this.aemInstanceManager.startInstance('author', 'start'));
+            }
+            if (wasPublisherRunning) {
+                startPromises.push(this.aemInstanceManager.startInstance('publisher', 'start'));
+            }
+            
+            if (startPromises.length > 0) {
+                console.log('[Backup] Restarting instances after backup...');
+                await Promise.all(startPromises);
+                
+                // Wait for AEM instances to start before starting dispatcher and SSL
+                if (wasPublisherRunning) {
+                    const maxWaitTime = 10 * 60 * 1000; // 10 minutes
+                    const checkInterval = 2000; // 2 seconds
+                    const startTime = Date.now();
+
+                    while (Date.now() - startTime < maxWaitTime) {
+                        if (await this.isAEMRunning('publisher')) {
+                            break;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, checkInterval));
+                    }
+                }
+                
+                const additionalStartPromises: Promise<void>[] = [];
+                if (wasDispatcherRunning && !this.dispatcherManager.isDispatcherRunning()) {
+                    additionalStartPromises.push(this.dispatcherManager.startDispatcher());
+                }
+                if (this.project.settings?.https?.enabled && (wasAuthorRunning || wasPublisherRunning || wasDispatcherRunning)) {
+                    additionalStartPromises.push(this.httpsService.startSslProxy());
+                }
+                
+                if (additionalStartPromises.length > 0) {
+                    await Promise.all(additionalStartPromises);
+                }
+            }
+        }
     }
 
     public async restore(tarName: string): Promise<void> {
-        await this.cleanBeforeRestore();
-        const backupFolderPath = this.getBackupFolder();
-        const backupPath = path.join(backupFolderPath, tarName);
+        // Load metadata to determine which instances to restore
+        const metadata = await this.loadBackupMetadata(tarName);
+        const instances = metadata?.selectedInstances || { author: true, publisher: true, dispatcher: true };
+        
+        // Check which instances are currently running
+        const wasAuthorRunning = instances.author && this.aemInstanceManager.isInstanceRunning('author');
+        const wasPublisherRunning = instances.publisher && this.aemInstanceManager.isInstanceRunning('publisher');
+        const wasDispatcherRunning = instances.dispatcher && this.dispatcherManager.isDispatcherRunning();
+        
+        try {
+            // Stop running instances that will be restored
+            const stopPromises: Promise<void>[] = [];
+            if (wasAuthorRunning) {
+                stopPromises.push(this.aemInstanceManager.stopInstance('author'));
+            }
+            if (wasPublisherRunning) {
+                stopPromises.push(this.aemInstanceManager.stopInstance('publisher'));
+            }
+            if (wasDispatcherRunning) {
+                stopPromises.push(this.dispatcherManager.stopDispatcher());
+            }
+            if (instances.author || instances.publisher || instances.dispatcher) {
+                if (this.project.settings?.https?.enabled) {
+                    stopPromises.push(this.httpsService.stopSslProxy());
+                }
+            }
+            
+            if (stopPromises.length > 0) {
+                console.log('[Restore] Stopping instances before restore...');
+                await Promise.all(stopPromises);
+                // Wait a bit for processes to fully stop
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            
+            await this.cleanBeforeRestore(instances);
+            const backupFolderPath = this.getBackupFolder();
+            const backupPath = path.join(backupFolderPath, tarName);
 
-        const tarCommand = tarName.endsWith('.tar.gz') ? 'tar -xzf' : 'tar -xf';
+            const tarCommand = tarName.endsWith('.tar.gz') ? 'tar -xzf' : 'tar -xf';
 
-        const command = `${tarCommand} "${backupPath}"`;
+            const command = `${tarCommand} "${backupPath}"`;
 
-        console.log(`[Restore] Starting restore ${backupPath}`);
-        console.log(`[Restore] Command: ${command}`);
-        await execAsync(command, { cwd: this.project.folderPath });
+            console.log(`[Restore] Starting restore ${backupPath}`);
+            console.log(`[Restore] Command: ${command}`);
+            await execAsync(command, { cwd: this.project.folderPath });
 
-        console.log(`[Restore] Restore done`);
+            console.log(`[Restore] Restore done`);
+        } finally {
+            // Restart instances that were running before restore
+            const startPromises: Promise<void>[] = [];
+            if (wasAuthorRunning) {
+                startPromises.push(this.aemInstanceManager.startInstance('author', 'start'));
+            }
+            if (wasPublisherRunning) {
+                startPromises.push(this.aemInstanceManager.startInstance('publisher', 'start'));
+            }
+            
+            if (startPromises.length > 0) {
+                console.log('[Restore] Restarting instances after restore...');
+                await Promise.all(startPromises);
+                
+                // Wait for AEM instances to start before starting dispatcher and SSL
+                if (wasPublisherRunning) {
+                    const maxWaitTime = 10 * 60 * 1000; // 10 minutes
+                    const checkInterval = 2000; // 2 seconds
+                    const startTime = Date.now();
+
+                    while (Date.now() - startTime < maxWaitTime) {
+                        if (await this.isAEMRunning('publisher')) {
+                            break;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, checkInterval));
+                    }
+                }
+                
+                const additionalStartPromises: Promise<void>[] = [];
+                if (wasDispatcherRunning && !this.dispatcherManager.isDispatcherRunning()) {
+                    additionalStartPromises.push(this.dispatcherManager.startDispatcher());
+                }
+                if (this.project.settings?.https?.enabled && (wasAuthorRunning || wasPublisherRunning || wasDispatcherRunning)) {
+                    additionalStartPromises.push(this.httpsService.startSslProxy());
+                }
+                
+                if (additionalStartPromises.length > 0) {
+                    await Promise.all(additionalStartPromises);
+                }
+            }
+        }
     }
 
     public async deleteBackup(tarName: string): Promise<void> {
         const backupFolderPath = this.getBackupFolder();
         const backupPath = path.join(backupFolderPath, tarName);
+        const metadataPath = path.join(backupFolderPath, tarName + '.json');
+        
+        // Delete the backup file
         fs.unlinkSync(backupPath);
+        
+        // Delete the metadata file if it exists
+        try {
+            if (fs.existsSync(metadataPath)) {
+                fs.unlinkSync(metadataPath);
+                console.log(`[Backup] Metadata deleted: ${metadataPath}`);
+            }
+        } catch (error) {
+            console.log(`[Backup] Could not delete metadata file: ${error}`);
+        }
     }
 
     public async listBackups(): Promise<BackupInfo[]> {
@@ -82,7 +265,7 @@ export class BackupService {
         
         const backupPath = path.join(this.project.folderPath, 'backup');
         
-        const backupInfo = allBackupFiles.map((file) => {
+        const backupInfo = await Promise.all(allBackupFiles.map(async (file) => {
             const filePath = path.join(backupPath, file);
             
             let fileSize = 0;
@@ -96,15 +279,20 @@ export class BackupService {
                 console.log(`[Backup] backup file not found: ${filePath}`);
             }
             
+            // Load metadata
+            const metadata = await this.loadBackupMetadata(file);
+            
             return {
                 name: file,
                 createdDate: createdDate,
                 fileSize: fileSize, 
-                compressed: file.endsWith('.tar.gz')
+                compressed: file.endsWith('.tar.gz'),
+                description: metadata?.description,
+                selectedInstances: metadata?.selectedInstances
             };
-        }).sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
+        }));
         
-        return backupInfo;
+        return backupInfo.sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
     }
 
     private listFiles(): string[] {
@@ -113,16 +301,22 @@ export class BackupService {
         return files.filter(file => file.endsWith('.tar') || file.endsWith('.tar.gz'));
     }
 
-    private getCleanPaths(): string[] {
+    private getCleanPaths(instances: { author: boolean; publisher: boolean; dispatcher: boolean }): string[] {
         const paths = [];
-        paths.push(...BackupService.aemDeleteBeforeRestorePaths.map(p => path.join('author', p)));
-        paths.push(...BackupService.aemDeleteBeforeRestorePaths.map(p => path.join('publisher', p)));
-        paths.push(...BackupService.dispatcherDeleteBeforeRestorePaths.map(p => path.join('dispatcher', p)));
+        if (instances.author) {
+            paths.push(...BackupService.aemDeleteBeforeRestorePaths.map(p => path.join('author', p)));
+        }
+        if (instances.publisher) {
+            paths.push(...BackupService.aemDeleteBeforeRestorePaths.map(p => path.join('publisher', p)));
+        }
+        if (instances.dispatcher) {
+            paths.push(...BackupService.dispatcherDeleteBeforeRestorePaths.map(p => path.join('dispatcher', p)));
+        }
         return paths;
     }
 
-    async cleanBeforeRestore(): Promise<void> {
-        const paths = this.getCleanPaths();
+    private async cleanBeforeRestore(instances: { author: boolean; publisher: boolean; dispatcher: boolean }): Promise<void> {
+        const paths = this.getCleanPaths(instances);
         
         for (const relativePath of paths) {
             const fullPath = path.join(this.project.folderPath, relativePath);
@@ -157,11 +351,17 @@ export class BackupService {
 
 
 
-    private getBackupPaths(): string[] {
+    private getBackupPaths(instances: { author: boolean; publisher: boolean; dispatcher: boolean }): string[] {
         const paths = [];
-        paths.push(...BackupService.aemBackupPaths.map(p => path.join('author', p)));
-        paths.push(...BackupService.aemBackupPaths.map(p => path.join('publisher', p)));
-        paths.push(...BackupService.dispatcherBackupPaths.map(p => path.join('dispatcher', p)));
+        if (instances.author) {
+            paths.push(...BackupService.aemBackupPaths.map(p => path.join('author', p)));
+        }
+        if (instances.publisher) {
+            paths.push(...BackupService.aemBackupPaths.map(p => path.join('publisher', p)));
+        }
+        if (instances.dispatcher) {
+            paths.push(...BackupService.dispatcherBackupPaths.map(p => path.join('dispatcher', p)));
+        }
         return paths;
     }
 
@@ -173,7 +373,7 @@ export class BackupService {
         return backupFolderPath;
     }
 
-    async compact(instance: 'author' | 'publisher'): Promise<void> {
+    public async compact(instance: 'author' | 'publisher'): Promise<void> {
         const instancePath = path.join(this.project.folderPath, instance);
         const oakRunJar = path.join(instancePath, 'oak-run.jar');
 
@@ -214,5 +414,55 @@ export class BackupService {
                 console.error(`[Backup] Error deleting log file ${file}:`, error);
             }
         });
+    }
+
+    private async createBackupMetadata(tarName: string, description?: string, selectedInstances?: { author: boolean; publisher: boolean; dispatcher: boolean }, compressed?: boolean): Promise<void> {
+        const backupFolderPath = this.getBackupFolder();
+        const metadataPath = path.join(backupFolderPath, tarName + '.json');
+        
+        const metadata = {
+            name: tarName,
+            description: description || '',
+            selectedInstances: selectedInstances || { author: true, publisher: true, dispatcher: true },
+            compressed: compressed || false,
+            createdDate: new Date().toISOString()
+        };
+        
+        try {
+            await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+            console.log(`[Backup] Metadata created: ${metadataPath}`);
+        } catch (error) {
+            console.error(`[Backup] Error creating metadata: ${error}`);
+        }
+    }
+
+    private async loadBackupMetadata(tarName: string): Promise<{ description?: string; selectedInstances?: { author: boolean; publisher: boolean; dispatcher: boolean } } | null> {
+        const backupFolderPath = this.getBackupFolder();
+        const metadataPath = path.join(backupFolderPath, tarName + '.json');
+        
+        try {
+            if (fs.existsSync(metadataPath)) {
+                const metadataContent = await fs.promises.readFile(metadataPath, 'utf-8');
+                return JSON.parse(metadataContent);
+            }
+        } catch (error) {
+            console.log(`[Backup] Could not load metadata for ${tarName}: ${error}`);
+        }
+        
+        return null; // Backwards compatibility - assume all instances selected
+    }
+
+    private async isAEMRunning(instanceType: 'author' | 'publisher'): Promise<boolean> {
+        if (!this.aemInstanceManager.isInstanceRunning(instanceType)) return false;
+
+        const port = instanceType === 'author' ? this.project.settings.author.port : this.project.settings.publisher.port;
+        try {
+            const response = await fetch(`http://localhost:${port}/libs/granite/core/content/login.html`, {
+                method: 'HEAD'
+            });
+            return response.status === 200;
+        } catch (error) {
+            return false;
+        }
     }
 }

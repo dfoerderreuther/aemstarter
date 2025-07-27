@@ -862,10 +862,10 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
   }
 });
 
-ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string, compress = true) => {
+ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string, compress = true, description?: string, selectedInstances?: { author: boolean; publisher: boolean; dispatcher: boolean }) => {
   try {
     const backupManager = new BackupService(project);
-    await backupManager.backup(tarName, compress);
+    await backupManager.backup(tarName, compress, description, selectedInstances);
     return true;
   } catch (error) {
     console.error('Error running backup all:', error);  

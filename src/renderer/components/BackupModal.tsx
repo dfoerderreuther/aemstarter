@@ -19,7 +19,8 @@ import {
   Center,
   Paper,
   ScrollArea,
-  Checkbox
+  Checkbox,
+  Textarea
 } from '@mantine/core';
 import { Project } from '../../types/Project';
 import { BackupInfo } from '../../types/BackupInfo';
@@ -39,7 +40,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [backupName, setBackupName] = useState('');
+  const [backupDescription, setBackupDescription] = useState('');
   const [compress, setCompress] = useState(true);
+  const [selectedInstances, setSelectedInstances] = useState({
+    author: true,
+    publisher: true,
+    dispatcher: true
+  });
   const [error, setError] = useState<string | null>(null);
   const [confirmRestore, setConfirmRestore] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -85,8 +92,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
     setCreating(true);
     setError(null);
     try {
-      await window.electronAPI.runBackupAll(project, backupName.trim(), compress);
+      await window.electronAPI.runBackupAll(project, backupName.trim(), compress, backupDescription.trim(), selectedInstances);
       setBackupName('');
+      setBackupDescription('');
       await loadBackups();
     } catch (err: unknown) {
       setError('Failed to create backup');
@@ -137,33 +145,61 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
                 <IconCloudUpload size={20} color="var(--mantine-color-green-6)" />
                 <Title order={4} c="green">Create New Backup</Title>
               </Group>
-              <Group>
-                <TextInput
-                  placeholder="Enter backup name"
-                  value={backupName}
-                  onChange={(e) => setBackupName(e.currentTarget.value)}
-                  disabled={creating}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreate();
-                  }}
-                  style={{ flex: 1 }}
-                />
-                <Button
-                  color="green"
-                  loading={creating}
-                  onClick={handleCreate}
-                  disabled={!backupName.trim()}
-                  leftSection={<IconPlus size={16} />}
-                >
-                  Create Backup
-                </Button>
-              </Group>
+              <TextInput
+                placeholder="Enter backup name"
+                value={backupName}
+                onChange={(e) => setBackupName(e.currentTarget.value)}
+                disabled={creating}
+                label="Backup Name"
+                required
+              />
+              <Textarea
+                placeholder="Enter backup description (optional)"
+                value={backupDescription}
+                onChange={(e) => setBackupDescription(e.currentTarget.value)}
+                disabled={creating}
+                label="Description"
+                rows={3}
+              />
+              <Stack gap="xs">
+                <Text size="sm" fw={500}>Include Instances:</Text>
+                <Group gap="md">
+                  <Checkbox
+                    label="Author"
+                    checked={selectedInstances.author}
+                    onChange={(event) => setSelectedInstances(prev => ({ ...prev, author: event?.currentTarget?.checked ?? false }))}
+                    disabled={creating}
+                  />
+                  <Checkbox
+                    label="Publisher"
+                    checked={selectedInstances.publisher}
+                    onChange={(event) => setSelectedInstances(prev => ({ ...prev, publisher: event?.currentTarget?.checked ?? false }))}
+                    disabled={creating}
+                  />
+                  <Checkbox
+                    label="Dispatcher"
+                    checked={selectedInstances.dispatcher}
+                    onChange={(event) => setSelectedInstances(prev => ({ ...prev, dispatcher: event?.currentTarget?.checked ?? false }))}
+                    disabled={creating}
+                  />
+                </Group>
+              </Stack>
               <Checkbox
                 label="Compress backup (slower)"
                 checked={compress}
                 onChange={(event) => setCompress(event.currentTarget.checked)}
                 disabled={creating}
               />
+              <Button
+                color="green"
+                loading={creating}
+                onClick={handleCreate}
+                disabled={!backupName.trim() || (!selectedInstances.author && !selectedInstances.publisher && !selectedInstances.dispatcher)}
+                leftSection={<IconPlus size={16} />}
+                fullWidth
+              >
+                Create Backup
+              </Button>
             </Stack>
           </Card>
 
@@ -199,9 +235,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
                   <Table striped highlightOnHover withTableBorder={false} verticalSpacing="md">
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th style={{ width: '35%' }}>Backup Name</Table.Th>
-                        <Table.Th style={{ width: '25%' }}>Created Date</Table.Th>
-                        <Table.Th style={{ width: '20%' }}>File Size</Table.Th>
+                        <Table.Th style={{ width: '30%' }}>Backup Name</Table.Th>
+                        <Table.Th style={{ width: '20%' }}>Created Date</Table.Th>
+                        <Table.Th style={{ width: '15%' }}>File Size</Table.Th>
+                        <Table.Th style={{ width: '15%' }}>Instances</Table.Th>
                         <Table.Th style={{ width: '20%', textAlign: 'center' }}>Actions</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
@@ -215,6 +252,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
                               </ActionIcon>
                               <Box>
                                 <Text fw={500} size="sm">{backup.name}</Text>
+                                {backup.description && (
+                                  <Text size="xs" c="dimmed" style={{ maxWidth: '200px' }} truncate>
+                                    {backup.description}
+                                  </Text>
+                                )}
                               </Box>
                             </Group>
                           </Table.Td>
@@ -236,29 +278,44 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
                             </Group>
                           </Table.Td>
                           <Table.Td>
+                            <Group gap="xs">
+                              {backup.selectedInstances ? (
+                                <>
+                                  {backup.selectedInstances.author && <Badge variant="light" color="blue" size="xs">A</Badge>}
+                                  {backup.selectedInstances.publisher && <Badge variant="light" color="green" size="xs">P</Badge>}
+                                  {backup.selectedInstances.dispatcher && <Badge variant="light" color="orange" size="xs">D</Badge>}
+                                </>
+                              ) : (
+                                <Badge variant="light" color="gray" size="xs">All</Badge>
+                              )}
+                            </Group>
+                          </Table.Td>
+                          <Table.Td>
                             <Center>
-                              <Button
-                                size="xs"
-                                color="blue"
-                                leftSection={<IconRestore size={14} />}
-                                loading={restoring === backup.name}
-                                disabled={restoring === backup.name}
-                                onClick={() => setConfirmRestore(backup.name)}
-                                variant="light"
-                              >
-                                Restore
-                              </Button>
-                              <Button
-                                size="xs"
-                                color="red"
-                                leftSection={<IconTrash size={14} />}
-                                loading={deleting === backup.name}
-                                disabled={deleting === backup.name}
-                                onClick={() => setConfirmDelete(backup.name)}
-                                variant="light"
-                              >
-                                Delete
-                              </Button>
+                              <Group gap="xs">
+                                <Button
+                                  size="xs"
+                                  color="blue"
+                                  leftSection={<IconRestore size={14} />}
+                                  loading={restoring === backup.name}
+                                  disabled={restoring === backup.name}
+                                  onClick={() => setConfirmRestore(backup.name)}
+                                  variant="light"
+                                >
+                                  Restore
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  color="red"
+                                  leftSection={<IconTrash size={14} />}
+                                  loading={deleting === backup.name}
+                                  disabled={deleting === backup.name}
+                                  onClick={() => setConfirmDelete(backup.name)}
+                                  variant="light"
+                                >
+                                  Delete
+                                </Button>
+                              </Group>
                             </Center>
                           </Table.Td>
                         </Table.Tr>
