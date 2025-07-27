@@ -20,7 +20,8 @@ import {
   Paper,
   ScrollArea,
   Checkbox,
-  Textarea
+  Textarea,
+  Tooltip
 } from '@mantine/core';
 import { Project } from '../../types/Project';
 import { BackupInfo } from '../../types/BackupInfo';
@@ -145,51 +146,64 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
                 <IconCloudUpload size={20} color="var(--mantine-color-green-6)" />
                 <Title order={4} c="green">Create New Backup</Title>
               </Group>
-              <TextInput
-                placeholder="Enter backup name"
-                value={backupName}
-                onChange={(e) => setBackupName(e.currentTarget.value)}
-                disabled={creating}
-                label="Backup Name"
-                required
-              />
-              <Textarea
-                placeholder="Enter backup description (optional)"
-                value={backupDescription}
-                onChange={(e) => setBackupDescription(e.currentTarget.value)}
-                disabled={creating}
-                label="Description"
-                rows={3}
-              />
-              <Stack gap="xs">
-                <Text size="sm" fw={500}>Include Instances:</Text>
-                <Group gap="md">
-                  <Checkbox
-                    label="Author"
-                    checked={selectedInstances.author}
-                    onChange={(event) => setSelectedInstances(prev => ({ ...prev, author: event?.currentTarget?.checked ?? false }))}
+              <Group align="flex-start" gap="md">
+                <Box style={{ flex: 1 }}>
+                  <TextInput
+                    placeholder="Enter backup name"
+                    value={backupName}
+                    onChange={(e) => setBackupName(e.currentTarget.value)}
                     disabled={creating}
+                    label="Backup Name"
+                    required
                   />
+                </Box>
+                <Box style={{ flex: 1 }}>
                   <Checkbox
-                    label="Publisher"
-                    checked={selectedInstances.publisher}
-                    onChange={(event) => setSelectedInstances(prev => ({ ...prev, publisher: event?.currentTarget?.checked ?? false }))}
+                    label="Compress backup (slower)"
+                    checked={compress}
+                    onChange={(event) => setCompress(event.currentTarget.checked)}
                     disabled={creating}
+                    style={{ marginTop: '24px' }}
                   />
-                  <Checkbox
-                    label="Dispatcher"
-                    checked={selectedInstances.dispatcher}
-                    onChange={(event) => setSelectedInstances(prev => ({ ...prev, dispatcher: event?.currentTarget?.checked ?? false }))}
+                </Box>
+              </Group>
+              <Group align="flex-start" gap="md">
+                <Box style={{ flex: 1 }}>
+                  <Textarea
+                    placeholder="Enter backup description (optional)"
+                    value={backupDescription}
+                    onChange={(e) => setBackupDescription(e.currentTarget.value)}
                     disabled={creating}
+                    label="Description"
+                    rows={3}
                   />
-                </Group>
-              </Stack>
-              <Checkbox
-                label="Compress backup (slower)"
-                checked={compress}
-                onChange={(event) => setCompress(event.currentTarget.checked)}
-                disabled={creating}
-              />
+                </Box>
+                <Box style={{ flex: 1 }}>
+                  <Stack gap="xs">
+                    <Text size="sm" fw={500}>Include Instances:</Text>
+                    <Stack gap="sm">
+                      <Checkbox
+                        label="Author"
+                        checked={selectedInstances.author}
+                        onChange={(event) => setSelectedInstances(prev => ({ ...prev, author: event?.currentTarget?.checked ?? false }))}
+                        disabled={creating}
+                      />
+                      <Checkbox
+                        label="Publisher"
+                        checked={selectedInstances.publisher}
+                        onChange={(event) => setSelectedInstances(prev => ({ ...prev, publisher: event?.currentTarget?.checked ?? false }))}
+                        disabled={creating}
+                      />
+                      <Checkbox
+                        label="Dispatcher"
+                        checked={selectedInstances.dispatcher}
+                        onChange={(event) => setSelectedInstances(prev => ({ ...prev, dispatcher: event?.currentTarget?.checked ?? false }))}
+                        disabled={creating}
+                      />
+                    </Stack>
+                  </Stack>
+                </Box>
+              </Group>
               <Button
                 color="green"
                 loading={creating}
@@ -253,7 +267,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
                               <Box>
                                 <Text fw={500} size="sm">{backup.name}</Text>
                                 {backup.description && (
-                                  <Text size="xs" c="dimmed" style={{ maxWidth: '200px' }} truncate>
+                                  <Text size="xs" c="dimmed" style={{ maxWidth: '200px', whiteSpace: 'pre-wrap' }}>
                                     {backup.description}
                                   </Text>
                                 )}
@@ -293,17 +307,19 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
                           <Table.Td>
                             <Center>
                               <Group gap="xs">
-                                <Button
-                                  size="xs"
-                                  color="blue"
-                                  leftSection={<IconRestore size={14} />}
-                                  loading={restoring === backup.name}
-                                  disabled={restoring === backup.name}
-                                  onClick={() => setConfirmRestore(backup.name)}
-                                  variant="light"
-                                >
-                                  Restore
-                                </Button>
+                                <Tooltip label="Restore backup (will shutdown and restart instances if running)">
+                                  <Button
+                                    size="xs"
+                                    color="blue"
+                                    leftSection={<IconRestore size={14} />}
+                                    loading={restoring === backup.name}
+                                    disabled={restoring === backup.name}
+                                    onClick={() => setConfirmRestore(backup.name)}
+                                    variant="light"
+                                  >
+                                    Restore
+                                  </Button>
+                                </Tooltip>
                                 <Button
                                   size="xs"
                                   color="red"
