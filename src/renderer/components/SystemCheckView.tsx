@@ -9,9 +9,10 @@ import {
   Alert,
   Indicator,
   Modal,
-  Grid
+  Grid,
+  Tooltip
 } from '@mantine/core';
-import { IconRefresh, IconCheck, IconX, IconAlertCircle, IconSettings, IconSkull } from '@tabler/icons-react';
+import { IconRefresh, IconCheck, IconX, IconAlertCircle, IconSettings, IconSkull, IconInfoCircle } from '@tabler/icons-react';
 import { SystemCheckResults } from '../../types/SystemCheckResults';
 import { Project, ProjectSettings } from '../../types/Project';
 
@@ -65,6 +66,71 @@ const SystemCheckItem: React.FC<SystemCheckItemProps> = ({ label, secondaryLabel
       >
         {statusValue}
       </Badge>
+    </Group>
+  );
+};
+
+interface DetectedJdksItemProps {
+  jdks: string[];
+}
+
+const DetectedJdksItem: React.FC<DetectedJdksItemProps> = ({ jdks }) => {
+  // Helper function to extract JDK version from path
+  const extractJdkVersion = (jdkPath: string): string => {
+    // Handle Mac paths like: /Library/Java/JavaVirtualMachines/jdk-20.jdk/Contents/Home
+    const macMatch = jdkPath.match(/jdk-(\d+)\.jdk/);
+    if (macMatch) {
+      return `jdk-${macMatch[1]}`;
+    }
+    
+    // Handle Linux paths like: /usr/lib/jvm/java-11-openjdk-amd64
+    const linuxMatch = jdkPath.match(/java-(\d+)/);
+    if (linuxMatch) {
+      return `jdk-${linuxMatch[1]}`;
+    }
+    
+    // Handle other Linux paths like: /usr/java/jdk-17
+    const otherMatch = jdkPath.match(/jdk-(\d+)/);
+    if (otherMatch) {
+      return `jdk-${otherMatch[1]}`;
+    }
+    
+    // Fallback: return the full path if no version pattern is found
+    return jdkPath;
+  };
+
+  if (jdks.length === 0) {
+    return (
+      <Group justify="space-between" p="sm" style={{ backgroundColor: 'var(--mantine-color-dark-6)', borderRadius: 'var(--mantine-radius-sm)' }}>
+        <Group gap="xs">
+          <IconInfoCircle size={16} color="var(--mantine-color-yellow-6)" />
+          <div>
+            <Text fw={500}>Detected JDKs</Text>
+            <Text size="xs" c="dimmed">No JDKs detected. Manual selection<br /> in project settings required</Text>
+          </div>
+        </Group>
+      </Group>
+    );
+  }
+
+  return (
+    <Group justify="space-between" p="sm" style={{ backgroundColor: 'var(--mantine-color-dark-6)', borderRadius: 'var(--mantine-radius-sm)' }}>
+      <Group gap="xs">
+        <IconCheck size={16} color="var(--mantine-color-green-6)" />
+        <div>
+          <Text fw={500}>Detected JDKs</Text>
+          <Text size="xs" c="dimmed">{jdks.length} installation(s) found</Text>
+        </div>
+      </Group>
+      <Group gap="xs">
+        {jdks.map((jdk, index) => (
+          <Tooltip key={index} label={jdk} multiline w={400}>
+            <Badge color="green" variant="light" size="sm">
+              {extractJdkVersion(jdk)}
+            </Badge>
+          </Tooltip>
+        ))}
+      </Group>
     </Group>
   );
 };
@@ -322,6 +388,7 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, stric
                   <Stack gap="xs">
                     <SystemCheckItem label="Java" status={results.javaAvailable} />
                     <SystemCheckItem label="Java Version" status={results.javaVersion} isVersion />
+                    <DetectedJdksItem jdks={results.detectedJdks} />
                     <SystemCheckItem label="Docker" status={results.dockerAvailable} />
                     <SystemCheckItem label="Docker Daemon" status={results.dockerDaemonRunning} />
                     <SystemCheckItem label="Docker Version" status={results.dockerVersion} isVersion />

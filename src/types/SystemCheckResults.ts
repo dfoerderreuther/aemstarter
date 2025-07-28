@@ -1,6 +1,7 @@
 export interface SystemCheckResults {
     javaAvailable: boolean;
     javaVersion: string;
+    detectedJdks: string[];
     dockerAvailable: boolean;
     dockerDaemonRunning: boolean;
     dockerVersion: string;

@@ -4,6 +4,7 @@ import { SystemCheckResults } from '../../types/SystemCheckResults';
 import { EditorAvailableResults } from '../../types/EditorAvailableResults';
 import { ProjectSettings } from '../../types/Project';
 import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
+import { JavaService } from './JavaService';
 
 
 export class SystemCheck {
@@ -11,6 +12,7 @@ export class SystemCheck {
     async runAllChecks(settings: ProjectSettings): Promise<SystemCheckResults> {
         const javaAvailable = await this.checkJavaAvailability();
         const javaVersion = await this.checkJavaVersion();
+        const detectedJdks = await this.checkDetectedJdks();
         const dockerAvailable = await this.checkDockerAvailability();
         const dockerDaemonRunning = await this.checkDockerDaemonRunning();
         const dockerVersion = await this.checkDockerVersion();
@@ -24,6 +26,7 @@ export class SystemCheck {
         return {
             javaAvailable,
             javaVersion,
+            detectedJdks,
             dockerAvailable,
             dockerDaemonRunning,
             dockerVersion,
@@ -72,6 +75,16 @@ export class SystemCheck {
             return versionOutput.split('\n')[0].trim();
         } catch (error) {
             return 'Not available';
+        }
+    }
+
+    private async checkDetectedJdks(): Promise<string[]> {
+        try {
+            const javaService = new JavaService();
+            return await javaService.getJavaHomePaths();
+        } catch (error) {
+            console.error('Failed to detect JDKs:', error);
+            return [];
         }
     }
 
