@@ -469,6 +469,7 @@ export class AemInstanceManager {
       let envVarsObj: { [key: string]: string } = {};
       if (instanceSettings.envVars) {
         envVarsObj = this.parseEnvVars(instanceSettings.envVars);
+        console.log('[AemInstanceManager] Environment variables:', envVarsObj);
       }
 
       const env: { [key: string]: string | undefined } = {
