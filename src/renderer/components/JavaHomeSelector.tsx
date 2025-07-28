@@ -54,6 +54,7 @@ export const JavaHomeSelector: React.FC<JavaHomeSelectorProps> = ({
         description="Path to the Java home directory"
         value={value}
         style={{ flex: 1 }}
+        required
         onChange={(event) => onChange(event.currentTarget.value)}
       />
       {javaPathsError ? (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Stack, TextInput, Group, Button, Anchor, Checkbox, ActionIcon, Text } from '@mantine/core';
+import { Modal, Stack, TextInput, Group, Button, Anchor, Checkbox, ActionIcon, Text, Paper, Space } from '@mantine/core';
 import { IconFolder, IconAlertTriangle } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { SystemCheckView } from './SystemCheckView';
@@ -235,14 +235,19 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     <Modal
       opened={opened}
       onClose={handleClose}
-      title="Create New Project"
+              title={
+          <Group gap="sm" justify="space-between" style={{ width: '100%' }}>
+            <Text>Create New Project</Text>
+            <SystemCheckView strict={true} />
+          </Group>
+        }
       centered
       size="lg"
       overlayProps={{ opacity: 0.55, blur: 3 }}
     >
       <Stack gap="md">
-        <SystemCheckView strict={true} />
-                  <TextInput
+        <Group gap="md" align="end">
+          <TextInput
             label="Project Name"
             placeholder="Enter project name"
             value={newProjectName}
@@ -251,27 +256,27 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             required
             autoFocus
             disabled={creating}
+            style={{ flex: 1 }}
           />
-          <Group gap="xs" align="end">
-            <TextInput
-              label="Project Folder"
-              description="Select the folder where your project will be created"
-              placeholder="Select project folder"
-              value={projectPath}
-              onChange={(e) => setProjectPath(e.target.value)}
-              style={{ flex: 1 }}
-              required
-              disabled={creating}
-            />
-            <ActionIcon
-              variant="filled"
-              onClick={handleSelectProjectPath}
-              size="lg"
-              disabled={creating}
-            >
-              <IconFolder size={16} />
-            </ActionIcon>
-          </Group>
+          <TextInput
+            label="Project Folder"
+            description="Select the folder where your project will be created"
+            placeholder="Select project folder"
+            value={projectPath}
+            onChange={(e) => setProjectPath(e.target.value)}
+            style={{ flex: 1 }}
+            required
+            disabled={creating}
+          />
+          <ActionIcon
+            variant="filled"
+            onClick={handleSelectProjectPath}
+            size="lg"
+            disabled={creating}
+          >
+            <IconFolder size={16} />
+          </ActionIcon>
+        </Group>
           {pathWarnings.length > 0 && (
             <Group gap="xs" align="center">
               <IconAlertTriangle size={14} color={pathIssuesAreBlockers ? "red" : "orange"} />
@@ -281,119 +286,124 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             </Group>
           )}
         <JavaHomeSelector value={javaHome} onChange={(value: string) => setJavaHome(value)} />
-        <Group>
-          <Checkbox
-            label="Classic AEM Version"
-            checked={classic}
-            onChange={(e) => handleClassicChange(e.target.checked)}
-            description="Use for older AEM versions (AEM 6.x and earlier)"
-          />
-        </Group>
-        <Group>
-          <TextInput
-            label="AEM SDK"
-            placeholder="Select AEM SDK zip file"
-            value={getFileName(aemSdkPath)}
-            readOnly
-            style={{ flex: 1 }}
-            disabled={creating}
-            title={aemSdkPath} // Show full path on hover
-          />
-          <Button 
-            onClick={handleSelectAemSdk}
-            disabled={creating}
-            style={{ marginTop: 'auto' }}
-          >
-            Browse
-          </Button>
-        </Group>
-        <Anchor
-          onClick={() => window.electronAPI.openUrl("https://experience.adobe.com/#/downloads/content/software-distribution/en/aemcloud.html?fulltext=AEM*+SDK*&1_group.propertyvalues.property=.%2Fjcr%3Acontent%2Fmetadata%2Fdc%3AsoftwareType&1_group.propertyvalues.operation=equals&1_group.propertyvalues.0_values=software-type%3Atooling&orderby=%40jcr%3Acontent%2Fjcr%3AlastModified&orderby.sort=desc&layout=list&p.offset=0&p.limit=24")}
-          size="sm"
-          style={{ marginTop: '-8px', marginBottom: '8px', cursor: 'pointer' }}
-        >
-          Download AEM SDK from experience.adobe.com
-        </Anchor>
-        {classic && (
-          <>
+        
+        <Paper p="md" withBorder>
+          <Stack gap="md">
             <Group>
               <TextInput
-                label="Classic Quickstart JAR"
-                placeholder="Select classic AEM quickstart JAR file"
-                value={getFileName(classicQuickstartPath)}
+                label="AEM SDK"
+                placeholder="Select AEM SDK zip file"
+                value={getFileName(aemSdkPath)}
                 readOnly
                 style={{ flex: 1 }}
                 disabled={creating}
-                title={classicQuickstartPath} // Show full path on hover
-                required
+                title={aemSdkPath} // Show full path on hover
               />
               <Button 
-                onClick={handleSelectClassicQuickstart}
+                onClick={handleSelectAemSdk}
                 disabled={creating}
                 style={{ marginTop: 'auto' }}
               >
                 Browse
               </Button>
-              {classicQuickstartPath && (
-                <Button 
-                  onClick={handleClearClassicQuickstart}
-                  disabled={creating}
-                  variant="outline"
-                  color="red"
-                  style={{ marginTop: 'auto' }}
-                >
-                  ✕
-                </Button>
-              )}
             </Group>
             <Anchor
-              onClick={() => window.electronAPI.openUrl("https://experience.adobe.com/#/downloads/content/software-distribution/en/aem.html?fulltext=quickstart*&orderby=%40jcr%3Acontent%2Fjcr%3AlastModified&orderby.sort=desc&layout=list&p.offset=0&p.limit=4")}
+              onClick={() => window.electronAPI.openUrl("https://experience.adobe.com/#/downloads/content/software-distribution/en/aemcloud.html?fulltext=AEM*+SDK*&1_group.propertyvalues.property=.%2Fjcr%3Acontent%2Fmetadata%2Fdc%3AsoftwareType&1_group.propertyvalues.operation=equals&1_group.propertyvalues.0_values=software-type%3Atooling&orderby=%40jcr%3Acontent%2Fjcr%3AlastModified&orderby.sort=desc&layout=list&p.offset=0&p.limit=24")}
               size="sm"
               style={{ marginTop: '-8px', marginBottom: '8px', cursor: 'pointer' }}
             >
-              Download Classic AEM Quickstart from experience.adobe.com
+              Download AEM SDK from experience.adobe.com
             </Anchor>
-            <Group>
-              <TextInput
-                label="License File"
-                placeholder="Select license properties file"
-                value={getFileName(licensePath)}
-                readOnly
-                style={{ flex: 1 }}
-                disabled={creating}
-                title={licensePath} // Show full path on hover
-                required
-              />
-              <Button 
-                onClick={handleSelectLicense}
-                disabled={creating}
-                style={{ marginTop: 'auto' }}
-              >
-                Browse
-              </Button>
-              {licensePath && (
-                <Button 
-                  onClick={handleClearLicense}
-                  disabled={creating}
-                  variant="outline"
-                  color="red"
-                  style={{ marginTop: 'auto' }}
+            
+                        <Checkbox
+              label="Classic AEM Version"
+              checked={classic}
+              onChange={(e) => handleClassicChange(e.target.checked)}
+              description="Use for older AEM versions (AEM 6.x and earlier)"
+            />
+            
+            {classic && (
+              <>
+                <Group>
+                  <TextInput
+                    label="Classic Quickstart JAR"
+                    placeholder="Select classic AEM quickstart JAR file"
+                    value={getFileName(classicQuickstartPath)}
+                    readOnly
+                    style={{ flex: 1 }}
+                    disabled={creating}
+                    title={classicQuickstartPath} // Show full path on hover
+                    required
+                  />
+                  <Button 
+                    onClick={handleSelectClassicQuickstart}
+                    disabled={creating}
+                    style={{ marginTop: 'auto' }}
+                  >
+                    Browse
+                  </Button>
+                  {classicQuickstartPath && (
+                    <Button 
+                      onClick={handleClearClassicQuickstart}
+                      disabled={creating}
+                      variant="outline"
+                      color="red"
+                      style={{ marginTop: 'auto' }}
+                    >
+                      ✕
+                    </Button>
+                  )}
+                </Group>
+                <Anchor
+                  onClick={() => window.electronAPI.openUrl("https://experience.adobe.com/#/downloads/content/software-distribution/en/aem.html?fulltext=quickstart*&orderby=%40jcr%3Acontent%2Fjcr%3AlastModified&orderby.sort=desc&layout=list&p.offset=0&p.limit=4")}
+                  size="sm"
+                  style={{ marginTop: '-8px', marginBottom: '8px', cursor: 'pointer' }}
                 >
-                  ✕
-                </Button>
-              )}
-            </Group>
-          </>
-        )}
-        <Group>
-          <Checkbox
-            label="Run first start and initial setup"
-            checked={runFirstStartSetup}
-            onChange={(e) => setRunFirstStartSetup(e.target.checked)}
-            description="This will start all instances, configure replication between Author, Publisher, and Dispatcher instances, load matching oak-run.jar and install the WKND packages."
-            disabled={classic}
-          />
-        </Group>
+                  Download Classic AEM Quickstart from experience.adobe.com
+                </Anchor>
+                <Group>
+                  <TextInput
+                    label="License File"
+                    placeholder="Select license properties file"
+                    value={getFileName(licensePath)}
+                    readOnly
+                    style={{ flex: 1 }}
+                    disabled={creating}
+                    title={licensePath} // Show full path on hover
+                    required
+                  />
+                  <Button 
+                    onClick={handleSelectLicense}
+                    disabled={creating}
+                    style={{ marginTop: 'auto' }}
+                  >
+                    Browse
+                  </Button>
+                  {licensePath && (
+                    <Button 
+                      onClick={handleClearLicense}
+                      disabled={creating}
+                      variant="outline"
+                      color="red"
+                      style={{ marginTop: 'auto' }}
+                    >
+                      ✕
+                    </Button>
+                  )}
+                </Group>
+              </>
+            )}
+            
+            <Checkbox
+              label="Run first start and initial setup"
+              checked={runFirstStartSetup}
+              onChange={(e) => setRunFirstStartSetup(e.target.checked)}
+              description="This will start all instances, configure replication between Author, Publisher, and Dispatcher instances, load matching oak-run.jar and install the WKND packages."
+              disabled={classic}
+            />
+          </Stack>
+        </Paper>
+        
         <Group justify="flex-end">
           <Button 
             variant="default" 
