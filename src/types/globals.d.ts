@@ -2,6 +2,7 @@ import { Project, ProjectSettings } from './Project';
 import { BackupInfo } from './BackupInfo';
 import { SystemCheckResults } from './SystemCheckResults';
 import { EditorAvailableResults } from './EditorAvailableResults';
+import { InstanceStartData } from './InstanceStartData';
 
 declare global {
   interface Window {
@@ -98,6 +99,7 @@ declare global {
       
       getAemInstancePid: (project: Project, instanceType: 'author' | 'publisher') => Promise<number | null>;
       getAemInstanceDebugStatus: (project: Project, instanceType: 'author' | 'publisher') => Promise<boolean>;
+      getAemInstanceStartData: (project: Project, instanceType: 'author' | 'publisher') => Promise<InstanceStartData | null>;
       
       getAvailableLogFiles: (project: Project, instanceType: 'author' | 'publisher') => Promise<string[]>;
       

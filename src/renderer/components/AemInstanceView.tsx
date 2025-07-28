@@ -6,9 +6,10 @@ import { LogTerminal, LogTerminalRef } from './LogTerminal';
 import { Screenshot } from './Screenshot';
 import { OakRunMenu } from './OakRunMenu';
 import { PackageMenu } from './PackageMenu';
-import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser, IconExternalLink } from '@tabler/icons-react';
+import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser, IconExternalLink, IconInfoCircle } from '@tabler/icons-react';
 import { SettingsMenu } from "./SettingsMenu";
 import { LogFileSelector } from './LogFileSelector';
+import { AemInstanceInfo } from './AemInstanceInfo';
 
 interface AemInstanceViewProps {
   instance: 'author' | 'publisher';
@@ -31,6 +32,8 @@ export const AemInstanceView = ({
   const [availableLogFiles, setAvailableLogFiles] = useState<string[]>(['error.log']);
   const [selectedLogFiles, setSelectedLogFiles] = useState<string[]>(['error.log']);
   const [filterText, setFilterText] = useState('');
+  const [infoModalOpened, setInfoModalOpened] = useState(false);
+  const [instanceStartData, setInstanceStartData] = useState<any>(null);
 
   const [terminalFontSize, setTerminalFontSize] = useState(9);
   const hasShownAemOutputRef = useRef(false);
@@ -262,6 +265,17 @@ export const AemInstanceView = ({
     if (terminalRef.current) {
       terminalRef.current.clear();
       hasShownAemOutputRef.current = false;
+    }
+  };
+
+  // Handle opening info modal
+  const handleOpenInfo = async () => {
+    try {
+      const startData = await window.electronAPI.getAemInstanceStartData(project, instance);
+      setInstanceStartData(startData);
+      setInfoModalOpened(true);
+    } catch (error) {
+      console.error('Error fetching instance start data:', error);
     }
   };
 
@@ -527,6 +541,17 @@ export const AemInstanceView = ({
                       instance={instance}
                       isRunning={isRunning}
                     />
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      onClick={handleOpenInfo}
+                      leftSection={<IconInfoCircle size={12} />}
+                      style={buttonStyle}
+                      styles={buttonStyles}
+                      disabled={!isRunning}
+                    >
+                      Info
+                    </Button>
                   </Stack>
                 </Box>
               </Box>
@@ -554,6 +579,14 @@ export const AemInstanceView = ({
           </Paper>
         </Box>
       </Stack>
+      
+      {/* Info Modal */}
+      <AemInstanceInfo
+        opened={infoModalOpened}
+        onClose={() => setInfoModalOpened(false)}
+        instanceType={instance}
+        startData={instanceStartData}
+      />
     </>
   );
 };

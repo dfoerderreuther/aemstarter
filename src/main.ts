@@ -534,6 +534,36 @@ ipcMain.handle('get-aem-instance-debug-status', (_, project: Project, instanceTy
   return manager.isInstanceInDebugMode(instanceType);
 });
 
+ipcMain.handle('get-aem-instance-start-data', (_, project: Project, instanceType: 'author' | 'publisher') => {
+  const manager = AemInstanceManagerRegister.getInstanceManager(project);
+  const startData = manager.getInstanceStartData(instanceType);
+    
+  if (!startData) {
+    console.log(`[main] No start data found for ${instanceType}`);
+    return null;
+  }
+  
+  // Serialize the data for IPC transmission
+  const serializedData = {
+    ...startData,
+    timestamp: startData.timestamp.toISOString(), // Convert Date to ISO string
+    usedProcessEnv: Object.fromEntries(
+      Object.entries(startData.usedProcessEnv || {}).map(([key, value]) => [
+        key, 
+        value === undefined ? null : String(value)
+      ])
+    ),
+    envVarsObj: Object.fromEntries(
+      Object.entries(startData.envVarsObj || {}).map(([key, value]) => [
+        key, 
+        String(value)
+      ])
+    )
+  };
+  
+  return serializedData;
+});
+
 ipcMain.handle('get-available-log-files', (_, project: Project, instanceType: 'author' | 'publisher') => {
   const manager = AemInstanceManagerRegister.getInstanceManager(project);
   return manager.getAvailableLogFiles(instanceType);

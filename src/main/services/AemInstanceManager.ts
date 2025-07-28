@@ -1,5 +1,6 @@
 import { ChildProcess, spawn, exec } from 'child_process';
 import { Project } from '../../types/Project';
+import { InstanceStartData } from '../../types/InstanceStartData';
 import path from 'path';
 import fs from 'fs';
 import { BrowserWindow } from 'electron';
@@ -22,6 +23,7 @@ export class AemInstanceManager {
   private project: Project;
   private logBuffers: Map<string, string> = new Map(); // Store incomplete lines
   private healthChecker: AemHealthChecker;
+  private startData: Map<string, InstanceStartData> = new Map(); // Store start data per instance
 
   constructor(project: Project) {
     this.project = project;
@@ -457,35 +459,33 @@ export class AemInstanceManager {
     const hasJavaHome = javaHome && javaHome.trim() !== '';
 
     let aemProcess: ChildProcess;
-
+    let envVarsObj: { [key: string]: string } = {};
+    if (instanceSettings.envVars) {
+      envVarsObj = this.parseEnvVars(instanceSettings.envVars);
+    } 
+    console.log('[AemInstanceManager] Environment variables:', envVarsObj);
+    
     // Use crx-quickstart/bin/start script
     const startScript = process.platform === 'win32' ? 'start.bat' : 'start';
     const startScriptPath = path.join(crxQuickstartDir, 'bin', startScript);
+    const startWithStartScript: boolean = hasCrxQuickstart && fs.existsSync(startScriptPath) && process.platform !== 'win32';
+
+    const env: { [key: string]: string | undefined } = {
+      ...process.env,
+      ...envVarsObj,
+      CQ_PORT: port.toString(),
+      CQ_RUNMODE: runmode,
+      CQ_JVM_OPTS: jvmOpts,
+    };
+
+    // Set JAVA_HOME if available
+    if (hasJavaHome) {
+      env.JAVA_HOME = javaHome;
+      console.log(`[AemInstanceManager] Using JAVA_HOME from project settings: ${javaHome}`);
+    }
 
     // can't use start script on windows as it goes crazy with opening multiple cmd windows
-    if (hasCrxQuickstart && fs.existsSync(startScriptPath) && process.platform !== 'win32') {
-      console.log('[AemInstanceManager] ### Starting AEM instance with crx-quickstart ###');
-      // Parse environment variables string into object
-      let envVarsObj: { [key: string]: string } = {};
-      if (instanceSettings.envVars) {
-        envVarsObj = this.parseEnvVars(instanceSettings.envVars);
-        console.log('[AemInstanceManager] Environment variables:', envVarsObj);
-      }
-
-      const env: { [key: string]: string | undefined } = {
-        ...process.env,
-        ...envVarsObj,
-        CQ_PORT: port.toString(),
-        CQ_RUNMODE: runmode,
-        CQ_JVM_OPTS: jvmOpts,
-      };
-
-      // Set JAVA_HOME if available
-      if (hasJavaHome) {
-        env.JAVA_HOME = javaHome;
-        console.log(`[AemInstanceManager] Using JAVA_HOME from project settings: ${javaHome}`);
-      }
-
+    if (startWithStartScript) {
       console.log('[AemInstanceManager] Starting AEM instance with start script:', startScriptPath);
       console.log('[AemInstanceManager] Environment variables:', env);
       console.log('[AemInstanceManager] Java options:', jvmOpts);
@@ -497,8 +497,12 @@ export class AemInstanceManager {
         detached: true
 
       });
+
     } else {
       console.log(`[AemInstanceManager] Start script not found at ${startScriptPath} or win32, falling back to quickstart.jar`);
+      console.log('[AemInstanceManager] Environment variables:', env);
+      console.log('[AemInstanceManager] Java options:', jvmOpts);
+
       // Fall back to quickstart.jar method - try new name first, then old name for backward compatibility
       let jarPath = path.join(instanceDir, 'aem-quickstart.jar');
       
@@ -508,18 +512,6 @@ export class AemInstanceManager {
         if (!fs.existsSync(jarPath)) {
           throw new Error(`Neither start script nor AEM jar found. Start script: ${startScriptPath}, Tried jars: ${path.join(instanceDir, 'aem-quickstart.jar')}, ${path.join(instanceDir, 'aem-sdk-quickstart.jar')}`);
         }
-      }
-
-      const env: { [key: string]: string | undefined } = {
-        ...process.env,
-        CQ_PORT: port.toString(),
-        CQ_RUNMODE: runmode,
-        CQ_JVM_OPTS: jvmOpts,
-      };
-
-      // Set JAVA_HOME if available (for consistency)
-      if (hasJavaHome) {
-        env.JAVA_HOME = javaHome;
       }
 
       const javaArgs = [
@@ -538,8 +530,8 @@ export class AemInstanceManager {
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: true
       });
-    }
 
+    }
 
     const instance: AemInstance = {
       process: aemProcess,
@@ -553,6 +545,19 @@ export class AemInstanceManager {
     };
 
     this.instances.set(instanceType, instance);
+
+    const startData: InstanceStartData = {
+      usedProcessEnv: env,
+      envVarsObj: envVarsObj || {},
+      port,
+      runmode,
+      jvmOptions: jvmOpts,
+      isDebugMode: startType === 'debug',
+      startedWithStartScript: startWithStartScript,
+      timestamp: new Date()
+    };
+    console.log('[AemInstanceManager] Storing startData:', startData);
+    this.startData.set(instanceType, startData);
 
     // Start tailing after a short delay to allow AEM to create initial folders
     // Use the selected log files from the instance
@@ -1013,5 +1018,11 @@ export class AemInstanceManager {
     this.project = project;
     // Also update the health checker with the new project
     this.healthChecker.updateProject(project);
+  }
+
+  // Get start data for an instance
+  getInstanceStartData(instanceType: 'author' | 'publisher'): InstanceStartData | null {
+    const data = this.startData.get(instanceType) || null;
+    return data;
   }
 } 

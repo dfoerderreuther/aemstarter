@@ -102,6 +102,9 @@ contextBridge.exposeInMainWorld(
     getAemInstanceDebugStatus: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('get-aem-instance-debug-status', project, instanceType),
 
+    getAemInstanceStartData: (project: Project, instanceType: 'author' | 'publisher') =>
+      ipcRenderer.invoke('get-aem-instance-start-data', project, instanceType),
+
     getAvailableLogFiles: (project: Project, instanceType: 'author' | 'publisher') =>
       ipcRenderer.invoke('get-available-log-files', project, instanceType),
 
