@@ -25,6 +25,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [classic, setClassic] = useState(false);
   const [classicQuickstartPath, setClassicQuickstartPath] = useState('');
   const [javaHome, setJavaHome] = useState('');
+  const [javaHomeValid, setJavaHomeValid] = useState(false);
   const [platform, setPlatform] = useState<string>('');
 
   // Helper function to extract filename from path
@@ -90,6 +91,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     setRunFirstStartSetup(true);
     setClassic(false);
     setClassicQuickstartPath('');
+    setJavaHome('');
+    setJavaHomeValid(false);
     onClose();
   };
 
@@ -118,7 +121,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   };
 
   const handleCreateProject = async () => {
-    if (!newProjectName.trim() || !projectPath || !aemSdkPath) return;
+    if (!newProjectName.trim() || !projectPath || !aemSdkPath || !javaHomeValid) return;
     if (classic && !classicQuickstartPath) return;
     if (classic && !licensePath) return;
     setCreating(true);
@@ -285,7 +288,11 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               </Text>
             </Group>
           )}
-        <JavaHomeSelector value={javaHome} onChange={(value: string) => setJavaHome(value)} />
+        <JavaHomeSelector 
+          value={javaHome} 
+          onChange={(value: string) => setJavaHome(value)}
+          onValidationChange={setJavaHomeValid}
+        />
         
         <Paper p="md" withBorder>
           <Stack gap="md">
@@ -415,7 +422,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           <Button 
             onClick={handleCreateProject} 
             loading={creating}
-            disabled={!newProjectName.trim() || !projectPath || !javaHome || !aemSdkPath || (classic && !classicQuickstartPath) || (classic && !licensePath) || hasPathBlockers}
+            disabled={!newProjectName.trim() || !projectPath || !javaHomeValid || !aemSdkPath || (classic && !classicQuickstartPath) || (classic && !licensePath) || hasPathBlockers}
           >
             Create
           </Button>

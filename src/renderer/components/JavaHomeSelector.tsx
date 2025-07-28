@@ -1,23 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { Group, TextInput, Button, Menu, Box, Tooltip, ActionIcon } from '@mantine/core';
-import { IconAlertCircle } from '@tabler/icons-react';
+import { Group, TextInput, Button, Menu, Box, Tooltip, ActionIcon, Badge, Text } from '@mantine/core';
+import { IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
 
 interface JavaHomeSelectorProps {
   value: string;
   onChange: (value: string) => void;
+  onValidationChange?: (isValid: boolean) => void;
+}
+
+interface JavaValidationResult {
+  isValid: boolean;
+  version?: string;
+  error?: string;
 }
 
 export const JavaHomeSelector: React.FC<JavaHomeSelectorProps> = ({
   value,
-  onChange
+  onChange,
+  onValidationChange
 }) => {
   const [javaHomePaths, setJavaHomePaths] = useState<string[]>([]);
   const [javaPathsLoading, setJavaPathsLoading] = useState(false);
   const [javaPathsError, setJavaPathsError] = useState<string | null>(null);
+  const [validationResult, setValidationResult] = useState<JavaValidationResult | null>(null);
+  const [validating, setValidating] = useState(false);
 
   useEffect(() => {
     loadJavaHomePaths();
   }, []);
+
+  useEffect(() => {
+    if (value) {
+      validateJavaHome(value);
+    } else {
+      setValidationResult(null);
+      onValidationChange?.(false);
+    }
+  }, [value, onValidationChange]);
+
+  // Notify parent of validation changes
+  useEffect(() => {
+    if (validationResult) {
+      onValidationChange?.(validationResult.isValid);
+    }
+  }, [validationResult, onValidationChange]);
 
   const loadJavaHomePaths = async () => {
     try {
@@ -34,6 +60,30 @@ export const JavaHomeSelector: React.FC<JavaHomeSelectorProps> = ({
     }
   };
 
+  const validateJavaHome = async (javaHomePath: string) => {
+    if (!javaHomePath.trim()) {
+      setValidationResult(null);
+      onValidationChange?.(false);
+      return;
+    }
+
+    try {
+      setValidating(true);
+      const result = await window.electronAPI.validateJavaHome(javaHomePath);
+      setValidationResult(result);
+    } catch (error) {
+      console.error('Error validating Java home:', error);
+      const invalidResult = {
+        isValid: false,
+        error: error instanceof Error ? error.message : 'Validation failed'
+      };
+      setValidationResult(invalidResult);
+      onValidationChange?.(false);
+    } finally {
+      setValidating(false);
+    }
+  };
+
   const handleBrowse = async () => {
     const result = await window.electronAPI.showOpenDialog({
       properties: ['openDirectory'],
@@ -47,16 +97,50 @@ export const JavaHomeSelector: React.FC<JavaHomeSelectorProps> = ({
     }
   };
 
+  const getValidationBadge = () => {
+    if (!value) return null;
+    
+    if (validating) {
+      return (
+        <Badge variant="light" color="gray" size="xs">
+          Validating...
+        </Badge>
+      );
+    }
+
+    if (!validationResult) return null;
+
+    if (validationResult.isValid && validationResult.version) {
+      return (
+        <Badge variant="light" color="green" size="xs" leftSection={<IconCheck size={10} />}>
+          JDK {validationResult.version}
+        </Badge>
+      );
+    } else {
+      return (
+        <Tooltip label={validationResult.error || 'Invalid JDK'} multiline w={300}>
+          <Badge variant="light" color="red" size="xs" leftSection={<IconX size={10} />}>
+            Invalid
+          </Badge>
+        </Tooltip>
+      );
+    }
+  };
+
   return (
     <Group w="100%" gap="xs" align="end">
-      <TextInput
-        label="Java Home"
-        description="Path to the Java home directory"
-        value={value}
-        style={{ flex: 1 }}
-        required
-        onChange={(event) => onChange(event.currentTarget.value)}
-      />
+      <Box style={{ flex: 1 }}>
+        <Group gap="xs" align="center" mb={4}>
+          <Text size="sm" fw={500}>Java Home</Text>
+          {getValidationBadge()}
+        </Group>
+        <TextInput
+          description="Path to the Java home directory"
+          value={value}
+          required
+          onChange={(event) => onChange(event.currentTarget.value)}
+        />
+      </Box>
       {javaPathsError ? (
         <Tooltip 
           label={`Automatic Java detection failed: ${javaPathsError}`}

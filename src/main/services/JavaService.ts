@@ -3,6 +3,12 @@ import { enhancedExecAsync } from "../enhancedExecAsync";
 import * as fs from "fs";
 import * as path from "path";
 
+export interface JavaVersionInfo {
+  isValid: boolean;
+  version?: string;
+  error?: string;
+}
+
 export class JavaService {
 
 
@@ -19,6 +25,59 @@ export class JavaService {
             }
         } catch (error) {
             throw new Error(`Failed to detect Java installations: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    public async validateJavaHome(javaHomePath: string): Promise<JavaVersionInfo> {
+        try {
+            // Check if the path exists
+            if (!fs.existsSync(javaHomePath)) {
+                return {
+                    isValid: false,
+                    error: 'Java home path does not exist'
+                };
+            }
+
+            // Check if bin/java exists
+            const javaExecutable = path.join(javaHomePath, 'bin', 'java');
+            if (!fs.existsSync(javaExecutable)) {
+                return {
+                    isValid: false,
+                    error: 'Java executable not found at bin/java'
+                };
+            }
+
+            // Try to get Java version
+            try {
+                const { stdout, stderr } = await enhancedExecAsync(`"${javaExecutable}" -version`);
+                
+                // Java version output goes to stderr, not stdout
+                const output = stderr || stdout;
+                
+                // Parse version from output like: "openjdk version "11.0.12" 2021-07-20"
+                const versionMatch = output.match(/version\s+"([^"]+)"/);
+                if (versionMatch) {
+                    return {
+                        isValid: true,
+                        version: versionMatch[1]
+                    };
+                } else {
+                    return {
+                        isValid: false,
+                        error: 'Could not parse Java version from output'
+                    };
+                }
+            } catch (execError) {
+                return {
+                    isValid: false,
+                    error: `Failed to execute java -version: ${execError instanceof Error ? execError.message : String(execError)}`
+                };
+            }
+        } catch (error) {
+            return {
+                isValid: false,
+                error: `Validation failed: ${error instanceof Error ? error.message : String(error)}`
+            };
         }
     }
 

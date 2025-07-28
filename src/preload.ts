@@ -219,6 +219,10 @@ contextBridge.exposeInMainWorld(
     // Java Home Paths
     getJavaHomePaths: () =>
       ipcRenderer.invoke('get-java-home-paths'),
+    
+    // Java Home Validation
+    validateJavaHome: (javaHomePath: string) =>
+      ipcRenderer.invoke('validate-java-home', javaHomePath),
 
     // Dev project utilities
     openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') =>

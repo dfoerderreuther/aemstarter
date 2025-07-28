@@ -699,6 +699,17 @@ ipcMain.handle('get-java-home-paths', async () => {
   }
 });
 
+// Java Home Validation
+ipcMain.handle('validate-java-home', async (_, javaHomePath: string) => {
+  try {
+    const javaService = new JavaService();
+    return await javaService.validateJavaHome(javaHomePath);
+  } catch (error) {
+    console.error('Error validating Java home path:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('save-project-settings', async (_, project: Project, settings: ProjectSettings) => {
   try {
     // Update the project settings in memory and save to file

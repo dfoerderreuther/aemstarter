@@ -224,6 +224,13 @@ declare global {
 
       // Java Home Paths
       getJavaHomePaths: () => Promise<string[]>;
+      
+      // Java Home Validation
+      validateJavaHome: (javaHomePath: string) => Promise<{
+        isValid: boolean;
+        version?: string;
+        error?: string;
+      }>;
 
       // Dev project utilities
       openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') => Promise<boolean>;
