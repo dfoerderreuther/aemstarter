@@ -2,6 +2,7 @@ import { Project } from "../../types/Project";
 import { ProjectSettingsService } from "./ProjectSettingsService";
 import path from "path";
 import fs from 'fs';
+import log from 'electron-log';
 
 export class ReplicationSettings {
     private static instance: ReplicationSettings;
@@ -17,7 +18,7 @@ export class ReplicationSettings {
         return ReplicationSettings.instance;
     }
     async setReplication(project: Project, instance: 'author' | 'publisher' | 'dispatcher') {
-        console.log('setReplication', project, instance);
+        log.info('setReplication', project, instance);
         if (instance === 'dispatcher') {
             await this.setReplicationDispatcher(project);
         } else if (instance === 'author') {
@@ -36,7 +37,7 @@ export class ReplicationSettings {
 
         const dispatcherConfigPath = dispatcherConfig.startsWith('/') ? dispatcherConfig : path.join(project.folderPath, 'dispatcher', dispatcherConfig);
 
-        console.log('dispatcherConfigPath', dispatcherConfigPath);
+        log.info('dispatcherConfigPath', dispatcherConfigPath);
         
         try {
             // Use Node.js fs operations instead of shell commands for better cross-platform compatibility
@@ -47,13 +48,13 @@ export class ReplicationSettings {
             const targetFarmPath = path.join(availableFarmsDir, 'aem-starter.farm');
             const symlinkPath = path.join(enabledFarmsDir, 'aem-starter.farm');
 
-            console.log('Disabling default.farm');
+            log.info('Disabling default.farm');
             // Remove default.farm if it exists
             if (fs.existsSync(defaultFarmPath)) {
                 await fs.promises.unlink(defaultFarmPath);
             }
 
-            console.log('Copying default.farm to aem-starter.farm');
+            log.info('Copying default.farm to aem-starter.farm');
             // Copy default.farm to aem-starter.farm
             if (fs.existsSync(sourceFarmPath)) {
                 await fs.promises.copyFile(sourceFarmPath, targetFarmPath);
@@ -62,7 +63,7 @@ export class ReplicationSettings {
             }
     
             // Modify the aem-starter.farm file to update allowedClients configuration
-            console.log('Updating farm file configuration');
+            log.info('Updating farm file configuration');
 
             // Read the farm file
             const farmFileContent = await fs.promises.readFile(targetFarmPath, 'utf8');
@@ -96,7 +97,7 @@ export class ReplicationSettings {
             // Write the modified content back to the file
             await fs.promises.writeFile(targetFarmPath, finalContent, 'utf8');
 
-            console.log('Creating symbolic link');
+            log.info('Creating symbolic link');
             // Create symbolic link using fs.symlink instead of shell command
             const relativePath = '../available_farms/aem-starter.farm';
             
@@ -108,16 +109,16 @@ export class ReplicationSettings {
             // Create new symlink
             await fs.promises.symlink(relativePath, symlinkPath);
             
-            console.log('Successfully updated dispatcher farm configuration');
+            log.info('Successfully updated dispatcher farm configuration');
             return { success: true, message: 'Dispatcher replication configured successfully' };
         } catch (error) {
-            console.error('Error updating dispatcher farm configuration:', error);
+            log.error('Error updating dispatcher farm configuration:', error);
             throw error;
         }
     }
 
     private async setReplicationPublisher(project: Project) {
-        console.log('setReplicationPublisher', project);
+        log.info('setReplicationPublisher', project);
 
         const data = '/sling:resourceType=cq/replication/components/agent&' + 
         './jcr:lastModified=&' + 
@@ -193,10 +194,10 @@ export class ReplicationSettings {
             }
 
             const responseText = await response.text();
-            console.log('Replication agent configured successfully:', responseText);
+            log.info('Replication agent configured successfully:', responseText);
             return { success: true, output: responseText };
         } catch (error) {
-            console.error('Error configuring replication agent:', error);
+            log.error('Error configuring replication agent:', error);
             return { success: false, error: error };
         }
     }
@@ -269,10 +270,10 @@ export class ReplicationSettings {
             }
 
             const responseText = await response.text();
-            console.log('Replication agent configured successfully:', responseText);
+            log.info('Replication agent configured successfully:', responseText);
             return { success: true, output: responseText };
         } catch (error) {
-            console.error('Error configuring replication agent:', error);
+            log.error('Error configuring replication agent:', error);
             return { success: false, error: error };
         }
     }

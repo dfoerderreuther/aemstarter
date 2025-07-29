@@ -10,6 +10,7 @@ import { HttpsServiceRegister } from '../HttpsServiceRegister';
 import { AemInstanceManager } from './AemInstanceManager';
 import { DispatcherManager } from './DispatcherManager';
 import { HttpsService } from './HttpsService';
+import log from 'electron-log';
 
 export class BackupService {
     private project: Project;
@@ -72,7 +73,7 @@ export class BackupService {
             }
             
             if (stopPromises.length > 0) {
-                console.log('[Backup] Stopping instances before backup...');
+                log.info('[Backup] Stopping instances before backup...');
                 await Promise.all(stopPromises);
                 // Wait a bit for processes to fully stop
                 await new Promise(resolve => setTimeout(resolve, 2000));
@@ -94,14 +95,14 @@ export class BackupService {
             const tarCommand = compress ? 'tar -czf' : 'tar -cf';
             const command = `${tarCommand} "${backupPath}" ${paths.join(' ')}`;
 
-            console.log(`[Backup] Starting backup ${backupPath}`);
-            console.log(`[Backup] Command: ${command}`);
+            log.info(`[Backup] Starting backup ${backupPath}`);
+            log.info(`[Backup] Command: ${command}`);
             await execAsync(command, { cwd: this.project.folderPath });
 
             // Create metadata JSON file
             await this.createBackupMetadata(tarName, description, instances, compress);
 
-            console.log(`[Backup] Backup done`);
+            log.info(`[Backup] Backup done`);
         } finally {
             // Restart instances that were running before backup
             const startPromises: Promise<void>[] = [];
@@ -113,7 +114,7 @@ export class BackupService {
             }
             
             if (startPromises.length > 0) {
-                console.log('[Backup] Restarting instances after backup...');
+                log.info('[Backup] Restarting instances after backup...');
                 await Promise.all(startPromises);
                 
                 // Wait for AEM instances to start before starting dispatcher and SSL
@@ -174,7 +175,7 @@ export class BackupService {
             }
             
             if (stopPromises.length > 0) {
-                console.log('[Restore] Stopping instances before restore...');
+                log.info('[Restore] Stopping instances before restore...');
                 await Promise.all(stopPromises);
                 // Wait a bit for processes to fully stop
                 await new Promise(resolve => setTimeout(resolve, 2000));
@@ -188,11 +189,11 @@ export class BackupService {
 
             const command = `${tarCommand} "${backupPath}"`;
 
-            console.log(`[Restore] Starting restore ${backupPath}`);
-            console.log(`[Restore] Command: ${command}`);
+            log.info(`[Restore] Starting restore ${backupPath}`);
+            log.info(`[Restore] Command: ${command}`);
             await execAsync(command, { cwd: this.project.folderPath });
 
-            console.log(`[Restore] Restore done`);
+            log.info(`[Restore] Restore done`);
         } finally {
             // Restart instances that were running before restore
             const startPromises: Promise<void>[] = [];
@@ -204,7 +205,7 @@ export class BackupService {
             }
             
             if (startPromises.length > 0) {
-                console.log('[Restore] Restarting instances after restore...');
+                log.info('[Restore] Restarting instances after restore...');
                 await Promise.all(startPromises);
                 
                 // Wait for AEM instances to start before starting dispatcher and SSL
@@ -248,10 +249,10 @@ export class BackupService {
         try {
             if (fs.existsSync(metadataPath)) {
                 fs.unlinkSync(metadataPath);
-                console.log(`[Backup] Metadata deleted: ${metadataPath}`);
+                log.info(`[Backup] Metadata deleted: ${metadataPath}`);
             }
         } catch (error) {
-            console.log(`[Backup] Could not delete metadata file: ${error}`);
+            log.info(`[Backup] Could not delete metadata file: ${error}`);
         }
     }
 
@@ -276,7 +277,7 @@ export class BackupService {
                 fileSize += stats.size;
                 createdDate = stats.birthtime;
             } catch (error) {
-                console.log(`[Backup] backup file not found: ${filePath}`);
+                log.info(`[Backup] backup file not found: ${filePath}`);
             }
             
             // Load metadata
@@ -325,17 +326,17 @@ export class BackupService {
                 if (fs.existsSync(fullPath)) {
                     const stats = fs.statSync(fullPath);
                     if (stats.isDirectory()) {
-                        console.log(`[Clean] Deleting directory: ${fullPath}`);
+                        log.info(`[Clean] Deleting directory: ${fullPath}`);
                         await this.deleteDirectory(fullPath);
                     } else {
-                        console.log(`[Clean] Deleting file: ${fullPath}`);
+                        log.info(`[Clean] Deleting file: ${fullPath}`);
                         fs.unlinkSync(fullPath);
                     }
                 } else {
-                    console.log(`[Clean] Path does not exist, skipping: ${fullPath}`);
+                    log.info(`[Clean] Path does not exist, skipping: ${fullPath}`);
                 }
             } catch (error) {
-                console.error(`[Clean] Error deleting path ${fullPath}:`, error);
+                log.error(`[Clean] Error deleting path ${fullPath}:`, error);
             }
         }
     }
@@ -344,7 +345,7 @@ export class BackupService {
         try {
             await fs.promises.rm(dirPath, { recursive: true, force: true });
         } catch (error) {
-            console.error(`[Clean] Error deleting directory ${dirPath}:`, error);
+            log.error(`[Clean] Error deleting directory ${dirPath}:`, error);
             throw error;
         }
     }
@@ -378,7 +379,7 @@ export class BackupService {
         const oakRunJar = path.join(instancePath, 'oak-run.jar');
 
         if (!fs.existsSync(oakRunJar)) {
-            console.log(`[OakRun] Oak run jar not found: ${oakRunJar}`);
+            log.info(`[OakRun] Oak run jar not found: ${oakRunJar}`);
             return;
         }
 
@@ -387,14 +388,14 @@ export class BackupService {
         
         const command = `java -Xss16m -Xmx8g -jar "${oakRunJar}" compact "${segmentStorePath}" > "${logPath}" 2>&1`;
         
-        console.log(`[OakRun] Starting compaction for ${instance} instance`);
-        console.log(`[OakRun] Command: ${command}`);
+        log.info(`[OakRun] Starting compaction for ${instance} instance`);
+        log.info(`[OakRun] Command: ${command}`);
         
         try {
             await execAsync(command, { cwd: this.project.folderPath });
-            console.log(`[OakRun] Compaction completed for ${instance} instance`);
+            log.info(`[OakRun] Compaction completed for ${instance} instance`);
         } catch (error) {
-            console.error(`[OakRun] Compaction failed for ${instance} instance:`, error);
+            log.error(`[OakRun] Compaction failed for ${instance} instance:`, error);
             throw error;
         }
     }
@@ -411,7 +412,7 @@ export class BackupService {
             try {
                 fs.unlinkSync(path.join(logsPath, file));
             } catch (error) {
-                console.error(`[Backup] Error deleting log file ${file}:`, error);
+                log.error(`[Backup] Error deleting log file ${file}:`, error);
             }
         });
     }
@@ -430,9 +431,9 @@ export class BackupService {
         
         try {
             await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-            console.log(`[Backup] Metadata created: ${metadataPath}`);
+            log.info(`[Backup] Metadata created: ${metadataPath}`);
         } catch (error) {
-            console.error(`[Backup] Error creating metadata: ${error}`);
+            log.error(`[Backup] Error creating metadata: ${error}`);
         }
     }
 
@@ -446,7 +447,7 @@ export class BackupService {
                 return JSON.parse(metadataContent);
             }
         } catch (error) {
-            console.log(`[Backup] Could not load metadata for ${tarName}: ${error}`);
+            log.info(`[Backup] Could not load metadata for ${tarName}: ${error}`);
         }
         
         return null; // Backwards compatibility - assume all instances selected

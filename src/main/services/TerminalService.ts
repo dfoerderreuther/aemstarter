@@ -2,6 +2,7 @@ import * as pty from 'node-pty';
 import { BrowserWindow } from 'electron';
 import os from 'os';
 import fs from 'fs';
+import log from 'electron-log';
 
 export interface TerminalOptions {
   cwd?: string;
@@ -69,27 +70,27 @@ export class TerminalService {
             this.mainWindow.webContents.send('terminal-data', terminalId, data);
           }
         } catch (error) {
-          console.error(`Error sending terminal data for ${terminalId}:`, error);
+          log.error(`Error sending terminal data for ${terminalId}:`, error);
         }
       });
 
       // Handle PTY exit with error handling
       ptyProcess.onExit(({ exitCode, signal }) => {
         try {
-          console.log(`Terminal ${terminalId} exited with code ${exitCode}, signal ${signal}`);
+          log.info(`Terminal ${terminalId} exited with code ${exitCode}, signal ${signal}`);
           this.terminals.delete(terminalId);
           
           if (this.mainWindow && !this.mainWindow.isDestroyed()) {
             this.mainWindow.webContents.send('terminal-exit', terminalId, exitCode, signal);
           }
         } catch (error) {
-          console.error(`Error handling terminal exit for ${terminalId}:`, error);
+          log.error(`Error handling terminal exit for ${terminalId}:`, error);
         }
       });
 
       return { terminalId, success: true };
     } catch (error) {
-      console.error('Error creating PTY terminal:', error);
+      log.error('Error creating PTY terminal:', error);
       
       // Send error to renderer if possible
       try {
@@ -97,7 +98,7 @@ export class TerminalService {
           this.mainWindow.webContents.send('terminal-error', terminalId, `Failed to create terminal: ${error instanceof Error ? error.message : String(error)}`);
         }
       } catch (sendError) {
-        console.error('Error sending terminal creation error:', sendError);
+        log.error('Error sending terminal creation error:', sendError);
       }
       
       throw error;
@@ -112,7 +113,7 @@ export class TerminalService {
         session.ptyProcess.write(data);
         return true;
       } catch (error) {
-        console.error(`Error writing to PTY terminal ${terminalId}:`, error);
+        log.error(`Error writing to PTY terminal ${terminalId}:`, error);
         
         // Clean up broken terminal
         try {
@@ -121,13 +122,13 @@ export class TerminalService {
             this.mainWindow.webContents.send('terminal-error', terminalId, `Terminal write error: ${error instanceof Error ? error.message : String(error)}`);
           }
         } catch (cleanupError) {
-          console.error('Error during terminal cleanup:', cleanupError);
+          log.error('Error during terminal cleanup:', cleanupError);
         }
         
         return false;
       }
     } else {
-      console.log(`[TerminalService] Cannot write to terminal ${terminalId}: session=${!!session}`);
+      log.info(`[TerminalService] Cannot write to terminal ${terminalId}: session=${!!session}`);
     }
     return false;
   }
@@ -137,10 +138,10 @@ export class TerminalService {
     if (session && session.ptyProcess) {
       try {
         session.ptyProcess.resize(cols, rows);
-        //console.log(`Resized terminal ${terminalId} to ${cols}x${rows}`);
+        //log.info(`Resized terminal ${terminalId} to ${cols}x${rows}`);
         return true;
       } catch (error) {
-        console.error(`[TerminalService] Error resizing PTY terminal ${terminalId}:`, error);
+        log.error(`[TerminalService] Error resizing PTY terminal ${terminalId}:`, error);
         return false;
       }
     }
@@ -153,10 +154,10 @@ export class TerminalService {
       try {
         session.ptyProcess.kill();
         this.terminals.delete(terminalId);
-        console.log(`[TerminalService] Killed terminal ${terminalId}`);
+        log.info(`[TerminalService] Killed terminal ${terminalId}`);
         return true;
       } catch (error) {
-        console.error(`[TerminalService] Error killing PTY terminal ${terminalId}:`, error);
+        log.error(`[TerminalService] Error killing PTY terminal ${terminalId}:`, error);
         // Still remove from map even if kill failed
         this.terminals.delete(terminalId);
         return false;
@@ -179,7 +180,7 @@ export class TerminalService {
       try {
         session.ptyProcess.kill();
       } catch (error) {
-        console.error(`[TerminalService] Error cleaning up terminal ${terminalId}:`, error);
+        log.error(`[TerminalService] Error cleaning up terminal ${terminalId}:`, error);
       }
     }
     this.terminals.clear();
@@ -187,14 +188,14 @@ export class TerminalService {
 
   // Clear all terminals (used when switching projects)
   clearAllTerminals(): void {
-    console.log('[TerminalService] Clearing all terminals for project switch');
+    log.info('[TerminalService] Clearing all terminals for project switch');
     // Kill all active terminal sessions
     for (const [terminalId, session] of this.terminals) {
       try {
         session.ptyProcess.kill();
-        console.log(`[TerminalService] Cleared terminal ${terminalId}`);
+        log.info(`[TerminalService] Cleared terminal ${terminalId}`);
       } catch (error) {
-        console.error(`[TerminalService] Error clearing terminal ${terminalId}:`, error);
+        log.error(`[TerminalService] Error clearing terminal ${terminalId}:`, error);
       }
     }
     this.terminals.clear();
@@ -288,13 +289,13 @@ export class TerminalService {
 
       for (const shell of shells) {
         if (shell && fs.existsSync(shell)) {
-          console.log(`[TerminalService] Using Windows shell: ${shell}`);
+          log.info(`[TerminalService] Using Windows shell: ${shell}`);
           return shell;
         }
       }
 
       // Fallback to cmd.exe
-      console.log('[TerminalService] Using fallback Windows shell: cmd.exe');
+      log.info('[TerminalService] Using fallback Windows shell: cmd.exe');
       return 'cmd.exe';
     } else if (platform === 'darwin') {
       // Enhanced macOS shell detection
@@ -307,12 +308,12 @@ export class TerminalService {
 
       for (const shell of shells) {
         if (shell && fs.existsSync(shell)) {
-          console.log(`[TerminalService] Using macOS shell: ${shell}`);
+          log.info(`[TerminalService] Using macOS shell: ${shell}`);
           return shell;
         }
       }
 
-      console.log('[TerminalService] Using fallback macOS shell: /bin/zsh');
+      log.info('[TerminalService] Using fallback macOS shell: /bin/zsh');
       return '/bin/zsh';
     } else {
       // Linux and other Unix-like systems
@@ -324,12 +325,12 @@ export class TerminalService {
 
       for (const shell of shells) {
         if (shell && fs.existsSync(shell)) {
-          console.log(`[TerminalService] Using Unix shell: ${shell}`);
+          log.info(`[TerminalService] Using Unix shell: ${shell}`);
           return shell;
         }
       }
 
-      console.log('[TerminalService] Using fallback Unix shell: /bin/bash');
+      log.info('[TerminalService] Using fallback Unix shell: /bin/bash');
       return '/bin/bash';
     }
   }

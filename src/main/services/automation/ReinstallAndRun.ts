@@ -2,6 +2,7 @@ import { AutoTask } from "./Automation";
 import { Project } from "../../../types/Project";
 import { Installer } from "../Installer";
 import { AutoStartStopService } from "../AutoStartStopService";
+import log from 'electron-log';
 
 export class ReinstallAndRun implements AutoTask {
 
@@ -15,7 +16,7 @@ export class ReinstallAndRun implements AutoTask {
     }
 
     public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
-        const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
+        const progress = progressCallback || (() => { log.info('Progress callback not provided'); });
         
         progress('Initiating automated AEM reinstallation process...');
         await this.startStopService.stop();

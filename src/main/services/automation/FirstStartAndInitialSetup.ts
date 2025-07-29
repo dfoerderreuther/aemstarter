@@ -10,6 +10,7 @@ import { ReplicationSettings } from "../ReplicationSettings";
 import { PackageInstaller } from "../PackageInstaller";
 import { PackageManager } from "../PackageManager";
 import { AutoStartStopService } from "../AutoStartStopService";
+import log from 'electron-log';
 
 export class FirstStartAndInitialSetup implements AutoTask {
 
@@ -26,7 +27,7 @@ export class FirstStartAndInitialSetup implements AutoTask {
     }
 
     public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
-        const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
+        const progress = progressCallback || (() => { log.info('Progress callback not provided'); });
 
         const wknd = parameters?.wknd === true;
         const localPackage: string = (parameters?.localPackage ?? '') as string;

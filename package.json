@@ -80,6 +80,7 @@
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
     "adm-zip": "^0.5.10",
+    "electron-log": "^5.4.1",
     "electron-squirrel-startup": "^1.0.1",
     "extract-zip": "^2.0.1",
     "http-proxy": "^1.18.1",

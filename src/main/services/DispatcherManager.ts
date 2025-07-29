@@ -7,6 +7,7 @@ import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
 import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 import os from 'os';
 import { execSync } from 'child_process';
+import log from 'electron-log';
 
 interface DispatcherInstance {
   process: ChildProcess | null;
@@ -108,15 +109,15 @@ export class DispatcherManager {
             HOME: process.env.HOME || os.homedir()
         };
 
-        //console.log(`[DispatcherManager] Using PATH: ${enhancedPath}`);
-        //console.log(`[DispatcherManager] Checking Docker availability...`);
+        //log.info(`[DispatcherManager] Using PATH: ${enhancedPath}`);
+        //log.info(`[DispatcherManager] Checking Docker availability...`);
         
         // Quick Docker check before starting
         try {
             const dockerVersion = execSync('docker --version', { env, timeout: 5000 }).toString();
-            console.log(`[DispatcherManager] Docker found: ${dockerVersion.trim()}`);
+            log.info(`[DispatcherManager] Docker found: ${dockerVersion.trim()}`);
         } catch (error) {
-            console.warn(`[DispatcherManager] Docker check failed:`, error);
+            log.warn(`[DispatcherManager] Docker check failed:`, error);
             // Don't fail here, let the dispatcher script handle it
         }
 
@@ -127,8 +128,8 @@ export class DispatcherManager {
             dispatcherSettings.port.toString()
         ];
 
-        console.log(`[DispatcherManager] Starting dispatcher with command: ${args.join(' ')}`);
-        console.log(`[DispatcherManager] Working directory: ${dispatcherDir}`);
+        log.info(`[DispatcherManager] Starting dispatcher with command: ${args.join(' ')}`);
+        log.info(`[DispatcherManager] Working directory: ${dispatcherDir}`);
 
         try {
             // Use appropriate shell for the platform
@@ -137,8 +138,8 @@ export class DispatcherManager {
                 ? ['/c', dockerRunScript, dispatcherSettings.config, `host.docker.internal:${settings.publisher.port}`, dispatcherSettings.port.toString()]
                 : args;
             
-            console.log(`[DispatcherManager] Using shell: ${shell}`);
-            console.log(`[DispatcherManager] Shell args:`, shellArgs);
+            log.info(`[DispatcherManager] Using shell: ${shell}`);
+            log.info(`[DispatcherManager] Shell args:`, shellArgs);
             
             // Start the dispatcher process with platform-appropriate options
             const dispatcherProcess = spawn(shell, shellArgs, {
@@ -172,7 +173,7 @@ export class DispatcherManager {
 
             // Handle process exit - ensure cleanup
             dispatcherProcess.on('exit', (code, signal) => {
-                console.log(`[DispatcherManager] Dispatcher process exited with code ${code} and signal ${signal}`);
+                log.info(`[DispatcherManager] Dispatcher process exited with code ${code} and signal ${signal}`);
                 // Only clean up if this is still our current process
                 if (this.instance.process === dispatcherProcess) {
                     this.instance.process = null;
@@ -183,7 +184,7 @@ export class DispatcherManager {
             });
 
             dispatcherProcess.on('error', (error) => {
-                console.error('[DispatcherManager] Dispatcher process error:', error);
+                log.error('[DispatcherManager] Dispatcher process error:', error);
                 // Only clean up if this is still our current process
                 if (this.instance.process === dispatcherProcess) {
                     this.instance.process = null;
@@ -218,9 +219,9 @@ export class DispatcherManager {
                 }
             }, 1000);
 
-            console.log(`[DispatcherManager] Dispatcher started successfully with PID: ${dispatcherProcess.pid}`);
+            log.info(`[DispatcherManager] Dispatcher started successfully with PID: ${dispatcherProcess.pid}`);
         } catch (error) {
-            console.error('[DispatcherManager] Error starting dispatcher:', error);
+            log.error('[DispatcherManager] Error starting dispatcher:', error);
             // Ensure clean state on error
             this.instance.process = null;
             this.instance.pid = null;
@@ -241,7 +242,7 @@ export class DispatcherManager {
         const pidToStop = this.instance.pid;
 
         try {
-            console.log(`[DispatcherManager] Stopping dispatcher with PID: ${pidToStop}`);
+            log.info(`[DispatcherManager] Stopping dispatcher with PID: ${pidToStop}`);
             
             // Send SIGINT (Ctrl+C) to the process group - this is the standard way
             // the dispatcher script expects to be stopped
@@ -249,9 +250,9 @@ export class DispatcherManager {
                 try {
                     // Kill the entire process group with SIGINT (Ctrl+C equivalent)
                     process.kill(-pidToStop, 'SIGINT');
-                    console.log('[DispatcherManager] Sent SIGINT to process group');
+                    log.info('[DispatcherManager] Sent SIGINT to process group');
                 } catch (killError) {
-                    console.warn('[DispatcherManager] Error sending SIGINT to process group, trying individual process:', killError);
+                    log.warn('[DispatcherManager] Error sending SIGINT to process group, trying individual process:', killError);
                     // Fallback to killing just the main process
                     processToStop.kill('SIGINT');
                 }
@@ -260,7 +261,7 @@ export class DispatcherManager {
             }
             
             // Wait longer for graceful shutdown since Docker containers may take time to stop
-            console.log('[DispatcherManager] Waiting for graceful shutdown...');
+            log.info('[DispatcherManager] Waiting for graceful shutdown...');
             let waitTime = 0;
             const maxWaitTime = 10000; // 10 seconds
             const checkInterval = 500; // Check every 500ms
@@ -272,12 +273,12 @@ export class DispatcherManager {
             
             // If still running, try SIGTERM
             if (processToStop.exitCode === null && !processToStop.killed) {
-                console.log('[DispatcherManager] Process still running, sending SIGTERM...');
+                log.info('[DispatcherManager] Process still running, sending SIGTERM...');
                 if (pidToStop) {
                     try {
                         process.kill(-pidToStop, 'SIGTERM');
                     } catch (killError) {
-                        console.warn('[DispatcherManager] Error sending SIGTERM to process group:', killError);
+                        log.warn('[DispatcherManager] Error sending SIGTERM to process group:', killError);
                         processToStop.kill('SIGTERM');
                     }
                 } else {
@@ -295,16 +296,16 @@ export class DispatcherManager {
             
             // Final force kill if absolutely necessary
             if (processToStop.exitCode === null && !processToStop.killed) {
-                console.log('[DispatcherManager] Process still running, force killing with SIGKILL...');
+                log.info('[DispatcherManager] Process still running, force killing with SIGKILL...');
                 this.killDispatcher();
                 
                 // Wait a bit for force kill to take effect
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
 
-            console.log('[DispatcherManager] Dispatcher stopped successfully');
+            log.info('[DispatcherManager] Dispatcher stopped successfully');
         } catch (error) {
-            console.error('[DispatcherManager] Error stopping dispatcher:', error);
+            log.error('[DispatcherManager] Error stopping dispatcher:', error);
         } finally {
             // Always clean up instance state, regardless of how stopping went
             if (this.instance.process === processToStop) {
@@ -332,7 +333,7 @@ export class DispatcherManager {
 
     async killDispatcher(): Promise<void> {
         const port = this.instance.port;
-        console.log(`[DispatcherManager] Force killing dispatcher containers on port ${port}`);
+        log.info(`[DispatcherManager] Force killing dispatcher containers on port ${port}`);
         
         try {
             // Stop health checking first
@@ -340,32 +341,32 @@ export class DispatcherManager {
             
             
             // Find containers using the dispatcher port
-            console.log(`[DispatcherManager] Looking for Docker containers using port ${port}...`);
+            log.info(`[DispatcherManager] Looking for Docker containers using port ${port}...`);
             
             // First, try to find containers by port mapping
             let containerId = await this.getContainerId();
             
             if (!containerId) {
-                console.log('[DispatcherManager] No Docker containers found to kill');
+                log.info('[DispatcherManager] No Docker containers found to kill');
                 this.sendLogData('No Docker containers found to kill\n');
             } else {
-                console.log(`[DispatcherManager] Found container to kill: ${containerId}`);
+                log.info(`[DispatcherManager] Found container to kill: ${containerId}`);
                 this.sendLogData(`Killing  Docker container: ${containerId}\n`);
                 
                 try {
-                    console.log(`[DispatcherManager] Killing container ${containerId}...`);
+                    log.info(`[DispatcherManager] Killing container ${containerId}...`);
                     await execAsync(`docker kill ${containerId}`, { timeout: 10000 });
                     this.sendLogData(`Killed container ${containerId}\n`);
                     
                     // Also remove the container to clean up
                     try {
                         await execAsync(`docker rm ${containerId}`, { timeout: 5000 });
-                        console.log(`[DispatcherManager] Removed container ${containerId}`);
+                        log.info(`[DispatcherManager] Removed container ${containerId}`);
                     } catch (rmError) {
-                        console.warn(`[DispatcherManager] Could not remove container ${containerId}:`, rmError instanceof Error ? rmError.message : String(rmError));
+                        log.warn(`[DispatcherManager] Could not remove container ${containerId}:`, rmError instanceof Error ? rmError.message : String(rmError));
                     }
                 } catch (killError) {
-                    console.error(`[DispatcherManager] Error killing container ${containerId}:`, killError);
+                    log.error(`[DispatcherManager] Error killing container ${containerId}:`, killError);
                     this.sendLogData(`Error killing container ${containerId}: ${killError instanceof Error ? killError.message : String(killError)}\n`);
                 }
             }
@@ -376,11 +377,11 @@ export class DispatcherManager {
             this.instance.pid = null;
             this.sendStatusUpdate(false);
             
-            console.log('[DispatcherManager] Docker dispatcher kill operation completed');
+            log.info('[DispatcherManager] Docker dispatcher kill operation completed');
             this.sendLogData('Docker dispatcher kill operation completed\n');
             
         } catch (error) {
-            console.error('[DispatcherManager] Error during killDispatcher:', error);
+            log.error('[DispatcherManager] Error during killDispatcher:', error);
             this.sendLogData(`Error during force kill: ${error instanceof Error ? error.message : String(error)}\n`);
             
             // Still clean up our state even if Docker operations failed
@@ -434,7 +435,7 @@ export class DispatcherManager {
                     fs.rmSync(itemPath, { recursive: true, force: true });
                     deletedCount++;
                 } catch (itemError) {
-                    console.error(`[DispatcherManager] Error deleting cache item ${itemPath}:`, itemError);
+                    log.error(`[DispatcherManager] Error deleting cache item ${itemPath}:`, itemError);
                     this.sendLogData(`Warning: Could not delete ${item}: ${itemError instanceof Error ? itemError.message : String(itemError)}\n`);
                 }
             }
@@ -442,7 +443,7 @@ export class DispatcherManager {
             this.sendLogData(`Cache cleared: ${deletedCount} items deleted\n`);
             
         } catch (error) {
-            console.error('[DispatcherManager] Error clearing cache:', error);
+            log.error('[DispatcherManager] Error clearing cache:', error);
             this.sendLogData(`Error clearing cache: ${error instanceof Error ? error.message : String(error)}\n`);
             throw error;
         }
@@ -454,7 +455,7 @@ export class DispatcherManager {
     cleanupStaleReferences(): void {
         if (this.instance.process) {
             if (this.instance.process.killed || this.instance.process.exitCode !== null) {
-                console.log('[DispatcherManager] Cleaning up stale process reference');
+                log.info('[DispatcherManager] Cleaning up stale process reference');
                 this.instance.process = null;
                 this.instance.pid = null;
                 this.sendStatusUpdate(false);
@@ -490,7 +491,7 @@ export class DispatcherManager {
                 port: this.instance.port
             });
         } else {
-            console.warn(`[DispatcherManager] Cannot send status update - mainWindow is ${this.mainWindow ? 'destroyed' : 'null'}`);
+            log.warn(`[DispatcherManager] Cannot send status update - mainWindow is ${this.mainWindow ? 'destroyed' : 'null'}`);
         }
     }
 
@@ -524,7 +525,7 @@ export class DispatcherManager {
 
     startHealthChecking(intervalMs = 30000) {
         if (!this.isDispatcherRunning()) {
-            console.warn('[DispatcherManager] Cannot start health checking for dispatcher: not running');
+            log.warn('[DispatcherManager] Cannot start health checking for dispatcher: not running');
             return;
         }
 

@@ -8,6 +8,7 @@ import { BrowserWindow } from 'electron';
 import { FirstStartAndInitialSetup } from './FirstStartAndInitialSetup';
 import { UpdateSdkAndRun } from './UpdateSdkAndRun';
 import { UpdateSdkAndInstallAndRun } from './UpdateSdkAndInstallAndRun';
+import log from 'electron-log';
 
 export interface AutoTask {
     project: Project;
@@ -44,11 +45,11 @@ export class Automation {
     private async run(type: string, mainWindow?: BrowserWindow, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const TaskConstructor = Automation.taskRegistry.get(type);
         if (TaskConstructor) {
-            console.log(`[Automation] Running task: ${type}${parameters ? ' with parameters: ' + JSON.stringify(parameters) : ''}`);
+            log.info(`[Automation] Running task: ${type}${parameters ? ' with parameters: ' + JSON.stringify(parameters) : ''}`);
             
             // Create progress callback to send updates to frontend
             const progressCallback = (message: string) => {
-                console.log(`[Automation] ${type}: ${message}`);
+                log.info(`[Automation] ${type}: ${message}`);
                 if (mainWindow && !mainWindow.isDestroyed()) {
                     mainWindow.webContents.send('automation-progress', {
                         projectId: this.project.id,
@@ -62,10 +63,10 @@ export class Automation {
             const task = new TaskConstructor(this.project);
             await task.run(progressCallback, parameters);
             
-            console.log(`[Automation] Task ${type} completed`);
+            log.info(`[Automation] Task ${type} completed`);
             progressCallback('Task completed successfully');
         } else {
-            console.log(`[Automation] Unknown task: ${type}`);
+            log.info(`[Automation] Unknown task: ${type}`);
         } 
     }
 

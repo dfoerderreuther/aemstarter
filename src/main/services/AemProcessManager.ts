@@ -4,6 +4,7 @@ import { Project } from '../../types/Project';
 import path from 'path';
 import fs from 'fs';
 import { BrowserWindow } from 'electron';
+import log from 'electron-log';
 
 export interface AemProcessOptions {
   port: number;
@@ -77,7 +78,7 @@ export class AemProcessManager {
 
       return { processId, success: true };
     } catch (error) {
-      console.error('Error starting AEM process:', error);
+      log.error('Error starting AEM process:', error);
       throw error;
     }
   }
@@ -92,8 +93,8 @@ export class AemProcessManager {
 
     const env = this.getAemEnvironment(session);
 
-    console.log('[AemProcessManager] Starting AEM with PTY on Windows:', startScriptPath);
-    console.log('[AemProcessManager] Environment variables:', env);
+    log.info('[AemProcessManager] Starting AEM with PTY on Windows:', startScriptPath);
+    log.info('[AemProcessManager] Environment variables:', env);
 
     // Create PTY process for AEM
     const ptyProcess = pty.spawn(startScript, [], {
@@ -116,7 +117,7 @@ export class AemProcessManager {
 
     // Handle PTY exit
     ptyProcess.onExit(({ exitCode, signal }) => {
-      console.log(`[AemProcessManager] AEM ${session.instanceType} PTY process exited with code ${exitCode}, signal ${signal}`);
+      log.info(`[AemProcessManager] AEM ${session.instanceType} PTY process exited with code ${exitCode}, signal ${signal}`);
       session.isRunning = false;
       this.sendPidStatusUpdate(session.instanceType, null, false);
     });
@@ -135,8 +136,8 @@ export class AemProcessManager {
 
     const env = this.getAemEnvironment(session);
 
-    console.log('[AemProcessManager] Starting AEM with spawn on Unix:', startScriptPath);
-    console.log('[AemProcessManager] Environment variables:', env);
+    log.info('[AemProcessManager] Starting AEM with spawn on Unix:', startScriptPath);
+    log.info('[AemProcessManager] Environment variables:', env);
 
     // Use traditional spawn for Unix-like systems
     const spawnProcess = spawn(startScriptPath, [], {
@@ -158,7 +159,7 @@ export class AemProcessManager {
     });
 
     spawnProcess.on('exit', (code, signal) => {
-      console.log(`[AemProcessManager] AEM ${session.instanceType} spawn process exited with code ${code}, signal ${signal}`);
+      log.info(`[AemProcessManager] AEM ${session.instanceType} spawn process exited with code ${code}, signal ${signal}`);
       session.isRunning = false;
       this.sendPidStatusUpdate(session.instanceType, null, false);
     });
@@ -242,10 +243,10 @@ export class AemProcessManager {
       this.sendPidStatusUpdate(session.instanceType, null, false);
       this.processes.delete(processId);
       
-      console.log(`[AemProcessManager] Stopped AEM process ${processId}`);
+      log.info(`[AemProcessManager] Stopped AEM process ${processId}`);
       return true;
     } catch (error) {
-      console.error(`[AemProcessManager] Error stopping AEM process ${processId}:`, error);
+      log.error(`[AemProcessManager] Error stopping AEM process ${processId}:`, error);
       return false;
     }
   }
@@ -268,7 +269,7 @@ export class AemProcessManager {
           session.spawnProcess.kill();
         }
       } catch (error) {
-        console.error(`Error cleaning up AEM process ${processId}:`, error);
+        log.error(`Error cleaning up AEM process ${processId}:`, error);
       }
     }
     this.processes.clear();

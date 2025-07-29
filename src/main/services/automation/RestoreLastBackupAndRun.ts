@@ -3,6 +3,7 @@ import { BackupService } from "../BackupService";
 import { Project } from "../../../types/Project";
 import { AutoTask } from "./Automation";
 import { AutoStartStopService } from "../AutoStartStopService";
+import log from 'electron-log';
 
 export class RestoreLastBackupAndRun implements AutoTask {
 
@@ -17,7 +18,7 @@ export class RestoreLastBackupAndRun implements AutoTask {
     }
 
     public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
-        const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
+        const progress = progressCallback || (() => { log.info('Progress callback not provided'); });
         
         const lastBackup = await this.findBackup();
         if (lastBackup) {

@@ -2,6 +2,7 @@
 import { enhancedExecAsync } from "../enhancedExecAsync";
 import * as fs from "fs";
 import * as path from "path";
+import log from 'electron-log';
 
 export interface JavaVersionInfo {
   isValid: boolean;
@@ -84,8 +85,8 @@ export class JavaService {
     private async getMacJavaHomePaths(): Promise<string[]> {
         try {
             const { stdout, stderr } = await enhancedExecAsync('/usr/libexec/java_home -V');
-            console.log("[JavaService] getMacJavaHomePaths stdout:", stdout);
-            console.log("[JavaService] getMacJavaHomePaths stderr:", stderr);
+            log.info("[JavaService] getMacJavaHomePaths stdout:", stdout);
+            log.info("[JavaService] getMacJavaHomePaths stderr:", stderr);
             
             // The -V flag outputs detailed info to stderr, not stdout
             const lines = stderr.split('\n');
@@ -129,7 +130,7 @@ export class JavaService {
                 }
             } catch (error) {
                 // Continue to next method
-                console.log(`Java detection method failed: ${error instanceof Error ? error.message : String(error)}`);
+                log.info(`Java detection method failed: ${error instanceof Error ? error.message : String(error)}`);
             }
         }
 
@@ -212,7 +213,7 @@ export class JavaService {
                     }
                 } catch (error) {
                     // Continue to next directory
-                    console.log(`Error reading directory ${dir}: ${error}`);
+                    log.info(`Error reading directory ${dir}: ${error}`);
                 }
             }
         }

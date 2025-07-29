@@ -7,6 +7,7 @@ This document outlines the steps required to enable automatic updates for the AE
 The application already has most of the infrastructure in place:
 
 - ✅ `update-electron-app` dependency installed (`^3.1.1`)
+- ✅ `electron-log` dependency installed
 - ✅ GitHub publisher configured in `forge.config.ts`
 - ✅ GitHub Actions workflow for releases
 - ✅ TypeScript definitions for `update-electron-app`
@@ -14,13 +15,7 @@ The application already has most of the infrastructure in place:
 
 ## Step 1: Enable Auto-Updates in Main Process
 
-### 1.1 Install Electron Log (Optional but Recommended)
-
-```bash
-npm install electron-log
-```
-
-### 1.2 Update Main Process Code
+### 1.1 Update Main Process Code
 
 Edit `src/main.ts` and replace the commented auto-update section (around lines 75-79) with:
 
@@ -42,7 +37,7 @@ updateElectronApp({
 // ... rest of existing code ...
 ```
 
-### 1.3 Environment-Specific Configuration (Recommended)
+### 1.2 Environment-Specific Configuration (Recommended)
 
 For better development experience, only enable auto-updates in production:
 

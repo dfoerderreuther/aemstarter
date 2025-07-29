@@ -1,6 +1,7 @@
 import { Project, ProjectSettings } from '../../types/Project';
 import fs from 'fs';
 import path from 'path';
+import log from 'electron-log';
 
 export class ProjectSettingsService {
 
@@ -46,7 +47,7 @@ export class ProjectSettingsService {
     }
 
     static getSettings(project: Project): ProjectSettings {
-        console.log('[ProjectSettingsService] Loading settings for project:', project.name);
+        log.info('[ProjectSettingsService] Loading settings for project:', project.name);
         const settingsPath = path.join(project.folderPath, 'settings.json');
         
         if (fs.existsSync(settingsPath)) {
@@ -54,28 +55,28 @@ export class ProjectSettingsService {
                 const settingsData = fs.readFileSync(settingsPath, 'utf8');
                 const parsedSettings = JSON.parse(settingsData) as ProjectSettings;
                 
-                console.log('[ProjectSettingsService] Loaded javaHome from file:', parsedSettings.general?.javaHome);
+                log.info('[ProjectSettingsService] Loaded javaHome from file:', parsedSettings.general?.javaHome);
                 
                 // Validate and merge with defaults to ensure all required fields exist
                 const defaultSettings = this.getDefaultSettings(project);
                 const mergedSettings = this.mergeWithDefaults(parsedSettings, defaultSettings);
                 
-                console.log('[ProjectSettingsService] Final javaHome after merge:', mergedSettings.general.javaHome);
+                log.info('[ProjectSettingsService] Final javaHome after merge:', mergedSettings.general.javaHome);
                 
                 return mergedSettings;
             } catch (error) {
-                console.error('Error parsing settings file:', error);
+                log.error('Error parsing settings file:', error);
                 // Return default settings if parsing fails
                 return this.getDefaultSettings(project);
             }
         }
         
-        console.log('[ProjectSettingsService] No settings file found, using defaults');
+        log.info('[ProjectSettingsService] No settings file found, using defaults');
         return this.getDefaultSettings(project);
     }
 
     static saveSettings(project: Project, settings: ProjectSettings): void {
-        console.log('[ProjectSettingsService] Saving settings for project:', project.name);
+        log.info('[ProjectSettingsService] Saving settings for project:', project.name);
         const settingsPath = path.join(project.folderPath, 'settings.json');
         
         try {
@@ -83,7 +84,7 @@ export class ProjectSettingsService {
             // Write settings as formatted JSON
             fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
         } catch (error) {
-            console.error('Error saving settings file:', error);
+            log.error('Error saving settings file:', error);
             throw error;
         }
     }

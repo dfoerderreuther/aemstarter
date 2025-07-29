@@ -5,6 +5,8 @@ import { EditorAvailableResults } from '../../types/EditorAvailableResults';
 import { ProjectSettings } from '../../types/Project';
 import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 import { JavaService } from './JavaService';
+import { spawn } from 'child_process';
+import log from 'electron-log';
 
 
 export class SystemCheck {
@@ -83,7 +85,7 @@ export class SystemCheck {
             const javaService = new JavaService();
             return await javaService.getJavaHomePaths();
         } catch (error) {
-            console.error('Failed to detect JDKs:', error);
+            log.error('Failed to detect JDKs:', error);
             return [];
         }
     }

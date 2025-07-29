@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { app } from 'electron';
 import { ProjectSettingsService } from './ProjectSettingsService';
+import log from 'electron-log';
 
 export class ProjectManager {
   private projects: Project[] = [];
@@ -35,7 +36,7 @@ export class ProjectManager {
         this.projects = this.projects.map(project => this.loadProjectSettings(project));
       }
     } catch (error) {
-      console.error('Error loading projects:', error);
+      log.error('Error loading projects:', error);
       this.projects = [];
     }
   }
@@ -48,7 +49,7 @@ export class ProjectManager {
         settings
       };
     } catch (error) {
-      console.error('Error loading settings for project:', project.name, error);
+      log.error('Error loading settings for project:', project.name, error);
       return {
         ...project,
         settings: ProjectSettingsService.getDefaultSettings(project)
@@ -64,7 +65,7 @@ export class ProjectManager {
       }
       fs.writeFileSync(this.projectsFilePath, JSON.stringify(this.projects, null, 2));
     } catch (error) {
-      console.error('Error saving projects:', error);
+      log.error('Error saving projects:', error);
     }
   }
 
@@ -75,7 +76,7 @@ export class ProjectManager {
         this.settings = JSON.parse(data);
       }
     } catch (error) {
-      console.error('Error loading settings:', error);
+      log.error('Error loading settings:', error);
       this.settings = {};
     }
   }
@@ -88,7 +89,7 @@ export class ProjectManager {
       }
       fs.writeFileSync(this.settingsFilePath, JSON.stringify(this.settings, null, 2));
     } catch (error) {
-      console.error('Error saving settings:', error);
+      log.error('Error saving settings:', error);
     }
   }
 
@@ -232,7 +233,7 @@ export class ProjectManager {
     try {
       ProjectSettingsService.saveSettings(updatedProject, settings);
     } catch (error) {
-      console.error('Error saving project settings to file:', error);
+      log.error('Error saving project settings to file:', error);
     }
 
     return updatedProject;

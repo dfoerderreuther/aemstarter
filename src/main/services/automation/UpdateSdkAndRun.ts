@@ -2,6 +2,7 @@ import { Project } from "../../../types/Project";
 import { Installer } from "../Installer";
 import { AutoTask } from "./Automation";
 import { AutoStartStopService } from "../AutoStartStopService";
+import log from 'electron-log';
 
 
 export class UpdateSdkAndRun implements AutoTask {
@@ -15,7 +16,7 @@ export class UpdateSdkAndRun implements AutoTask {
     }
 
     public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
-        const progress = progressCallback || (() => { console.log('Progress callback not provided'); });
+        const progress = progressCallback || (() => { log.info('Progress callback not provided'); });
 
         progress('Updating SDK and start');
 

@@ -5,6 +5,7 @@ import { AemInstanceManager } from "./AemInstanceManager";
 import { DispatcherManager } from "./DispatcherManager";
 import { HttpsService } from "./HttpsService";
 import { HttpsServiceRegister } from "../HttpsServiceRegister";
+import log from 'electron-log';
 
 export class AutoStartStopService {
 
@@ -21,6 +22,7 @@ export class AutoStartStopService {
     }
 
     public async start() {
+        log.info(`[AutoStartStopService] Starting AEM and Dispatcher...`);
         // Start author and publisher in parallel
         const aemStartPromises: Promise<void>[] = [];
         aemStartPromises.push(this.aemInstanceManager.startInstance('author', 'start'))
@@ -50,6 +52,7 @@ export class AutoStartStopService {
     }
     
     public async startDebug() {
+        log.info(`[AutoStartStopService] Starting AEM and Dispatcher in debug mode...`);
         // Start author and publisher in parallel in debug mode
         const aemStartPromises: Promise<void>[] = [];
         aemStartPromises.push(this.aemInstanceManager.startInstance('author', 'debug'))
@@ -79,6 +82,7 @@ export class AutoStartStopService {
     }
 
     public async stop() {
+        log.info(`[AutoStartStopService] Stopping AEM and Dispatcher...`);
         const stopPromises: Promise<void>[] = [];
         
         if (this.aemInstanceManager.isInstanceRunning('author')) {
@@ -97,6 +101,7 @@ export class AutoStartStopService {
     }
 
     public async restartDispatcher() {
+        log.info(`[AutoStartStopService] Restarting Dispatcher...`);
         if (this.dispatcherManager.isDispatcherRunning()) {
             await this.dispatcherManager.stopDispatcher();
         }
@@ -105,6 +110,7 @@ export class AutoStartStopService {
 
 
     public async awaitAllRunning() {
+        log.info(`[AutoStartStopService] Awaiting all services to be running...`);
         const maxWaitTime = 10 * 60 * 1000; // 5 minutes in milliseconds
         const checkInterval = 2000; // 2 seconds in milliseconds
         const startTime = Date.now();

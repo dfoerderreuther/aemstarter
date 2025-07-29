@@ -126,7 +126,7 @@ export const TerminalTabQuickCommands = ({
     },
     'AEM-Starter Logging': {
       items: [
-        { command: 'tail -n 100 -f ~/Library/Application\\ Support/AEM-Starter/logs/main.log', name: 'Watch AEM-Starter Logs' }
+        { command: 'tail -n 100 -f ~/Library/Logs/AEM-Starter/main.log', name: 'Watch AEM-Starter Logs' }
       ]
     }
   };

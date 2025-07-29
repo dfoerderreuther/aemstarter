@@ -5,6 +5,7 @@ import { execSync } from 'child_process';
 import * as https from 'https';
 import * as httpProxy from 'http-proxy';
 import { BrowserWindow } from 'electron';
+import log from 'electron-log';
 
 class HttpsProxyLogger {
     private project: Project;
@@ -41,7 +42,7 @@ class HttpsProxyLogger {
             fs.appendFileSync(logFilePath, formattedMessage);
         } catch (error) {
             // Fallback to console if file writing fails
-            console.log(`[HTTPS Proxy] ${message}`);
+            log.info(`[HTTPS Proxy] ${message}`);
         }
     }
 
@@ -53,7 +54,7 @@ class HttpsProxyLogger {
             fs.appendFileSync(logFilePath, formattedMessage);
         } catch (error) {
             // Fallback to console if file writing fails
-            console.error(`[HTTPS Proxy] ${message}`);
+            log.error(`[HTTPS Proxy] ${message}`);
         }
     }
 
@@ -116,7 +117,7 @@ export class HttpsService {
     }
 
     public async startSslProxy(): Promise<void> {
-        console.log('[HttpsService] startSslProxy');
+        log.info('[HttpsService] startSslProxy');
         return new Promise(async (resolve, reject) => {
             try {
                 const sslDir = path.join(this.project.folderPath, 'ssl');
@@ -179,7 +180,7 @@ export class HttpsService {
     }
 
     public async stopSslProxy(): Promise<void> {
-        console.log('[HttpsService] stopSslProxy');
+        log.info('[HttpsService] stopSslProxy');
         return new Promise((resolve, reject) => {
             if (!this.server) {
                 this.logger.log('No SSL proxy server to stop');

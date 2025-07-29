@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { randomUUID } from 'crypto';
 import AdmZip from 'adm-zip';
+import log from 'electron-log';
 
 export class PackageManager {
 
@@ -127,14 +128,14 @@ ${filterEntries}
         const packagesDir = path.join(this.project.folderPath, 'packages');
         if (!fs.existsSync(packagesDir)) {
             fs.mkdirSync(packagesDir, { recursive: true });
-            console.log(`[PackageManager] Created packages directory: ${packagesDir}`);
+            log.info(`[PackageManager] Created packages directory: ${packagesDir}`);
         }
 
         // Create package-specific directory
         const packageDir = path.join(packagesDir, name);
         if (!fs.existsSync(packageDir)) {
             fs.mkdirSync(packageDir, { recursive: true });
-            console.log(`[PackageManager] Created package directory: ${packageDir}`);
+            log.info(`[PackageManager] Created package directory: ${packageDir}`);
         }
 
         // Load package metadata to get actual AEM paths
@@ -145,13 +146,13 @@ ${filterEntries}
             try {
                 const metadataContent = fs.readFileSync(metadataPath, 'utf8');
                 packageMetadata = JSON.parse(metadataContent);
-                console.log(`[PackageManager] Loaded package metadata from: ${metadataPath}`);
+                log.info(`[PackageManager] Loaded package metadata from: ${metadataPath}`);
             } catch (error) {
-                console.error(`[PackageManager] Error loading package metadata:`, error);
-                console.log(`[PackageManager] Will use fallback path construction`);
+                log.error(`[PackageManager] Error loading package metadata:`, error);
+                log.info(`[PackageManager] Will use fallback path construction`);
             }
         } else {
-            console.log(`[PackageManager] No metadata file found, using fallback path construction`);
+            log.info(`[PackageManager] No metadata file found, using fallback path construction`);
         }
 
         // Get instance settings
@@ -168,26 +169,26 @@ ${filterEntries}
             const host = 'localhost';
             const packageName = `${name}-${instance}`;
             
-            console.log(`[PackageManager] Rebuilding package ${packageName} on ${instance} instance`);
+            log.info(`[PackageManager] Rebuilding package ${packageName} on ${instance} instance`);
             
             try {
                 // Get the actual AEM package path from metadata, or fall back to constructed path
                 let packagePath;
                 if (instance === 'author' && packageMetadata.authorAemPath) {
                     packagePath = packageMetadata.authorAemPath;
-                    console.log(`[PackageManager] Using stored author AEM path: ${packagePath}`);
+                    log.info(`[PackageManager] Using stored author AEM path: ${packagePath}`);
                 } else if (instance === 'publisher' && packageMetadata.publisherAemPath) {
                     packagePath = packageMetadata.publisherAemPath;
-                    console.log(`[PackageManager] Using stored publisher AEM path: ${packagePath}`);
+                    log.info(`[PackageManager] Using stored publisher AEM path: ${packagePath}`);
                 } else {
                     // Fallback to constructed path for backward compatibility
                     packagePath = `/etc/packages/aem-starter/${packageName}.zip`;
-                    console.log(`[PackageManager] Using fallback path: ${packagePath}`);
+                    log.info(`[PackageManager] Using fallback path: ${packagePath}`);
                 }
                 
                 // Build the package
                 const buildUrl = `http://${host}:${port}/crx/packmgr/service/.json${packagePath}?cmd=build`;
-                console.log(`[PackageManager] Building package: ${buildUrl}`);
+                log.info(`[PackageManager] Building package: ${buildUrl}`);
                 
                 const buildResponse = await fetch(buildUrl, {
                     method: 'POST',
@@ -197,8 +198,8 @@ ${filterEntries}
                 });
                 
                 const buildResponseText = await buildResponse.text();
-                console.log(`[PackageManager] Build response status: ${buildResponse.status}`);
-                console.log(`[PackageManager] Build response text:`, buildResponseText);
+                log.info(`[PackageManager] Build response status: ${buildResponse.status}`);
+                log.info(`[PackageManager] Build response text:`, buildResponseText);
                 
                 if (!buildResponse.ok) {
                     throw new Error(`Failed to build package: ${buildResponse.status} ${buildResponse.statusText}. Response: ${buildResponseText}`);
@@ -207,13 +208,13 @@ ${filterEntries}
                 // Download the built package
                 const downloadUrl = `http://${host}:${port}${packagePath}`;
                 const tempPackagePath = path.join(packageDir, `${packageName}.zip`);
-                console.log(`[PackageManager] Downloading package from ${downloadUrl} to ${tempPackagePath}`);
+                log.info(`[PackageManager] Downloading package from ${downloadUrl} to ${tempPackagePath}`);
                 await this.atomicDownloadWithAuth(downloadUrl, tempPackagePath);
                 
-                console.log(`[PackageManager] Successfully rebuilt and downloaded package: ${packageName}`);
+                log.info(`[PackageManager] Successfully rebuilt and downloaded package: ${packageName}`);
                 
             } catch (error) {
-                console.error(`[PackageManager] Error rebuilding/downloading package ${packageName}:`, error);
+                log.error(`[PackageManager] Error rebuilding/downloading package ${packageName}:`, error);
                 throw error;
             }
         }
@@ -224,7 +225,7 @@ ${filterEntries}
         const packagesDir = path.join(this.project.folderPath, 'packages');
         if (!fs.existsSync(packagesDir)) {
             fs.mkdirSync(packagesDir, { recursive: true });
-            console.log(`[PackageManager] Created packages directory: ${packagesDir}`);
+            log.info(`[PackageManager] Created packages directory: ${packagesDir}`);
         }
 
         // Create package-specific directory
@@ -233,7 +234,7 @@ ${filterEntries}
             throw new Error(`Package '${name}' already exists. Please choose a different name.`);
         }
         fs.mkdirSync(packageDir, { recursive: true });
-        console.log(`[PackageManager] Created package directory: ${packageDir}`);
+        log.info(`[PackageManager] Created package directory: ${packageDir}`);
 
         // Initialize package metadata
         const packageMetadata: any = {
@@ -260,7 +261,7 @@ ${filterEntries}
             const host = 'localhost';
             const packageName = `${name}-${instance}`;
             
-            console.log(`[PackageManager] Creating package ${packageName} with paths: ${paths.join(', ')} on ${instance} instance`);
+            log.info(`[PackageManager] Creating package ${packageName} with paths: ${paths.join(', ')} on ${instance} instance`);
             
             try {
                 // Create package zip with filter.xml
@@ -269,19 +270,19 @@ ${filterEntries}
                 // Save package locally first for debugging
                 const tempPackagePath = path.join(packageDir, `${packageName}.zip`);
                 fs.writeFileSync(tempPackagePath, packageBuffer);
-                console.log(`[PackageManager] Created package zip at: ${tempPackagePath}`);
-                console.log(`[PackageManager] Package size: ${packageBuffer.length} bytes`);
+                log.info(`[PackageManager] Created package zip at: ${tempPackagePath}`);
+                log.info(`[PackageManager] Package size: ${packageBuffer.length} bytes`);
                 
                 // Debug: Check zip contents
                 try {
                     const testZip = new AdmZip(tempPackagePath);
                     const entries = testZip.getEntries();
-                    console.log(`[PackageManager] Zip contains ${entries.length} entries:`);
+                    log.info(`[PackageManager] Zip contains ${entries.length} entries:`);
                     entries.forEach(entry => {
-                        console.log(`  - ${entry.entryName} (${entry.header.size} bytes)`);
+                        log.info(`  - ${entry.entryName} (${entry.header.size} bytes)`);
                     });
                 } catch (zipError) {
-                    console.error(`[PackageManager] Error reading zip contents:`, zipError);
+                    log.error(`[PackageManager] Error reading zip contents:`, zipError);
                 }
                 
                 // Upload package to package manager using proper form data
@@ -289,9 +290,9 @@ ${filterEntries}
                 const formData = this.createSimpleMultipartFormData(boundary, packageBuffer, `${packageName}.zip`);
                 
                 const uploadUrl = `http://${host}:${port}/crx/packmgr/service/.json`;
-                console.log(`[PackageManager] Uploading package to: ${uploadUrl}`);
-                console.log(`[PackageManager] Form data size: ${formData.length} bytes`);
-                console.log(`[PackageManager] Boundary: ${boundary}`);
+                log.info(`[PackageManager] Uploading package to: ${uploadUrl}`);
+                log.info(`[PackageManager] Form data size: ${formData.length} bytes`);
+                log.info(`[PackageManager] Boundary: ${boundary}`);
                 
                 const uploadResponse = await fetch(uploadUrl, {
                     method: 'POST',
@@ -303,8 +304,8 @@ ${filterEntries}
                 });
                 
                 const uploadResponseText = await uploadResponse.text();
-                console.log(`[PackageManager] Upload response status: ${uploadResponse.status}`);
-                console.log(`[PackageManager] Upload response text:`, uploadResponseText);
+                log.info(`[PackageManager] Upload response status: ${uploadResponse.status}`);
+                log.info(`[PackageManager] Upload response text:`, uploadResponseText);
                 
                 if (!uploadResponse.ok) {
                     throw new Error(`Failed to upload package: ${uploadResponse.status} ${uploadResponse.statusText}. Response: ${uploadResponseText}`);
@@ -316,17 +317,17 @@ ${filterEntries}
                     const responseJson = JSON.parse(uploadResponseText);
                     if (responseJson.success && responseJson.path) {
                         packagePath = responseJson.path;
-                        console.log(`[PackageManager] Package uploaded to: ${packagePath}`);
+                        log.info(`[PackageManager] Package uploaded to: ${packagePath}`);
                     } else {
                         throw new Error(`Upload response indicates failure: ${uploadResponseText}`);
                     }
                 } catch (parseError) {
-                    console.log(`[PackageManager] Could not parse upload response as JSON, trying to extract path from HTML response`);
+                    log.info(`[PackageManager] Could not parse upload response as JSON, trying to extract path from HTML response`);
                     // Try to extract path from HTML response
                     const pathMatch = uploadResponseText.match(/\/etc\/packages\/[^"]+\.zip/);
                     if (pathMatch) {
                         packagePath = pathMatch[0];
-                        console.log(`[PackageManager] Extracted package path: ${packagePath}`);
+                        log.info(`[PackageManager] Extracted package path: ${packagePath}`);
                     } else {
                         throw new Error(`Could not determine package path from upload response: ${uploadResponseText}`);
                     }
@@ -341,7 +342,7 @@ ${filterEntries}
                 
                 // Build the package
                 const buildUrl = `http://${host}:${port}/crx/packmgr/service/.json${packagePath}?cmd=build`;
-                console.log(`[PackageManager] Building package: ${buildUrl}`);
+                log.info(`[PackageManager] Building package: ${buildUrl}`);
                 
                 const buildResponse = await fetch(buildUrl, {
                     method: 'POST',
@@ -351,8 +352,8 @@ ${filterEntries}
                 });
                 
                 const buildResponseText = await buildResponse.text();
-                console.log(`[PackageManager] Build response status: ${buildResponse.status}`);
-                console.log(`[PackageManager] Build response text:`, buildResponseText);
+                log.info(`[PackageManager] Build response status: ${buildResponse.status}`);
+                log.info(`[PackageManager] Build response text:`, buildResponseText);
                 
                 if (!buildResponse.ok) {
                     throw new Error(`Failed to build package: ${buildResponse.status} ${buildResponse.statusText}. Response: ${buildResponseText}`);
@@ -360,13 +361,13 @@ ${filterEntries}
                 
                 // Download the built package
                 const downloadUrl = `http://${host}:${port}${packagePath}`;
-                console.log(`[PackageManager] Downloading package from ${downloadUrl} to ${tempPackagePath}`);
+                log.info(`[PackageManager] Downloading package from ${downloadUrl} to ${tempPackagePath}`);
                 await this.atomicDownloadWithAuth(downloadUrl, tempPackagePath);
                 
-                console.log(`[PackageManager] Successfully created, built and downloaded package: ${packageName}`);
+                log.info(`[PackageManager] Successfully created, built and downloaded package: ${packageName}`);
                 
             } catch (error) {
-                console.error(`[PackageManager] Error creating/building/downloading package ${packageName}:`, error);
+                log.error(`[PackageManager] Error creating/building/downloading package ${packageName}:`, error);
                 throw error;
             }
         }
@@ -375,9 +376,9 @@ ${filterEntries}
         const metadataPath = path.join(packageDir, 'package.json');
         try {
             fs.writeFileSync(metadataPath, JSON.stringify(packageMetadata, null, 2));
-            console.log(`[PackageManager] Saved package metadata to: ${metadataPath}`);
+            log.info(`[PackageManager] Saved package metadata to: ${metadataPath}`);
         } catch (error) {
-            console.error(`[PackageManager] Error saving package metadata:`, error);
+            log.error(`[PackageManager] Error saving package metadata:`, error);
         }
     }
 
@@ -413,7 +414,7 @@ ${filterEntries}
                         const metadataContent = fs.readFileSync(metadataPath, 'utf8');
                         packageMetadata = JSON.parse(metadataContent);
                     } catch (error) {
-                        console.error(`[PackageManager] Error loading package metadata for ${packageFolder}:`, error);
+                        log.error(`[PackageManager] Error loading package metadata for ${packageFolder}:`, error);
                     }
                 }
                 
@@ -426,7 +427,7 @@ ${filterEntries}
                         const authorStats = fs.statSync(authorZipPath);
                         authorSize = authorStats.size;
                     } catch (error) {
-                        console.error(`[PackageManager] Error getting author package size for ${packageFolder}:`, error);
+                        log.error(`[PackageManager] Error getting author package size for ${packageFolder}:`, error);
                     }
                 }
                 
@@ -435,7 +436,7 @@ ${filterEntries}
                         const publisherStats = fs.statSync(publisherZipPath);
                         publisherSize = publisherStats.size;
                     } catch (error) {
-                        console.error(`[PackageManager] Error getting publisher package size for ${packageFolder}:`, error);
+                        log.error(`[PackageManager] Error getting publisher package size for ${packageFolder}:`, error);
                     }
                 }
                 
@@ -479,11 +480,11 @@ ${filterEntries}
                                     }
                                 }
                             } catch (filterError) {
-                                console.error(`[PackageManager] Error reading filter.xml content for ${packageFolder}:`, filterError);
+                                log.error(`[PackageManager] Error reading filter.xml content for ${packageFolder}:`, filterError);
                             }
                         }
                     } catch (zipError) {
-                        console.error(`[PackageManager] Error reading zip file for ${packageFolder}:`, zipError);
+                        log.error(`[PackageManager] Error reading zip file for ${packageFolder}:`, zipError);
                     }
                 }
                 
@@ -499,7 +500,7 @@ ${filterEntries}
                     publisherAemPath: packageMetadata.publisherAemPath
                 });
             } catch (error) {
-                console.error(`[PackageManager] Error reading package folder ${packageFolder}:`, error);
+                log.error(`[PackageManager] Error reading package folder ${packageFolder}:`, error);
                 // Still add the package with basic info if folder reading fails
                 try {
                     const stats = fs.statSync(packageFolderPath);
@@ -511,7 +512,7 @@ ${filterEntries}
                         hasPublisher: false
                     });
                 } catch (statsError) {
-                    console.error(`[PackageManager] Error getting stats for ${packageFolder}:`, statsError);
+                    log.error(`[PackageManager] Error getting stats for ${packageFolder}:`, statsError);
                 }
             }
         }
@@ -525,9 +526,9 @@ ${filterEntries}
         if (fs.existsSync(packageFolderPath)) {
             // Remove the entire package folder and its contents
             fs.rmSync(packageFolderPath, { recursive: true, force: true });
-            console.log(`[PackageManager] Deleted package folder: ${packageName}`);
+            log.info(`[PackageManager] Deleted package folder: ${packageName}`);
         } else {
-            console.log(`[PackageManager] Package folder not found: ${packageName}`);
+            log.info(`[PackageManager] Package folder not found: ${packageName}`);
         }
     }
 
@@ -541,7 +542,7 @@ ${filterEntries}
             throw new Error(`Package file not found: ${zipFilePath}`);
         }
 
-        console.log(`[PackageManager] Installing package ${packageName} for ${instance} instance from ${zipFilePath}`);
+        log.info(`[PackageManager] Installing package ${packageName} for ${instance} instance from ${zipFilePath}`);
         return this.installPackageFromFile(instance, zipFilePath);
     }
 
@@ -567,7 +568,7 @@ ${filterEntries}
         }
         
         await Promise.all(promises);
-        console.log(`[PackageManager] Successfully installed all packages for ${packageName}`);
+        log.info(`[PackageManager] Successfully installed all packages for ${packageName}`);
     }
 
     private async installPackageFromFile(instance: 'author' | 'publisher', filePath: string): Promise<void> {
@@ -586,7 +587,7 @@ ${filterEntries}
         const port = instanceSettings.port;
         const host = 'localhost'; // Default host
 
-        console.log(`[PackageManager] Installing package on ${instance} instance (${host}:${port})`);
+        log.info(`[PackageManager] Installing package on ${instance} instance (${host}:${port})`);
         
         try {
             // Read the file as a buffer
@@ -602,7 +603,7 @@ ${filterEntries}
             });
 
             const url = `http://${host}:${port}/crx/packmgr/service.jsp`;
-            console.log(`[PackageManager] Installing package to: ${url}`);
+            log.info(`[PackageManager] Installing package to: ${url}`);
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -620,11 +621,11 @@ ${filterEntries}
             }
 
             const responseText = await response.text();
-            console.log(`[PackageManager] Installation response:`, responseText);
-            console.log(`[PackageManager] Successfully installed package on ${instance} instance`);
+            log.info(`[PackageManager] Installation response:`, responseText);
+            log.info(`[PackageManager] Successfully installed package on ${instance} instance`);
             
         } catch (error) {
-            console.error(`[PackageManager] Error installing package:`, error);
+            log.error(`[PackageManager] Error installing package:`, error);
             throw error;
         }
     }

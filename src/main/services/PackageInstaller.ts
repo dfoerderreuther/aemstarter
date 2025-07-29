@@ -2,6 +2,7 @@ import { Project } from "../../types/Project";
 import path from 'path';
 import fs from 'fs';
 import { randomUUID } from 'crypto';
+import log from 'electron-log';
 
 export class PackageInstaller {
 
@@ -42,45 +43,45 @@ export class PackageInstaller {
 
         // Create install directory if it doesn't exist
         const installDir = this.getInstallDir();
-        console.log(`[PackageInstaller] DEBUG: packageUrl = ${packageUrl}`);
-        console.log(`[PackageInstaller] DEBUG: installDir = ${installDir}`);
+        log.info(`[PackageInstaller] DEBUG: packageUrl = ${packageUrl}`);
+        log.info(`[PackageInstaller] DEBUG: installDir = ${installDir}`);
 
         // Extract filename from URL and make it instance-specific
         const originalFileName = path.basename(packageUrl);
-        console.log(`[PackageInstaller] DEBUG: originalFileName = ${originalFileName}`);
+        log.info(`[PackageInstaller] DEBUG: originalFileName = ${originalFileName}`);
         const fileExtension = path.extname(originalFileName);
         const baseName = path.basename(originalFileName, fileExtension);
         const fileName = `${baseName}-${instance}${fileExtension}`;
         const filePath = path.join(installDir, fileName);
-        console.log(`[PackageInstaller] DEBUG: fileName = ${fileName}`);
-        console.log(`[PackageInstaller] DEBUG: filePath = ${filePath}`);
+        log.info(`[PackageInstaller] DEBUG: fileName = ${fileName}`);
+        log.info(`[PackageInstaller] DEBUG: filePath = ${filePath}`);
 
         if (packageUrl.startsWith('http')) {
 
             // Download the package if it doesn't exist
             if (!fs.existsSync(filePath)) {
-                console.log(`[PackageInstaller] Downloading package from ${packageUrl} for ${instance} instance`);
+                log.info(`[PackageInstaller] Downloading package from ${packageUrl} for ${instance} instance`);
                 
                 try {
                     await this.atomicDownload(packageUrl, filePath);
-                    console.log(`[PackageInstaller] Downloaded package to ${filePath}`);
+                    log.info(`[PackageInstaller] Downloaded package to ${filePath}`);
                 } catch (error) {
-                    console.error(`[PackageInstaller] Error downloading package:`, error);
+                    log.error(`[PackageInstaller] Error downloading package:`, error);
                     throw error;
                 }
             } else {
-                console.log(`[PackageInstaller] Package already exists at ${filePath}`);
+                log.info(`[PackageInstaller] Package already exists at ${filePath}`);
             }
         } else {
             // its a file
             
             // Copy the package if it doesn't exist
             if (!fs.existsSync(filePath)) {
-                console.log(`[PackageInstaller] Copying package from ${packageUrl} for ${instance} instance`);
+                log.info(`[PackageInstaller] Copying package from ${packageUrl} for ${instance} instance`);
                 fs.copyFileSync(packageUrl, filePath);
-                console.log(`[PackageInstaller] Copied package to ${filePath}`);
+                log.info(`[PackageInstaller] Copied package to ${filePath}`);
             } else {
-                console.log(`[PackageInstaller] Package already exists at ${filePath}`);
+                log.info(`[PackageInstaller] Package already exists at ${filePath}`);
             }
         }
         return this.installPackageFromFile(instance, filePath);
@@ -111,7 +112,7 @@ export class PackageInstaller {
         const port = instanceSettings.port;
         const host = 'localhost'; // Default host
 
-        console.log(`[PackageInstaller] Installing package on ${instance} instance (${host}:${port})`);
+        log.info(`[PackageInstaller] Installing package on ${instance} instance (${host}:${port})`);
         
         try {
             // Read the file as a buffer
@@ -127,7 +128,7 @@ export class PackageInstaller {
             });
 
             const url = `http://${host}:${port}/crx/packmgr/service.jsp`;
-            console.log(`[PackageInstaller] Installing package to: ${url}`);
+            log.info(`[PackageInstaller] Installing package to: ${url}`);
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -145,11 +146,11 @@ export class PackageInstaller {
             }
 
             const responseText = await response.text();
-            console.log(`[PackageInstaller] Installation response:`, responseText);
-            console.log(`[PackageInstaller] Successfully installed package on ${instance} instance`);
+            log.info(`[PackageInstaller] Installation response:`, responseText);
+            log.info(`[PackageInstaller] Successfully installed package on ${instance} instance`);
             
         } catch (error) {
-            console.error(`[PackageInstaller] Error installing package:`, error);
+            log.error(`[PackageInstaller] Error installing package:`, error);
             throw error;
         }
     }

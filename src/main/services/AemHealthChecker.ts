@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import { Project } from '../../types/Project';
 import path from 'path';
 import fs from 'fs';
+import log from 'electron-log';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'starting' | 'unknown';
@@ -33,7 +34,7 @@ export class AemHealthChecker {
     
     // Skip health check if disabled in general configuration
     if (!settings.general?.healthCheck) {
-      console.log(`[AemHealthChecker] Health check disabled in general settings, skipping ${instanceType}`);
+      log.info(`[AemHealthChecker] Health check disabled in general settings, skipping ${instanceType}`);
       return {
         status: 'unknown',
         timestamp: Date.now()
@@ -94,13 +95,13 @@ export class AemHealthChecker {
         timestamp: Date.now()
       };
 
-      //console.log(`[AemHealthChecker] Health check result for ${instanceType}: status=${response.status}, ok=${response.ok}, url=${url}`);
+      //log.info(`[AemHealthChecker] Health check result for ${instanceType}: status=${response.status}, ok=${response.ok}, url=${url}`);
 
       // Take a screenshot regardless of health status (for debugging)
       try {
         status.screenshotPath = await this.takeScreenshot(instanceType, port);
       } catch (screenshotError) {
-        console.warn(`Failed to take screenshot for ${instanceType}:`, screenshotError);
+        log.warn(`Failed to take screenshot for ${instanceType}:`, screenshotError);
       }
 
       this.lastHealthStatus.set(instanceType, status);
@@ -119,7 +120,7 @@ export class AemHealthChecker {
         timestamp: Date.now()
       };
 
-      console.log(`[AemHealthChecker] Health check error for ${instanceType}`);
+      log.info(`[AemHealthChecker] Health check error for ${instanceType}`);
 
       this.lastHealthStatus.set(instanceType, status);
       this.sendHealthUpdate(instanceType, status);
@@ -253,11 +254,11 @@ export class AemHealthChecker {
         try {
           fs.unlinkSync(file.path);
         } catch (error) {
-          console.warn(`Failed to delete old screenshot ${file.name}:`, error);
+          log.warn(`Failed to delete old screenshot ${file.name}:`, error);
         }
       });
     } catch (error) {
-      console.warn(`Failed to cleanup old screenshots for ${instanceType}:`, error);
+      log.warn(`Failed to cleanup old screenshots for ${instanceType}:`, error);
     }
   }
 
@@ -274,7 +275,7 @@ export class AemHealthChecker {
     
     // Only restart the interval if it needs to change
     if (currentConfig.intervalMs !== desiredInterval) {
-      console.log(`[AemHealthChecker] Adjusting health check interval for ${instanceType} from ${currentConfig.intervalMs}ms to ${desiredInterval}ms (status: ${status.status}, statusCode: ${status.statusCode})`);
+      log.info(`[AemHealthChecker] Adjusting health check interval for ${instanceType} from ${currentConfig.intervalMs}ms to ${desiredInterval}ms (status: ${status.status}, statusCode: ${status.statusCode})`);
       
       // Stop current interval
       const interval = this.healthCheckIntervals.get(instanceType);
@@ -316,7 +317,7 @@ export class AemHealthChecker {
       clearInterval(interval);
       this.healthCheckIntervals.delete(instanceType);
       this.currentIntervals.delete(instanceType);
-      console.log(`[AemHealthChecker] Stopped health checks for ${instanceType}`);
+      log.info(`[AemHealthChecker] Stopped health checks for ${instanceType}`);
     }
   }
 

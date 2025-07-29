@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, Menu } from 
 import path from 'node:path';
 import fs from 'fs';
 import started from 'electron-squirrel-startup';
+import log from 'electron-log';
 import { Installer } from './main/services/Installer';
 import { ProjectSettingsService } from './main/services/ProjectSettingsService';
 import { PackageInstaller } from './main/services/PackageInstaller';
@@ -39,34 +40,8 @@ app.setName('AEM-Starter');
 app.commandLine.appendSwitch('max-old-space-size', '8192'); // 8GB
 app.commandLine.appendSwitch('max-semi-space-size', '512'); // 512MB
 
-// Setup logging for production builds
-if (!process.env.NODE_ENV || process.env.NODE_ENV === 'production') {
-  const logDir = path.join(app.getPath('userData'), 'logs');
-  if (!fs.existsSync(logDir)) {
-    fs.mkdirSync(logDir, { recursive: true });
-  }
-  
-  const logFile = path.join(logDir, 'main.log');
-  const logStream = fs.createWriteStream(logFile, { flags: 'a' });
-  
-  // Redirect console output to log file
-  const originalConsoleLog = console.log;
-  const originalConsoleError = console.error;
-  
-  console.log = (...args) => {
-    const timestamp = new Date().toISOString();
-    logStream.write(`[${timestamp}] LOG: ${args.join(' ')}\n`);
-    originalConsoleLog(...args);
-  };
-  
-  console.error = (...args) => {
-    const timestamp = new Date().toISOString();
-    logStream.write(`[${timestamp}] ERROR: ${args.join(' ')}\n`);
-    originalConsoleError(...args);
-  };
-  
-  console.log('Main process logging initialized. Log file:', logFile);
-}
+// Initialize electron-log (automatically handles file logging)
+log.info('Main process logging initialized');
 
 // Declare Vite environment variables
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -93,8 +68,8 @@ const createWindow = () => {
   };
 
   const iconPath = getIconPath();
-  console.log('Using icon path:', iconPath);
-  console.log('Icon file exists:', fs.existsSync(iconPath));
+  log.info('Using icon path:', iconPath);
+  log.info('Icon file exists:', fs.existsSync(iconPath));
     
   mainWindow = new BrowserWindow({
     width: 1600,
@@ -140,16 +115,16 @@ const createWindow = () => {
 
 // Project management IPC handlers
 ipcMain.handle('check-running-instances', async (_, project: Project) => {
-  console.log('[main, check-running-instances] Checking project:', project?.name);
+      log.info('[main, check-running-instances] Checking project:', project?.name);
   
   if (!project) {
-    console.log('[check-running-instances] No project provided');
+          log.info('[check-running-instances] No project provided');
     return { hasRunning: false, runningInstances: [] };
   }
 
   // Check if project folder still exists
   if (!fs.existsSync(project.folderPath)) {
-    console.log(`[check-running-instances] Project folder not found, removing from database: ${project.name} (${project.folderPath})`);
+          log.info(`[check-running-instances] Project folder not found, removing from database: ${project.name} (${project.folderPath})`);
     ProjectManagerRegister.getManager().deleteProject(project.id);
     return { hasRunning: false, runningInstances: [] };
   }
@@ -192,7 +167,7 @@ ipcMain.handle('check-running-instances', async (_, project: Project) => {
       });
     }
   } catch (error) {
-    console.warn(`Error checking instances for project ${project.name}:`, error);
+    log.warn(`Error checking instances for project ${project.name}:`, error);
   }
 
   const result = {
@@ -200,7 +175,7 @@ ipcMain.handle('check-running-instances', async (_, project: Project) => {
     runningInstances
   };
   
-  console.log('[check-running-instances] Final result:', result);
+  log.info('[check-running-instances] Final result:', result);
   return result;
 });
 
@@ -257,7 +232,7 @@ ipcMain.handle('cleanup-orphaned-projects', async () => {
     cleanupOrphanedProjects();
     return true;
   } catch (error) {
-    console.error('Error cleaning up orphaned projects:', error);
+    log.error('Error cleaning up orphaned projects:', error);
     throw error;
   }
 });
@@ -271,7 +246,7 @@ ipcMain.handle('open-url', async (_, url) => {
     await shell.openExternal(url);
     return true;
   } catch (error) {
-    console.error('Error opening URL:', error);
+    log.error('Error opening URL:', error);
     throw error;
   }
 });
@@ -281,7 +256,7 @@ ipcMain.handle('open-in-finder', async (_, folderPath) => {
     await shell.openPath(folderPath);
     return true;
   } catch (error) {
-    console.error('Error opening folder in finder:', error);
+    log.error('Error opening folder in finder:', error);
     throw error;
   }
 });
@@ -330,7 +305,7 @@ ipcMain.handle('open-in-editor', async (_, folderPath: string, project?: Project
     
     return true;
   } catch (error) {
-    console.error('Error opening folder in editor:', error);
+    log.error('Error opening folder in editor:', error);
     throw error;
   }
 });
@@ -356,7 +331,7 @@ ipcMain.handle('read-directory', async (_, dirPath, showHidden = false) => {
           } catch (error) {
             // If we can't stat the symlink target (broken symlink), 
             // keep the original values
-            console.warn(`Could not stat symlink target for ${entryPath}:`, error);
+            log.warn(`Could not stat symlink target for ${entryPath}:`, error);
           }
         }
         
@@ -369,7 +344,7 @@ ipcMain.handle('read-directory', async (_, dirPath, showHidden = false) => {
         };
       });
   } catch (error) {
-    console.error('Error reading directory:', error);
+    log.error('Error reading directory:', error);
     throw error;
   }
 });
@@ -379,7 +354,7 @@ ipcMain.handle('read-file', async (_, filePath) => {
     const content = await fs.promises.readFile(filePath, 'utf-8');
     return { content };
   } catch (error) {
-    console.error('Error reading file:', error);
+    log.error('Error reading file:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
@@ -389,7 +364,7 @@ ipcMain.handle('write-file', async (_, filePath, content) => {
     await fs.promises.writeFile(filePath, content, 'utf-8');
     return {};
   } catch (error) {
-    console.error('Error writing file:', error);
+    log.error('Error writing file:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
@@ -409,7 +384,7 @@ ipcMain.handle('file-tree-read', async (_, project: Project, dirPath: string, sh
     const service = getFileTreeService(project);
     return await service.readDirectoryTree(dirPath, showHidden);
   } catch (error) {
-    console.error('Error reading directory tree:', error);
+    log.error('Error reading directory tree:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
@@ -420,7 +395,7 @@ ipcMain.handle('file-tree-create-file', async (_, project: Project, filePath: st
     await service.createFile(filePath, content);
     return { success: true };
   } catch (error) {
-    console.error('Error creating file:', error);
+    log.error('Error creating file:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
@@ -431,7 +406,7 @@ ipcMain.handle('file-tree-create-directory', async (_, project: Project, dirPath
     await service.createDirectory(dirPath);
     return { success: true };
   } catch (error) {
-    console.error('Error creating directory:', error);
+    log.error('Error creating directory:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
@@ -442,7 +417,7 @@ ipcMain.handle('file-tree-rename', async (_, project: Project, oldPath: string, 
     await service.rename(oldPath, newPath);
     return { success: true };
   } catch (error) {
-    console.error('Error renaming:', error);
+    log.error('Error renaming:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
@@ -453,7 +428,7 @@ ipcMain.handle('file-tree-move', async (_, project: Project, sourcePath: string,
     await service.move(sourcePath, destinationPath);
     return { success: true };
   } catch (error) {
-    console.error('Error moving:', error);
+    log.error('Error moving:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
@@ -464,7 +439,7 @@ ipcMain.handle('file-tree-delete', async (_, project: Project, targetPath: strin
     await service.delete(targetPath);
     return { success: true };
   } catch (error) {
-    console.error('Error deleting:', error);
+    log.error('Error deleting:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
@@ -475,7 +450,7 @@ ipcMain.handle('file-tree-get-info', async (_, project: Project, targetPath: str
     const info = await service.getInfo(targetPath);
     return { info };
   } catch (error) {
-    console.error('Error getting file info:', error);
+    log.error('Error getting file info:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 });
@@ -487,7 +462,7 @@ ipcMain.handle('install-aem', async (_, project: Project) => {
     await installer.install();
     return true;
   } catch (error) {
-    console.error('Error installing AEM:', error);
+    log.error('Error installing AEM:', error);
     throw error;
   }
 });
@@ -503,7 +478,7 @@ ipcMain.handle('start-aem-instance', async (_, project: Project, instanceType: '
     await manager.startInstance(instanceType, startType);
     return true;
   } catch (error) {
-    console.error('Error starting AEM instance:', error);
+    log.error('Error starting AEM instance:', error);
     throw error;
   }
 });
@@ -514,7 +489,7 @@ ipcMain.handle('stop-aem-instance', async (_, project: Project, instanceType: 'a
     await manager.stopInstance(instanceType);
     return true;
   } catch (error) {
-    console.error('Error stopping AEM instance:', error);
+    log.error('Error stopping AEM instance:', error);
     throw error;
   }
 });
@@ -539,7 +514,7 @@ ipcMain.handle('get-aem-instance-start-data', (_, project: Project, instanceType
   const startData = manager.getInstanceStartData(instanceType);
     
   if (!startData) {
-    console.log(`[main] No start data found for ${instanceType}`);
+    log.info(`[main] No start data found for ${instanceType}`);
     return null;
   }
   
@@ -580,7 +555,7 @@ ipcMain.handle('update-log-files', async (_, project: Project, instanceType: 'au
     await manager.updateLogFiles(instanceType, logFiles);
     return true;
   } catch (error) {
-    console.error('Error updating log files:', error);
+    log.error('Error updating log files:', error);
     throw error;
   }
 });
@@ -591,7 +566,7 @@ ipcMain.handle('kill-all-aem-instances', async (_, project: Project) => {
     await manager.killAllInstances();
     return true;
   } catch (error) {
-    console.error('Error killing all AEM instances:', error);
+    log.error('Error killing all AEM instances:', error);
     throw error;
   }
 });
@@ -603,14 +578,14 @@ ipcMain.handle('take-aem-screenshot', async (_, project: Project, instanceType: 
     const screenshotPath = await manager.takeScreenshot(instanceType);
     return screenshotPath;
   } catch (error) {
-    console.error('Error taking screenshot:', error);
+    log.error('Error taking screenshot:', error);
     throw error;
   }
 });
 
 ipcMain.handle('get-latest-screenshot', async (_, project: Project, instanceType: 'author' | 'publisher' | 'dispatcher') => {
   try {
-    console.log(`[main] Getting latest screenshot for ${project.name} ${instanceType}`);
+    log.info(`[main] Getting latest screenshot for ${project.name} ${instanceType}`);
     
     // First try to get from memory (health status)
     let screenshotPath: string | null = null;
@@ -619,17 +594,17 @@ ipcMain.handle('get-latest-screenshot', async (_, project: Project, instanceType
       const manager = AemInstanceManagerRegister.getInstanceManager(project);
       screenshotPath = manager.getLatestScreenshot(instanceType);
       if (screenshotPath) {
-        console.log(`[main] Found screenshot from health status: ${screenshotPath}`);
+        log.info(`[main] Found screenshot from health status: ${screenshotPath}`);
         return screenshotPath;
       }
     }
     
     // If not found in memory, look for files on disk
     const screenshotsDir = path.join(project.folderPath, 'screenshots');
-    console.log(`[main] Looking for screenshot files in: ${screenshotsDir}`);
+    log.info(`[main] Looking for screenshot files in: ${screenshotsDir}`);
     
     if (!fs.existsSync(screenshotsDir)) {
-      console.log(`[main] Screenshots directory does not exist: ${screenshotsDir}`);
+      log.info(`[main] Screenshots directory does not exist: ${screenshotsDir}`);
       return null;
     }
     
@@ -645,14 +620,14 @@ ipcMain.handle('get-latest-screenshot', async (_, project: Project, instanceType
     
     if (files.length > 0) {
       const latestScreenshot = files[0].path;
-      console.log(`[main] Found latest screenshot file: ${latestScreenshot}`);
+      log.info(`[main] Found latest screenshot file: ${latestScreenshot}`);
       return latestScreenshot;
     }
     
-    console.log(`[main] No screenshot files found for ${instanceType}`);
+    log.info(`[main] No screenshot files found for ${instanceType}`);
     return null;
   } catch (error) {
-    console.error('Error getting latest screenshot:', error);
+    log.error('Error getting latest screenshot:', error);
     return null;
   }
 });
@@ -662,7 +637,7 @@ ipcMain.handle('get-health-status', async (_, project: Project, instanceType: 'a
     const manager = AemInstanceManagerRegister.getInstanceManager(project);
     return manager.getHealthStatus(instanceType);
   } catch (error) {
-    console.error('Error getting health status:', error);
+    log.error('Error getting health status:', error);
     return null;
   }
 });
@@ -679,7 +654,7 @@ ipcMain.handle('read-screenshot', async (_, screenshotPath: string) => {
     const mimeType = screenshotPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
     return `data:${mimeType};base64,${base64Image}`;
   } catch (error) {
-    console.error('Error reading screenshot:', error);
+    log.error('Error reading screenshot:', error);
     return null;
   }
 });
@@ -702,7 +677,7 @@ ipcMain.handle('get-project-settings', async (_, project: Project) => {
   try {
     return ProjectSettingsService.getSettings(project);
   } catch (error) {
-    console.error('Error getting project settings:', error);
+    log.error('Error getting project settings:', error);
     throw error;
   }
 });
@@ -713,7 +688,7 @@ ipcMain.handle('check-editor-availability', async () => {
     const systemCheck = new SystemCheck();
     return await systemCheck.checkEditorAvailability();
   } catch (error) {
-    console.error('Error checking editor availability:', error);
+    log.error('Error checking editor availability:', error);
     throw error;
   }
 });
@@ -724,7 +699,7 @@ ipcMain.handle('get-java-home-paths', async () => {
     const javaService = new JavaService();
     return await javaService.getJavaHomePaths();
   } catch (error) {
-    console.error('Error getting Java home paths:', error);
+    log.error('Error getting Java home paths:', error);
     throw error;
   }
 });
@@ -735,7 +710,7 @@ ipcMain.handle('validate-java-home', async (_, javaHomePath: string) => {
     const javaService = new JavaService();
     return await javaService.validateJavaHome(javaHomePath);
   } catch (error) {
-    console.error('Error validating Java home path:', error);
+    log.error('Error validating Java home path:', error);
     throw error;
   }
 });
@@ -758,13 +733,13 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: Pr
     const manager = AemInstanceManagerRegister.getInstanceManager(updatedProject);
     // Check author instance
     if (settings.general?.healthCheck && manager.isInstanceRunning('author')) {
-      console.log('[main] Starting health checking for author instance after settings change');
+      log.info('[main] Starting health checking for author instance after settings change');
       manager.startHealthChecking('author');
     }
     
     // Check publisher instance  
     if (settings.general?.healthCheck && manager.isInstanceRunning('publisher')) {
-      console.log('[main] Starting health checking for publisher instance after settings change');
+      log.info('[main] Starting health checking for publisher instance after settings change');
       manager.startHealthChecking('publisher');
     }
     
@@ -772,10 +747,10 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: Pr
     const dispatcherManager = DispatcherManagerRegister.getManager(updatedProject);
     if (dispatcherManager.isDispatcherRunning()) {
       if (settings.general?.healthCheck) {
-        console.log('[main] Starting health checking for dispatcher after settings change');
+        log.info('[main] Starting health checking for dispatcher after settings change');
         dispatcherManager.startHealthChecking();
       } else if (!settings.general?.healthCheck) {
-        console.log('[main] Stopping health checking for dispatcher after settings change');
+        log.info('[main] Stopping health checking for dispatcher after settings change');
         dispatcherManager.stopHealthChecking();
       }
     }
@@ -786,7 +761,7 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: Pr
     // Return the updated project so the frontend can update its state
     return updatedProject;
   } catch (error) {
-    console.error('Error saving project settings:', error);
+    log.error('Error saving project settings:', error);
     throw error;
   }
 });
@@ -809,7 +784,7 @@ ipcMain.handle('install-package', async (_, project: Project, instance: 'author'
     }
     return true;
   } catch (error) {
-    console.error('Error installing package:', error);
+    log.error('Error installing package:', error);
     throw error;
   }
 });
@@ -820,7 +795,7 @@ ipcMain.handle('list-packages', async (_, project: Project) => {
     const packageManager = new PackageManager(project);
     return await packageManager.listPackages();
   } catch (error) {
-    console.error('Error listing packages:', error);
+    log.error('Error listing packages:', error);
     throw error;
   }
 });
@@ -831,7 +806,7 @@ ipcMain.handle('create-package', async (_, project: Project, name: string, insta
     await packageManager.createPackage(name, instances, paths);
     return true;
   } catch (error) {
-    console.error('Error creating package:', error);
+    log.error('Error creating package:', error);
     throw error;
   }
 });
@@ -842,7 +817,7 @@ ipcMain.handle('delete-package', async (_, project: Project, packageName: string
     await packageManager.deletePackage(packageName);
     return true;
   } catch (error) {
-    console.error('Error deleting package:', error);
+    log.error('Error deleting package:', error);
     throw error;
   }
 });
@@ -853,7 +828,7 @@ ipcMain.handle('rebuild-package', async (_, project: Project, name: string, inst
     await packageManager.rebuildPackage(name, instances);
     return true;
   } catch (error) {
-    console.error('Error rebuilding package:', error);
+    log.error('Error rebuilding package:', error);
     throw error;
   }
 });
@@ -865,7 +840,7 @@ ipcMain.handle('setup-replication', async (_, project: Project, instance: 'autho
     const result = await replicationSettings.setReplication(project, instance);
     return result;
   } catch (error) {
-    console.error('Error setting up replication:', error);
+    log.error('Error setting up replication:', error);
     throw error;
   }
 });
@@ -876,7 +851,7 @@ ipcMain.handle('is-oak-jar-available', (_, project: Project, instanceType: 'auth
     const manager = AemInstanceManagerRegister.getInstanceManager(project);
     return manager.isOakJarAvailable(instanceType);
   } catch (error) {
-    console.error('Error checking oak-run.jar availability:', error);
+    log.error('Error checking oak-run.jar availability:', error);
     return false;
   }
 });
@@ -887,7 +862,7 @@ ipcMain.handle('load-oak-jar', async (_, project: Project) => {
     await manager.loadOakJar();
     return true;
   } catch (error) {
-    console.error('Error loading oak-run.jar:', error);
+    log.error('Error loading oak-run.jar:', error);
     throw error;
   }
 });
@@ -898,7 +873,7 @@ ipcMain.handle('run-oak-compaction', async (_, project: Project, instanceType: '
     await backupManager.compact(instanceType);
     return true;
   } catch (error) {
-    console.error('Error running oak compaction:', error);
+    log.error('Error running oak compaction:', error);
     throw error;
   }
 });
@@ -909,7 +884,7 @@ ipcMain.handle('run-backup-all', async (_, project: Project, tarName: string, co
     await backupManager.backup(tarName, compress, description, selectedInstances);
     return true;
   } catch (error) {
-    console.error('Error running backup all:', error);  
+    log.error('Error running backup all:', error);  
     throw error;
   }
 });
@@ -919,7 +894,7 @@ ipcMain.handle('list-backups-all', async (_, project: Project) => {
     const backupManager = new BackupService(project);
     return await backupManager.listBackups()
   } catch (error) {
-    console.error('Error listing backups:', error);
+    log.error('Error listing backups:', error);
     throw error;
   }
 });
@@ -930,7 +905,7 @@ ipcMain.handle('run-restore-all', async (_, project: Project, tarName: string) =
     await backupManager.restore(tarName);
     return true;
   } catch (error) {
-    console.error('Error running restore all:', error); 
+    log.error('Error running restore all:', error); 
     throw error;
   }
 });
@@ -941,7 +916,7 @@ ipcMain.handle('delete-backup-all', async (_, project: Project, tarName: string)
     await backupManager.deleteBackup(tarName);
     return true;
   } catch (error) {
-    console.error('Error deleting backup all:', error);
+    log.error('Error deleting backup all:', error);
     throw error;
   }
 });
@@ -952,7 +927,7 @@ ipcMain.handle('run-automation-task', async (_, project: Project, task: string, 
     await Automation.run(project, task, mainWindow || undefined, parameters);
     return true;
   } catch (error) {
-    console.error('Error running automation task:', error);
+    log.error('Error running automation task:', error);
     throw error;
   }
 });
@@ -967,7 +942,7 @@ ipcMain.handle('start-dispatcher', async (_, project: Project) => {
     await manager.startDispatcher();
     return true;
   } catch (error) {
-    console.error('Error starting dispatcher:', error);
+    log.error('Error starting dispatcher:', error);
     throw error;
   }
 });
@@ -978,7 +953,7 @@ ipcMain.handle('stop-dispatcher', async (_, project: Project) => {
     await manager.stopDispatcher();
     return true;
   } catch (error) {
-    console.error('Error stopping dispatcher:', error);
+    log.error('Error stopping dispatcher:', error);
     throw error;
   }
 });
@@ -989,7 +964,7 @@ ipcMain.handle('kill-dispatcher', async (_, project: Project) => {
     await manager.killDispatcher();
     return true;
   } catch (error) {
-    console.error('Error killing dispatcher:', error);
+    log.error('Error killing dispatcher:', error);
     throw error;
   }
 });
@@ -1003,7 +978,7 @@ ipcMain.handle('get-dispatcher-status', async (_, project: Project) => {
     }
     return manager.getDispatcherStatus();
   } catch (error) {
-    console.error('Error getting dispatcher status:', error);
+    log.error('Error getting dispatcher status:', error);
     return { isRunning: false, pid: null, port: 80, config: './dispatcher-sdk/src' };
   }
 });
@@ -1015,7 +990,7 @@ ipcMain.handle('flush-dispatcher', async (_, project: Project) => {
     manager.clearCache();
     return true;
   } catch (error) {
-    console.error('Error flushing dispatcher:', error);
+    log.error('Error flushing dispatcher:', error);
     throw error;
   }
 });
@@ -1026,7 +1001,7 @@ ipcMain.handle('clear-dispatcher-cache', async (_, project: Project) => {
     manager.clearCache();
     return true;
   } catch (error) {
-    console.error('Error clearing dispatcher cache:', error);
+    log.error('Error clearing dispatcher cache:', error);
     throw error;
   }
 });
@@ -1037,7 +1012,7 @@ ipcMain.handle('take-dispatcher-screenshot', async (_, project: Project) => {
     const manager = DispatcherManagerRegister.getManager(project);
     return await manager.takeScreenshot();
   } catch (error) {
-    console.error('Error taking dispatcher screenshot:', error);
+    log.error('Error taking dispatcher screenshot:', error);
     throw error;
   }
 });
@@ -1047,7 +1022,7 @@ ipcMain.handle('get-dispatcher-health-status', async (_, project: Project) => {
     const manager = DispatcherManagerRegister.getManager(project);
     return manager.getHealthStatus();
   } catch (error) {
-    console.error('Error getting dispatcher health status:', error);
+    log.error('Error getting dispatcher health status:', error);
     return null;
   }
 });
@@ -1057,7 +1032,7 @@ ipcMain.handle('check-dispatcher-health', async (_, project: Project) => {
     const manager = DispatcherManagerRegister.getManager(project);
     return await manager.checkHealth();
   } catch (error) {
-    console.error('Error checking dispatcher health:', error);
+    log.error('Error checking dispatcher health:', error);
     throw error;
   }
 });
@@ -1067,7 +1042,7 @@ ipcMain.handle('get-dispatcher-container-id', async (_, project: Project) => {
     const manager = DispatcherManagerRegister.getManager(project);
     return await manager.getContainerId();
   } catch (error) {
-    console.error('Error getting dispatcher container ID:', error);
+    log.error('Error getting dispatcher container ID:', error);
     throw error;
   }
 });
@@ -1078,7 +1053,7 @@ ipcMain.handle('run-system-check', async (_, settings: ProjectSettings) => {
     const systemCheck = new SystemCheck();
     return await systemCheck.runAllChecks(settings);
   } catch (error) {
-    console.error('Error running system check:', error);
+    log.error('Error running system check:', error);
     throw error;
   }
 });
@@ -1095,7 +1070,7 @@ ipcMain.handle('open-dev-project', async (_, project: Project, type: 'files' | '
     await devProjectUtils.open(project, type);
     return true;
   } catch (error) {
-    console.error('Error opening dev project:', error);
+    log.error('Error opening dev project:', error);
     throw error;
   }
 });
@@ -1174,7 +1149,7 @@ ipcMain.handle('start-ssl-proxy', async (_, project: Project) => {
     await httpsService.startSslProxy();
     return true;
   } catch (error) {
-    console.error('Error starting SSL proxy:', error);
+    log.error('Error starting SSL proxy:', error);
     throw error;
   }
 });
@@ -1188,7 +1163,7 @@ ipcMain.handle('stop-ssl-proxy', async (_, project: Project) => {
     await httpsService.stopSslProxy();
     return true;
   } catch (error) {
-    console.error('Error stopping SSL proxy:', error);
+    log.error('Error stopping SSL proxy:', error);
     throw error;
   }
 });
@@ -1201,7 +1176,7 @@ ipcMain.handle('is-ssl-proxy-running', async (_, project: Project) => {
     }
     return await httpsService.isSslProxyRunning();
   } catch (error) {
-    console.error('Error checking SSL proxy status:', error);
+    log.error('Error checking SSL proxy status:', error);
     throw error;
   }
 });
@@ -1216,7 +1191,7 @@ const getCurrentProject = async (): Promise<Project | null> => {
       if (project) {
         // Check if the project folder still exists
         if (!fs.existsSync(project.folderPath)) {
-          console.log(`[getCurrentProject] Last project folder not found, removing from database: ${project.name} (${project.folderPath})`);
+          log.info(`[getCurrentProject] Last project folder not found, removing from database: ${project.name} (${project.folderPath})`);
           projectManager.deleteProject(project.id);
           return null;
         }
@@ -1224,7 +1199,7 @@ const getCurrentProject = async (): Promise<Project | null> => {
       }
     }
   } catch (error) {
-    console.warn('Error getting current project:', error);
+    log.warn('Error getting current project:', error);
   }
   return null;
 };
@@ -1245,7 +1220,7 @@ const checkRunningInstancesForProject = async (project: Project): Promise<{
   try {
     // First check if the project folder still exists
     if (!fs.existsSync(project.folderPath)) {
-      console.log(`[checkRunningInstancesForProject] Project folder not found: ${project.name} (${project.folderPath})`);
+      log.info(`[checkRunningInstancesForProject] Project folder not found: ${project.name} (${project.folderPath})`);
       return {
         hasRunning: false,
         runningInstances: []
@@ -1278,7 +1253,7 @@ const checkRunningInstancesForProject = async (project: Project): Promise<{
       });
     }
   } catch (error) {
-    console.warn(`Error checking instances for project ${project.name}:`, error);
+    log.warn(`Error checking instances for project ${project.name}:`, error);
   }
 
   return {
@@ -1298,7 +1273,7 @@ const createMenu = () => {
     const validProjects = allProjects.filter(project => {
       const folderExists = fs.existsSync(project.folderPath);
       if (!folderExists) {
-        console.log(`[createMenu] Project folder not found, removing from menu: ${project.name} (${project.folderPath})`);
+        log.info(`[createMenu] Project folder not found, removing from menu: ${project.name} (${project.folderPath})`);
         // Remove the project from the database since the folder is gone
         projectManager.deleteProject(project.id);
       }
@@ -1531,21 +1506,21 @@ const cleanupOrphanedProjects = () => {
     const orphanedProjects = allProjects.filter(project => !fs.existsSync(project.folderPath));
     
     if (orphanedProjects.length > 0) {
-      console.log(`[cleanupOrphanedProjects] Found ${orphanedProjects.length} orphaned projects to clean up`);
+      log.info(`[cleanupOrphanedProjects] Found ${orphanedProjects.length} orphaned projects to clean up`);
       orphanedProjects.forEach(project => {
-        console.log(`[cleanupOrphanedProjects] Removing orphaned project: ${project.name} (${project.folderPath})`);
+        log.info(`[cleanupOrphanedProjects] Removing orphaned project: ${project.name} (${project.folderPath})`);
         projectManager.deleteProject(project.id);
       });
-      console.log(`[cleanupOrphanedProjects] Cleanup completed`);
+      log.info(`[cleanupOrphanedProjects] Cleanup completed`);
     }
   } catch (error) {
-    console.error('Error cleaning up orphaned projects:', error);
+    log.error('Error cleaning up orphaned projects:', error);
   }
 };
 
 // Helper function to gracefully stop all running AEM applications
 const gracefullyStopAllApplications = async (): Promise<void> => {
-  console.log('[gracefulShutdown] Starting graceful shutdown of all AEM applications...');
+  log.info('[gracefulShutdown] Starting graceful shutdown of all AEM applications...');
   
   try {
     const projectManager = ProjectManagerRegister.getManager();
@@ -1555,7 +1530,7 @@ const gracefullyStopAllApplications = async (): Promise<void> => {
     const validProjects = allProjects.filter(project => fs.existsSync(project.folderPath));
     
     if (validProjects.length === 0) {
-      console.log('[gracefulShutdown] No valid projects found');
+      log.info('[gracefulShutdown] No valid projects found');
       return;
     }
     
@@ -1568,29 +1543,29 @@ const gracefullyStopAllApplications = async (): Promise<void> => {
         const runningCheck = await checkRunningInstancesForProject(project);
         
         if (runningCheck.hasRunning) {
-          console.log(`[gracefulShutdown] Found running instances in project "${project.name}":`, 
+          log.info(`[gracefulShutdown] Found running instances in project "${project.name}":`, 
             runningCheck.runningInstances.map(instance => `${instance.instanceType}:${instance.port}`).join(', '));
           
           // Use AutoStartStopService to gracefully stop all services for this project
           const autoStartStopService = new AutoStartStopService(project);
           stopPromises.push(
             autoStartStopService.stop().catch(error => {
-              console.error(`[gracefulShutdown] Error stopping services for project "${project.name}":`, error);
+              log.error(`[gracefulShutdown] Error stopping services for project "${project.name}":`, error);
             })
           );
         }
       } catch (error) {
-        console.error(`[gracefulShutdown] Error checking project "${project.name}":`, error);
+        log.error(`[gracefulShutdown] Error checking project "${project.name}":`, error);
       }
     }
     
     if (stopPromises.length > 0) {
-      console.log(`[gracefulShutdown] Stopping services for ${stopPromises.length} projects...`);
+      log.info(`[gracefulShutdown] Stopping services for ${stopPromises.length} projects...`);
       
       // Set a timeout to ensure we don't block shutdown indefinitely
       const timeout = new Promise<void>((resolve) => {
         setTimeout(() => {
-          console.log('[gracefulShutdown] Timeout reached, proceeding with shutdown');
+          log.info('[gracefulShutdown] Timeout reached, proceeding with shutdown');
           resolve();
         }, 10000); // 10 second timeout
       });
@@ -1601,12 +1576,12 @@ const gracefullyStopAllApplications = async (): Promise<void> => {
         timeout
       ]);
       
-      console.log('[gracefulShutdown] All services stopped successfully');
+      log.info('[gracefulShutdown] All services stopped successfully');
     } else {
-      console.log('[gracefulShutdown] No running instances found to stop');
+      log.info('[gracefulShutdown] No running instances found to stop');
     }
   } catch (error) {
-    console.error('[gracefulShutdown] Error during graceful shutdown:', error);
+    log.error('[gracefulShutdown] Error during graceful shutdown:', error);
   }
 };
 
@@ -1634,7 +1609,7 @@ app.on('ready', () => {
       // Use net.fetch with file:// protocol for secure file access
       return net.fetch(`file://${filePath}`);
     } catch (error) {
-      console.error('Error handling local-file protocol:', error);
+      log.error('Error handling local-file protocol:', error);
       return new Response('Internal server error', { status: 500 });
     }
   });
@@ -1645,7 +1620,7 @@ app.on('ready', () => {
   // Force set dock icon on macOS
   if (process.platform === 'darwin' && mainWindow && app.dock) {
     const iconPath = path.join(__dirname, '../../icons/icon.png');
-    console.log('Setting dock icon:', iconPath);
+    log.info('Setting dock icon:', iconPath);
     if (fs.existsSync(iconPath)) {
       app.dock.setIcon(iconPath);
     }
@@ -1657,7 +1632,7 @@ let isShuttingDown = false;
 
 // Helper function to perform graceful shutdown with timeout
 const performGracefulShutdown = async (): Promise<void> => {
-  console.log('[app] performGracefulShutdown: Starting graceful shutdown...');
+  log.info('[app] performGracefulShutdown: Starting graceful shutdown...');
   
   try {
     // Gracefully stop all AEM applications first
@@ -1668,9 +1643,9 @@ const performGracefulShutdown = async (): Promise<void> => {
       terminalService.cleanup();
     }
     
-    console.log('[app] performGracefulShutdown: Graceful shutdown completed');
+    log.info('[app] performGracefulShutdown: Graceful shutdown completed');
   } catch (error) {
-    console.error('[app] performGracefulShutdown: Error during graceful shutdown:', error);
+    log.error('[app] performGracefulShutdown: Error during graceful shutdown:', error);
   }
 };
 
@@ -1685,12 +1660,12 @@ app.on('before-quit', async (event) => {
   event.preventDefault();
   isShuttingDown = true;
   
-  console.log('[app] before-quit: Starting graceful shutdown...');
+  log.info('[app] before-quit: Starting graceful shutdown...');
   
   // Set a timeout for the entire shutdown process
   const shutdownTimeout = new Promise<void>((resolve) => {
     setTimeout(() => {
-      console.log('[app] before-quit: Shutdown timeout reached, forcing quit');
+      log.info('[app] before-quit: Shutdown timeout reached, forcing quit');
       resolve();
     }, 15000); // 15 second timeout for entire shutdown process
   });
@@ -1702,10 +1677,10 @@ app.on('before-quit', async (event) => {
       shutdownTimeout
     ]);
   } catch (error) {
-    console.error('[app] before-quit: Error during graceful shutdown:', error);
+    log.error('[app] before-quit: Error during graceful shutdown:', error);
   } finally {
     // Force quit the app after cleanup (or if cleanup failed)
-    console.log('[app] before-quit: Quitting app');
+    log.info('[app] before-quit: Quitting app');
     app.quit();
   }
 });
@@ -1717,13 +1692,13 @@ app.on('window-all-closed', async () => {
     return;
   }
   
-  console.log('[app] window-all-closed: Starting graceful shutdown...');
+  log.info('[app] window-all-closed: Starting graceful shutdown...');
   isShuttingDown = true;
   
   // Set a timeout for the entire shutdown process
   const shutdownTimeout = new Promise<void>((resolve) => {
     setTimeout(() => {
-      console.log('[app] window-all-closed: Shutdown timeout reached, forcing quit');
+      log.info('[app] window-all-closed: Shutdown timeout reached, forcing quit');
       resolve();
     }, 15000); // 15 second timeout for entire shutdown process
   });
@@ -1735,10 +1710,10 @@ app.on('window-all-closed', async () => {
       shutdownTimeout
     ]);
   } catch (error) {
-    console.error('[app] window-all-closed: Error during graceful shutdown:', error);
+    log.error('[app] window-all-closed: Error during graceful shutdown:', error);
   } finally {
     // Always quit the app when all windows are closed
-    console.log('[app] window-all-closed: Quitting app');
+    log.info('[app] window-all-closed: Quitting app');
     app.quit();
   }
 });

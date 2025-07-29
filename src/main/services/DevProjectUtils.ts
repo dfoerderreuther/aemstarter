@@ -1,6 +1,7 @@
 import { Project } from "../../types/Project";
 import { ProjectSettingsService } from "./ProjectSettingsService";
 import { spawn } from 'child_process';
+import log from 'electron-log';
 
 export class DevProjectUtils {
 
@@ -70,7 +71,7 @@ export class DevProjectUtils {
             child.unref();
 
         } catch (error) {
-            console.error('[DevProjectUtils] Error executing command: ', command, error);
+            log.error('[DevProjectUtils] Error executing command: ', command, error);
         }
     }
 

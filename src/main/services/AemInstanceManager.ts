@@ -6,6 +6,7 @@ import fs from 'fs';
 import { BrowserWindow } from 'electron';
 import { AemHealthChecker, HealthStatus } from './AemHealthChecker';
 import { BackupService } from './BackupService';
+import log from 'electron-log';
 
 interface AemInstance {
   process: ChildProcess | null;
@@ -168,7 +169,7 @@ export class AemInstanceManager {
 
       exec(cmd, (error, stdout) => {
         if (error || !stdout.trim()) {
-          //console.log(`[AemInstanceManager] No LISTENING process found on port ${port}: ${error?.message || 'No output'}`);
+          //log.info(`[AemInstanceManager] No LISTENING process found on port ${port}: ${error?.message || 'No output'}`);
           resolve(null);
           return;
         }
@@ -181,7 +182,7 @@ export class AemInstanceManager {
               if (parts.length >= 5 && parts[3] === 'LISTENING') {
                 const pid = parseInt(parts[4], 10);
                 if (pid && !isNaN(pid)) {
-                  console.log(`[AemInstanceManager] Found LISTENING process PID ${pid} on port ${port}`);
+                  log.info(`[AemInstanceManager] Found LISTENING process PID ${pid} on port ${port}`);
                   resolve(pid);
                   return;
                 }
@@ -192,14 +193,14 @@ export class AemInstanceManager {
             // Parse Unix lsof output (just the PID)
             const pid = parseInt(stdout.trim(), 10);
             if (pid && !isNaN(pid)) {
-              console.log(`[AemInstanceManager] Found LISTENING process PID ${pid} on port ${port}`);
+              log.info(`[AemInstanceManager] Found LISTENING process PID ${pid} on port ${port}`);
               resolve(pid);
             } else {
               resolve(null);
             }
           }
         } catch (parseError) {
-          console.error(`[AemInstanceManager] Error parsing process output for port ${port}:`, parseError);
+          log.error(`[AemInstanceManager] Error parsing process output for port ${port}:`, parseError);
           resolve(null);
         }
       });
@@ -208,7 +209,7 @@ export class AemInstanceManager {
 
   private async findJavaProcessWithRetry(port: number, maxRetries = 10, delayMs = 2000): Promise<number | null> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      console.log(`[AemInstanceManager] Attempting to find Java process on port ${port} (attempt ${attempt}/${maxRetries})`);
+      log.info(`[AemInstanceManager] Attempting to find Java process on port ${port} (attempt ${attempt}/${maxRetries})`);
       
       const pid = await this.findJavaProcess(port);
       if (pid) {
@@ -216,12 +217,12 @@ export class AemInstanceManager {
       }
       
       if (attempt < maxRetries) {
-        console.log(`[AemInstanceManager] Process not found on port ${port}, retrying in ${delayMs}ms...`);
+        log.info(`[AemInstanceManager] Process not found on port ${port}, retrying in ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
     
-    console.warn(`[AemInstanceManager] Failed to find Java process on port ${port} after ${maxRetries} attempts`);
+    log.warn(`[AemInstanceManager] Failed to find Java process on port ${port} after ${maxRetries} attempts`);
     return null;
   }
 
@@ -229,7 +230,7 @@ export class AemInstanceManager {
     const startTime = Date.now();
     while (!fs.existsSync(logPath)) {
       if (Date.now() - startTime > maxWaitSeconds * 1000) {
-        console.warn(`[AemInstanceManager] Timeout waiting for log file after ${maxWaitSeconds} seconds: ${logPath}`);
+        log.warn(`[AemInstanceManager] Timeout waiting for log file after ${maxWaitSeconds} seconds: ${logPath}`);
         return false;
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -247,7 +248,7 @@ export class AemInstanceManager {
     );
 
     if (!fs.existsSync(logPath)) {
-      console.log(`[AemInstanceManager] No logs directory found at ${logPath}`);
+      log.info(`[AemInstanceManager] No logs directory found at ${logPath}`);
       return ['error.log']; // Return default if logs directory doesn't exist yet
     }
 
@@ -266,13 +267,13 @@ export class AemInstanceManager {
       
       return logFiles;
     } catch (error) {
-      console.error(`[AemInstanceManager] Error reading log directory: ${error}`);
+      log.error(`[AemInstanceManager] Error reading log directory: ${error}`);
       return ['error.log']; // Return default on error
     }
   }
 
   private async startTailing(instanceType: string, instance: AemInstance, logFiles: string[] = ['error.log', 'stdout.log']) {
-    console.log(`[AemInstanceManager] Starting tailing for ${instanceType} with log files: ${logFiles}`);
+    log.info(`[AemInstanceManager] Starting tailing for ${instanceType} with log files: ${logFiles}`);
 
     // Stop any existing tail processes
     this.stopTailing(instanceType);
@@ -303,14 +304,14 @@ export class AemInstanceManager {
           // Create empty log file
           fs.writeFileSync(logPath, '');
         } catch (error) {
-          console.error(`[AemInstanceManager] Failed to create oak-run log file: ${logPath}`, error);
+          log.error(`[AemInstanceManager] Failed to create oak-run log file: ${logPath}`, error);
           continue;
         }
       } else {
         // Wait for log file to exist (for regular AEM logs)
         const exists = await this.waitForLogFile(logPath);
         if (!exists) {
-          console.warn(`[AemInstanceManager] Log file not found: ${logPath}`);
+          log.warn(`[AemInstanceManager] Log file not found: ${logPath}`);
           continue;
         }
       }
@@ -362,13 +363,13 @@ export class AemInstanceManager {
       });
 
       tailProcess.on('error', (error) => {
-        console.error(`[AemInstanceManager] Error in tail process for ${logFile}: ${error}`);
+        log.error(`[AemInstanceManager] Error in tail process for ${logFile}: ${error}`);
         this.sendLogData(instanceType, `Error tailing log file ${logFile}: ${error.message}`);
       });
 
       tailProcess.on('exit', (code) => {
         if (code !== 0 && !tailProcess.killed) {
-          console.warn(`[AemInstanceManager] Tail process for ${logFile} exited unexpectedly, restarting...`);
+          log.warn(`[AemInstanceManager] Tail process for ${logFile} exited unexpectedly, restarting...`);
           setTimeout(() => {
             if (instance.selectedLogFiles.includes(logFile)) {
               this.startTailing(instanceType, instance, [logFile]);
@@ -378,7 +379,7 @@ export class AemInstanceManager {
       });
 
       if (!tailProcess.pid) {
-        console.error(`[AemInstanceManager] Failed to start tail process for ${logFile}`);
+        log.error(`[AemInstanceManager] Failed to start tail process for ${logFile}`);
         continue;
       }
     }
@@ -431,7 +432,7 @@ export class AemInstanceManager {
     instanceType: 'author' | 'publisher',
     startType: 'start' | 'debug'
   ): Promise<void> {
-    console.log(`[AemInstanceManager] ### Starting ${instanceType} instance ###`);
+    log.info(`[AemInstanceManager] ### Starting ${instanceType} instance ###`);
     // Load settings from project object
     const settings = this.project.settings;
     const instanceSettings = settings[instanceType];
@@ -443,7 +444,7 @@ export class AemInstanceManager {
     const instanceDir = path.join(this.project.folderPath, instanceType);
     const crxQuickstartDir = path.join(instanceDir, 'crx-quickstart');
     const hasCrxQuickstart = fs.existsSync(crxQuickstartDir);
-    console.log(`[AemInstanceManager] ### hasCrxQuickstart: ${hasCrxQuickstart} ###`);
+    log.info(`[AemInstanceManager] ### hasCrxQuickstart: ${hasCrxQuickstart} ###`);
 
     const port = instanceSettings.port;
     const runmode = instanceSettings.runmode;
@@ -463,7 +464,7 @@ export class AemInstanceManager {
     if (instanceSettings.envVars) {
       envVarsObj = this.parseEnvVars(instanceSettings.envVars);
     } 
-    console.log('[AemInstanceManager] Environment variables:', envVarsObj);
+    log.info('[AemInstanceManager] Environment variables:', envVarsObj);
     
     // Use crx-quickstart/bin/start script
     const startScript = process.platform === 'win32' ? 'start.bat' : 'start';
@@ -481,14 +482,14 @@ export class AemInstanceManager {
     // Set JAVA_HOME if available
     if (hasJavaHome) {
       env.JAVA_HOME = javaHome;
-      console.log(`[AemInstanceManager] Using JAVA_HOME from project settings: ${javaHome}`);
+      log.info(`[AemInstanceManager] Using JAVA_HOME from project settings: ${javaHome}`);
     }
 
     // can't use start script on windows as it goes crazy with opening multiple cmd windows
     if (startWithStartScript) {
-      console.log('[AemInstanceManager] Starting AEM instance with start script:', startScriptPath);
-      console.log('[AemInstanceManager] Environment variables:', env);
-      console.log('[AemInstanceManager] Java options:', jvmOpts);
+      log.info('[AemInstanceManager] Starting AEM instance with start script:', startScriptPath);
+      log.info('[AemInstanceManager] Environment variables:', env);
+      log.info('[AemInstanceManager] Java options:', jvmOpts);
 
       aemProcess = spawn(startScriptPath, [], {
         cwd: instanceDir,
@@ -499,9 +500,9 @@ export class AemInstanceManager {
       });
 
     } else {
-      console.log(`[AemInstanceManager] Start script not found at ${startScriptPath} or win32, falling back to quickstart.jar`);
-      console.log('[AemInstanceManager] Environment variables:', env);
-      console.log('[AemInstanceManager] Java options:', jvmOpts);
+      log.info(`[AemInstanceManager] Start script not found at ${startScriptPath} or win32, falling back to quickstart.jar`);
+      log.info('[AemInstanceManager] Environment variables:', env);
+      log.info('[AemInstanceManager] Java options:', jvmOpts);
 
       // Fall back to quickstart.jar method - try new name first, then old name for backward compatibility
       let jarPath = path.join(instanceDir, 'aem-quickstart.jar');
@@ -556,7 +557,7 @@ export class AemInstanceManager {
       startedWithStartScript: startWithStartScript,
       timestamp: new Date()
     };
-    console.log('[AemInstanceManager] Storing startData:', startData);
+    log.info('[AemInstanceManager] Storing startData:', startData);
     this.startData.set(instanceType, startData);
 
     // Start tailing after a short delay to allow AEM to create initial folders
@@ -586,18 +587,18 @@ export class AemInstanceManager {
     }, 300000);
 
     aemProcess.on('error', (error) => {
-      console.error(`[AemInstanceManager] Error starting ${instanceType} instance:`, error);
+      log.error(`[AemInstanceManager] Error starting ${instanceType} instance:`, error);
     });
 
     aemProcess.on('exit', async (code, signal) => {
       if (!instance.pid) {
-        console.log(`[AemInstanceManager] Initial ${instanceType} process exited with code ${code} and signal ${signal}`);
+        log.info(`[AemInstanceManager] Initial ${instanceType} process exited with code ${code} and signal ${signal}`);
       }
       
       const realPid = await this.findJavaProcessWithRetry(port);
       if (realPid) {
         instance.pid = realPid;
-        console.log(`[AemInstanceManager] Found AEM ${instanceType} process with PID ${realPid}`);
+        log.info(`[AemInstanceManager] Found AEM ${instanceType} process with PID ${realPid}`);
         this.sendPidStatusUpdate(instanceType, realPid, true);
       } else {
         this.sendPidStatusUpdate(instanceType, null, false);
@@ -614,11 +615,11 @@ export class AemInstanceManager {
         const realPid = await this.findJavaProcess(port);
         if (realPid) {
           instance.pid = realPid;
-          console.log(`[AemInstanceManager] AEM ${instanceType} started with PID ${realPid}`);
+          log.info(`[AemInstanceManager] AEM ${instanceType} started with PID ${realPid}`);
           this.sendPidStatusUpdate(instanceType, realPid, true);
           
           // Always start health checking (will check config on each run)
-          console.log(`[AemInstanceManager] Starting health checks for ${instanceType}`);
+          log.info(`[AemInstanceManager] Starting health checks for ${instanceType}`);
           // Wait a bit for AEM to fully start before beginning health checks
           setTimeout(() => {
             this.healthChecker.startHealthChecking(instanceType, port, 30000); // Check every 30 seconds
@@ -633,10 +634,10 @@ export class AemInstanceManager {
   }
 
   async stopInstance(instanceType: 'author' | 'publisher'): Promise<void> {
-    console.log(`[AemInstanceManager] ###  Stopping ${instanceType} instance ###`);
+    log.info(`[AemInstanceManager] ###  Stopping ${instanceType} instance ###`);
     const instance = this.instances.get(instanceType);
     if (!instance) {
-      console.log(`[AemInstanceManager] No instance found for ${instanceType}`);
+      log.info(`[AemInstanceManager] No instance found for ${instanceType}`);
       return;
     }
 
@@ -647,13 +648,13 @@ export class AemInstanceManager {
 
     // Find the current LISTENING process on the port (this is the real AEM process)
     const currentPid = await this.findJavaProcess(instance.port);
-    console.log(`[AemInstanceManager] Current AEM LISTENING process PID for ${instanceType}: ${currentPid}`);
-    console.log(`[AemInstanceManager] Stored instance PID for ${instanceType}: ${instance.pid}`);
+    log.info(`[AemInstanceManager] Current AEM LISTENING process PID for ${instanceType}: ${currentPid}`);
+    log.info(`[AemInstanceManager] Stored instance PID for ${instanceType}: ${instance.pid}`);
 
     // Kill the actual AEM process if found
     if (currentPid) {
       try {
-        console.log(`[AemInstanceManager] Attempting to kill AEM LISTENING process ${currentPid} for ${instanceType}`);
+        log.info(`[AemInstanceManager] Attempting to kill AEM LISTENING process ${currentPid} for ${instanceType}`);
         process.kill(currentPid, 'SIGTERM'); // Try graceful shutdown first
         
         // Wait a bit for graceful shutdown
@@ -662,28 +663,28 @@ export class AemInstanceManager {
         // Check if process is still running
         const stillRunning = await this.findJavaProcess(instance.port);
         if (stillRunning) {
-          console.log(`[AemInstanceManager] Process ${currentPid} still running, forcing kill`);
+          log.info(`[AemInstanceManager] Process ${currentPid} still running, forcing kill`);
           process.kill(currentPid, 'SIGKILL'); // Force kill if still running
         } else {
-          console.log(`[AemInstanceManager] Process ${currentPid} terminated gracefully`);
+          log.info(`[AemInstanceManager] Process ${currentPid} terminated gracefully`);
         }
       } catch (error) {
-        console.error(`[AemInstanceManager] Error killing AEM process ${currentPid}:`, error);
+        log.error(`[AemInstanceManager] Error killing AEM process ${currentPid}:`, error);
       }
     } else if (instance.pid) {
       // Fallback to stored PID if we can't find the current one
       try {
-        console.log(`[AemInstanceManager] No current process found, trying stored PID ${instance.pid}`);
+        log.info(`[AemInstanceManager] No current process found, trying stored PID ${instance.pid}`);
         process.kill(instance.pid, 'SIGTERM');
       } catch (error) {
-        console.error(`[AemInstanceManager] Error killing stored PID ${instance.pid}:`, error);
+        log.error(`[AemInstanceManager] Error killing stored PID ${instance.pid}:`, error);
       }
     }
 
     // Kill the original spawn process if it exists
     if (instance.process && !instance.process.killed) {
       try {
-        console.log(`[AemInstanceManager] Killing original spawn process for ${instanceType}`);
+        log.info(`[AemInstanceManager] Killing original spawn process for ${instanceType}`);
         instance.process.kill('SIGTERM');
         
         // Wait for process to exit or force kill after timeout
@@ -691,23 +692,23 @@ export class AemInstanceManager {
           const timeout = setTimeout(() => {
             try {
               if (instance.process && !instance.process.killed) {
-                console.log(`[AemInstanceManager] Force killing original spawn process for ${instanceType}`);
+                log.info(`[AemInstanceManager] Force killing original spawn process for ${instanceType}`);
                 instance.process.kill('SIGKILL');
               }
             } catch (error) {
-              console.error(`[AemInstanceManager] Error force killing spawn process:`, error);
+              log.error(`[AemInstanceManager] Error force killing spawn process:`, error);
             }
             resolve(undefined);
           }, 10000); // 10 second timeout
 
           instance.process?.on('exit', () => {
-            console.log(`[AemInstanceManager] Original spawn process exited for ${instanceType}`);
+            log.info(`[AemInstanceManager] Original spawn process exited for ${instanceType}`);
             clearTimeout(timeout);
             resolve(undefined);
           });
         });
       } catch (error) {
-        console.error(`[AemInstanceManager] Error killing original spawn process:`, error);
+        log.error(`[AemInstanceManager] Error killing original spawn process:`, error);
       }
     }
 
@@ -722,9 +723,9 @@ export class AemInstanceManager {
     // Verify the process is actually stopped
     const finalCheck = await this.findJavaProcess(instance.port);
     if (finalCheck) {
-      console.warn(`[AemInstanceManager] Warning: AEM process ${finalCheck} still running on port ${instance.port} after stop attempt`);
+      log.warn(`[AemInstanceManager] Warning: AEM process ${finalCheck} still running on port ${instance.port} after stop attempt`);
     } else {
-      console.log(`[AemInstanceManager] Successfully stopped ${instanceType} instance`);
+      log.info(`[AemInstanceManager] Successfully stopped ${instanceType} instance`);
     }
   }
 
@@ -739,7 +740,7 @@ export class AemInstanceManager {
 
     exec(cmd, (error) => {
       if (error) {
-        console.error(`[AemInstanceManager] Error killing all instances:`, error);
+        log.error(`[AemInstanceManager] Error killing all instances:`, error);
       }
     });
 
@@ -817,7 +818,7 @@ export class AemInstanceManager {
   startHealthChecking(instanceType: 'author' | 'publisher', intervalMs = 30000) {
     const instance = this.instances.get(instanceType);
     if (!instance || !instance.pid) {
-      console.warn(`[AemInstanceManager] Cannot start health checking for ${instanceType}: instance not running`);
+      log.warn(`[AemInstanceManager] Cannot start health checking for ${instanceType}: instance not running`);
       return;
     }
 
@@ -869,7 +870,7 @@ export class AemInstanceManager {
     if (!oakVersion) {
       throw new Error('Oak version not found in bundle data');
     }
-    console.log(`[AemInstanceManager] Found Oak version: ${oakVersion}`);
+    log.info(`[AemInstanceManager] Found Oak version: ${oakVersion}`);
 
     // Extract major, minor, patch (ignore any -SNAPSHOT or timestamp suffix)
     // Examples:
@@ -906,23 +907,23 @@ export class AemInstanceManager {
       triedVersions.push(tryVersion);
       const oakJarUrl = `https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/${tryVersion}/oak-run-${tryVersion}.jar`;
       jarPath = path.join(installDir, `oak-run-${tryVersion}.jar`);
-      console.log(`[AemInstanceManager] Attempting to download oak-run.jar from ${oakJarUrl}`);
+      log.info(`[AemInstanceManager] Attempting to download oak-run.jar from ${oakJarUrl}`);
       
       try {
         const jarResponse = await fetch(oakJarUrl);
         if (jarResponse.ok) {
           const jarBuffer = await jarResponse.arrayBuffer();
           fs.writeFileSync(jarPath, Buffer.from(jarBuffer));
-          console.log(`[AemInstanceManager] Downloaded oak-run.jar to ${jarPath}`);
+          log.info(`[AemInstanceManager] Downloaded oak-run.jar to ${jarPath}`);
           found = true;
           oakVersion = tryVersion;
           break;
         } else {
-          console.warn(`[AemInstanceManager] oak-run.jar not found for version ${tryVersion}: ${jarResponse.statusText}`);
+          log.warn(`[AemInstanceManager] oak-run.jar not found for version ${tryVersion}: ${jarResponse.statusText}`);
         }
               } catch (err) {
           lastError = err instanceof Error ? err : new Error(String(err));
-          console.warn(`[AemInstanceManager] Error downloading oak-run.jar for version ${tryVersion}: ${err}`);
+          log.warn(`[AemInstanceManager] Error downloading oak-run.jar for version ${tryVersion}: ${err}`);
       }
       
       // Decrement patch version
@@ -943,7 +944,7 @@ export class AemInstanceManager {
     // Strategy 2: If still not found, try some known stable versions
     if (!found) {
       const knownVersions = ['1.78.0', '1.76.0', '1.74.0', '1.72.0', '1.70.0', '1.68.0', '1.66.0', '1.64.0', '1.62.0', '1.60.0'];
-      console.log(`[AemInstanceManager] Trying known stable versions: ${knownVersions.join(', ')}`);
+      log.info(`[AemInstanceManager] Trying known stable versions: ${knownVersions.join(', ')}`);
       
       for (const tryVersion of knownVersions) {
         if (triedVersions.includes(tryVersion)) {
@@ -953,23 +954,23 @@ export class AemInstanceManager {
         triedVersions.push(tryVersion);
         const oakJarUrl = `https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/${tryVersion}/oak-run-${tryVersion}.jar`;
         jarPath = path.join(installDir, `oak-run-${tryVersion}.jar`);
-        console.log(`[AemInstanceManager] Attempting to download oak-run.jar from ${oakJarUrl}`);
+        log.info(`[AemInstanceManager] Attempting to download oak-run.jar from ${oakJarUrl}`);
         
         try {
           const jarResponse = await fetch(oakJarUrl);
           if (jarResponse.ok) {
             const jarBuffer = await jarResponse.arrayBuffer();
             fs.writeFileSync(jarPath, Buffer.from(jarBuffer));
-            console.log(`[AemInstanceManager] Downloaded oak-run.jar to ${jarPath}`);
+            log.info(`[AemInstanceManager] Downloaded oak-run.jar to ${jarPath}`);
             found = true;
             oakVersion = tryVersion;
             break;
           } else {
-            console.warn(`[AemInstanceManager] oak-run.jar not found for version ${tryVersion}: ${jarResponse.statusText}`);
+            log.warn(`[AemInstanceManager] oak-run.jar not found for version ${tryVersion}: ${jarResponse.statusText}`);
           }
         } catch (err) {
           lastError = err instanceof Error ? err : new Error(String(err));
-          console.warn(`[AemInstanceManager] Error downloading oak-run.jar for version ${tryVersion}: ${err}`);
+          log.warn(`[AemInstanceManager] Error downloading oak-run.jar for version ${tryVersion}: ${err}`);
         }
       }
     }
@@ -988,7 +989,7 @@ export class AemInstanceManager {
       }
       // Create new symlink
       fs.symlinkSync(jarPath, symlinkPath);
-      console.log(`[AemInstanceManager] Created symlink at ${symlinkPath}`);
+      log.info(`[AemInstanceManager] Created symlink at ${symlinkPath}`);
     }
   }
 
