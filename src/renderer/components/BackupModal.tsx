@@ -70,6 +70,16 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
   useEffect(() => {
     if (opened) {
       setError(null); // Clear any previous errors when opening modal
+      // Reset form state when modal opens
+      setBackupName('');
+      setBackupDescription('');
+      setSelectedInstances({
+        author: true,
+        publisher: true,
+        dispatcher: true
+      });
+      setConfirmRestore(null);
+      setConfirmDelete(null);
       loadBackups();
     }
   }, [opened, project]);
@@ -96,6 +106,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({ opened, onClose, proje
       await window.electronAPI.runBackupAll(project, backupName.trim(), compress, backupDescription.trim(), selectedInstances);
       setBackupName('');
       setBackupDescription('');
+      setSelectedInstances({
+        author: true,
+        publisher: true,
+        dispatcher: true
+      });
       await loadBackups();
     } catch (err: unknown) {
       setError('Failed to create backup');
