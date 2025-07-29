@@ -1592,7 +1592,7 @@ const gracefullyStopAllApplications = async (): Promise<void> => {
         setTimeout(() => {
           console.log('[gracefulShutdown] Timeout reached, proceeding with shutdown');
           resolve();
-        }, 30000); // 30 second timeout
+        }, 10000); // 10 second timeout
       });
       
       // Wait for all stop operations to complete or timeout
@@ -1655,6 +1655,25 @@ app.on('ready', () => {
 // Track if we're already shutting down to prevent multiple shutdown attempts
 let isShuttingDown = false;
 
+// Helper function to perform graceful shutdown with timeout
+const performGracefulShutdown = async (): Promise<void> => {
+  console.log('[app] performGracefulShutdown: Starting graceful shutdown...');
+  
+  try {
+    // Gracefully stop all AEM applications first
+    await gracefullyStopAllApplications();
+    
+    // Clean up terminal sessions
+    if (terminalService) {
+      terminalService.cleanup();
+    }
+    
+    console.log('[app] performGracefulShutdown: Graceful shutdown completed');
+  } catch (error) {
+    console.error('[app] performGracefulShutdown: Error during graceful shutdown:', error);
+  }
+};
+
 // Handle graceful shutdown when user tries to quit the app
 app.on('before-quit', async (event) => {
   if (isShuttingDown) {
@@ -1668,20 +1687,25 @@ app.on('before-quit', async (event) => {
   
   console.log('[app] before-quit: Starting graceful shutdown...');
   
+  // Set a timeout for the entire shutdown process
+  const shutdownTimeout = new Promise<void>((resolve) => {
+    setTimeout(() => {
+      console.log('[app] before-quit: Shutdown timeout reached, forcing quit');
+      resolve();
+    }, 15000); // 15 second timeout for entire shutdown process
+  });
+  
   try {
-    // Gracefully stop all AEM applications first
-    await gracefullyStopAllApplications();
-    
-    // Clean up terminal sessions
-    if (terminalService) {
-      terminalService.cleanup();
-    }
-    
-    console.log('[app] before-quit: Graceful shutdown completed, quitting app');
+    // Wait for graceful shutdown or timeout
+    await Promise.race([
+      performGracefulShutdown(),
+      shutdownTimeout
+    ]);
   } catch (error) {
     console.error('[app] before-quit: Error during graceful shutdown:', error);
   } finally {
     // Force quit the app after cleanup (or if cleanup failed)
+    console.log('[app] before-quit: Quitting app');
     app.quit();
   }
 });
@@ -1696,20 +1720,25 @@ app.on('window-all-closed', async () => {
   console.log('[app] window-all-closed: Starting graceful shutdown...');
   isShuttingDown = true;
   
+  // Set a timeout for the entire shutdown process
+  const shutdownTimeout = new Promise<void>((resolve) => {
+    setTimeout(() => {
+      console.log('[app] window-all-closed: Shutdown timeout reached, forcing quit');
+      resolve();
+    }, 15000); // 15 second timeout for entire shutdown process
+  });
+  
   try {
-    // Gracefully stop all AEM applications first
-    await gracefullyStopAllApplications();
-    
-    // Clean up terminal sessions
-    if (terminalService) {
-      terminalService.cleanup();
-    }
-    
-    console.log('[app] window-all-closed: Graceful shutdown completed');
+    // Wait for graceful shutdown or timeout
+    await Promise.race([
+      performGracefulShutdown(),
+      shutdownTimeout
+    ]);
   } catch (error) {
     console.error('[app] window-all-closed: Error during graceful shutdown:', error);
   } finally {
     // Always quit the app when all windows are closed
+    console.log('[app] window-all-closed: Quitting app');
     app.quit();
   }
 });
