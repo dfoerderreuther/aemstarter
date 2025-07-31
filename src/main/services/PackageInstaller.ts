@@ -147,7 +147,7 @@ export class PackageInstaller {
 
             const responseText = await response.text();
             log.info(`[PackageInstaller] Installation response:`, responseText);
-            log.info(`[PackageInstaller] Successfully installed package on ${instance} instance`);
+            log.info(`[PackageInstaller] Successfully installed package ${fileName} on ${instance} instance`);
             
         } catch (error) {
             log.error(`[PackageInstaller] Error installing package:`, error);
