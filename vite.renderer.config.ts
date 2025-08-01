@@ -1,9 +1,18 @@
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+// Read package.json to get version
+const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
 
 // https://vitejs.dev/config
 export default defineConfig({
   plugins: [svgr()],
+  define: {
+    // Make package.json version available to renderer
+    __APP_VERSION__: JSON.stringify(packageJson.version),
+  },
   build: {
     rollupOptions: {
       output: {

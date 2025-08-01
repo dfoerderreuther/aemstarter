@@ -5,6 +5,9 @@ import { EditorAvailableResults } from './EditorAvailableResults';
 import { InstanceStartData } from './InstanceStartData';
 
 declare global {
+  // App version injected by Vite
+  const __APP_VERSION__: string;
+  
   interface Window {
     electronAPI: {
       checkRunningInstances: (project: Project) => Promise<{

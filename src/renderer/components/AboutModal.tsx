@@ -2,6 +2,9 @@ import { Modal, Stack, Text, Group, ThemeIcon, Button, Anchor } from '@mantine/c
 import { IconBrandGithub, IconLicense } from '@tabler/icons-react';
 import AemLogo from '../assets/AEM.svg';
 
+// Version from package.json (injected by Vite)
+declare const __APP_VERSION__: string;
+
 interface AboutModalProps {
   opened: boolean;
   onClose: () => void;
@@ -22,7 +25,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ opened, onClose }) => {
         
         <Stack gap="sm" align="center">
           <Text size="xl" fw={600}>AEM-Starter</Text>
-          <Text size="lg" c="dimmed">Version 1.0.18</Text>
+          <Text size="lg" c="dimmed">Version {__APP_VERSION__}</Text>
         </Stack>
         
         <Text size="md" ta="center" maw={400}>
