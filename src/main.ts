@@ -1523,72 +1523,7 @@ const cleanupOrphanedProjects = () => {
   }
 };
 
-// Helper function to gracefully stop all running AEM applications
-const gracefullyStopAllApplications = async (): Promise<void> => {
-  log.info('[gracefulShutdown] Starting graceful shutdown of all AEM applications...');
-  
-  try {
-    const projectManager = ProjectManagerRegister.getManager();
-    const allProjects = projectManager.getAllProjects();
-    
-    // Filter out projects whose folders no longer exist
-    const validProjects = allProjects.filter(project => fs.existsSync(project.folderPath));
-    
-    if (validProjects.length === 0) {
-      log.info('[gracefulShutdown] No valid projects found');
-      return;
-    }
-    
-    // Check which projects have running instances and stop them
-    const stopPromises: Promise<void>[] = [];
-    
-    for (const project of validProjects) {
-      try {
-        // Check if project has any running instances
-        const runningCheck = await checkRunningInstancesForProject(project);
-        
-        if (runningCheck.hasRunning) {
-          log.info(`[gracefulShutdown] Found running instances in project "${project.name}":`, 
-            runningCheck.runningInstances.map(instance => `${instance.instanceType}:${instance.port}`).join(', '));
-          
-          // Use AutoStartStopService to gracefully stop all services for this project
-          const autoStartStopService = new AutoStartStopService(project);
-          stopPromises.push(
-            autoStartStopService.stop().catch(error => {
-              log.error(`[gracefulShutdown] Error stopping services for project "${project.name}":`, error);
-            })
-          );
-        }
-      } catch (error) {
-        log.error(`[gracefulShutdown] Error checking project "${project.name}":`, error);
-      }
-    }
-    
-    if (stopPromises.length > 0) {
-      log.info(`[gracefulShutdown] Stopping services for ${stopPromises.length} projects...`);
-      
-      // Set a timeout to ensure we don't block shutdown indefinitely
-      const timeout = new Promise<void>((resolve) => {
-        setTimeout(() => {
-          log.info('[gracefulShutdown] Timeout reached, proceeding with shutdown');
-          resolve();
-        }, 10000); // 10 second timeout
-      });
-      
-      // Wait for all stop operations to complete or timeout
-      await Promise.race([
-        Promise.all(stopPromises),
-        timeout
-      ]);
-      
-      log.info('[gracefulShutdown] All services stopped successfully');
-    } else {
-      log.info('[gracefulShutdown] No running instances found to stop');
-    }
-  } catch (error) {
-    log.error('[gracefulShutdown] Error during graceful shutdown:', error);
-  }
-};
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -1630,97 +1565,57 @@ app.on('ready', () => {
       app.dock.setIcon(iconPath);
     }
   }
+  
+  // Add a fallback to ensure the app quits properly
+  process.on('SIGINT', () => {
+    log.info('[app] SIGINT received, forcing quit');
+    app.quit();
+  });
+  
+  process.on('SIGTERM', () => {
+    log.info('[app] SIGTERM received, forcing quit');
+    app.quit();
+  });
+  
+  // Add a simple quit handler for testing
+  app.on('quit', () => {
+    log.info('[app] quit: App is quitting');
+  });
+  
+  app.on('will-quit', () => {
+    log.info('[app] will-quit: App will quit');
+  });
 });
 
 // Track if we're already shutting down to prevent multiple shutdown attempts
 let isShuttingDown = false;
 
-// Helper function to perform graceful shutdown with timeout
-const performGracefulShutdown = async (): Promise<void> => {
-  log.info('[app] performGracefulShutdown: Starting graceful shutdown...');
+// Handle graceful shutdown when user tries to quit the app
+app.on('before-quit', (event) => {
+  log.info('[app] before-quit: Quit requested');
   
   try {
-    // Gracefully stop all AEM applications first
-    await gracefullyStopAllApplications();
-    
-    // Clean up terminal sessions
+    // Simple cleanup - just kill terminals
     if (terminalService) {
+      log.info('[app] before-quit: Cleaning up terminals...');
       terminalService.cleanup();
     }
     
-    log.info('[app] performGracefulShutdown: Graceful shutdown completed');
+    if (aemProcessManager) {
+      log.info('[app] before-quit: Cleaning up AEM process manager...');
+      aemProcessManager.cleanup();
+    }
+    
+    log.info('[app] before-quit: Cleanup completed, allowing quit');
   } catch (error) {
-    log.error('[app] performGracefulShutdown: Error during graceful shutdown:', error);
-  }
-};
-
-// Handle graceful shutdown when user tries to quit the app
-app.on('before-quit', async (event) => {
-  if (isShuttingDown) {
-    // If we're already shutting down, allow the quit to proceed
-    return;
-  }
-  
-  // Prevent the quit until we've cleaned up
-  event.preventDefault();
-  isShuttingDown = true;
-  
-  log.info('[app] before-quit: Starting graceful shutdown...');
-  
-  // Set a timeout for the entire shutdown process
-  const shutdownTimeout = new Promise<void>((resolve) => {
-    setTimeout(() => {
-      log.info('[app] before-quit: Shutdown timeout reached, forcing quit');
-      resolve();
-    }, 15000); // 15 second timeout for entire shutdown process
-  });
-  
-  try {
-    // Wait for graceful shutdown or timeout
-    await Promise.race([
-      performGracefulShutdown(),
-      shutdownTimeout
-    ]);
-  } catch (error) {
-    log.error('[app] before-quit: Error during graceful shutdown:', error);
-  } finally {
-    // Force quit the app after cleanup (or if cleanup failed)
-    log.info('[app] before-quit: Quitting app');
-    app.quit();
+    log.error('[app] before-quit: Error during shutdown:', error);
   }
 });
 
 // Quit when all windows are closed on all platforms
-app.on('window-all-closed', async () => {
-  if (isShuttingDown) {
-    // If we're already shutting down via before-quit, just return
-    return;
-  }
-  
-  log.info('[app] window-all-closed: Starting graceful shutdown...');
-  isShuttingDown = true;
-  
-  // Set a timeout for the entire shutdown process
-  const shutdownTimeout = new Promise<void>((resolve) => {
-    setTimeout(() => {
-      log.info('[app] window-all-closed: Shutdown timeout reached, forcing quit');
-      resolve();
-    }, 15000); // 15 second timeout for entire shutdown process
-  });
-  
-  try {
-    // Wait for graceful shutdown or timeout
-    await Promise.race([
-      performGracefulShutdown(),
-      shutdownTimeout
-    ]);
-  } catch (error) {
-    log.error('[app] window-all-closed: Error during graceful shutdown:', error);
-  } finally {
-    // Always quit the app when all windows are closed
-    log.info('[app] window-all-closed: Quitting app');
-    app.quit();
-  }
+app.on('window-all-closed', () => {
+  log.info('[app] window-all-closed: All windows closed, quitting app');
+  app.quit();
 });
 
 app.on('activate', () => {

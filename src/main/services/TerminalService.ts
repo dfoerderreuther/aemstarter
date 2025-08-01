@@ -175,15 +175,19 @@ export class TerminalService {
   }
 
   cleanup(): void {
+    log.info(`[TerminalService] Cleaning up ${this.terminals.size} terminal sessions...`);
+    
     // Kill all active terminal sessions
     for (const [terminalId, session] of this.terminals) {
       try {
+        log.info(`[TerminalService] Killing terminal ${terminalId}...`);
         session.ptyProcess.kill();
       } catch (error) {
         log.error(`[TerminalService] Error cleaning up terminal ${terminalId}:`, error);
       }
     }
     this.terminals.clear();
+    log.info(`[TerminalService] Terminal cleanup completed`);
   }
 
   // Clear all terminals (used when switching projects)
