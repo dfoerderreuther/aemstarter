@@ -39,11 +39,10 @@ Then go to https://github.com/dfoerderreuther/aemstarter/releases and download /
 ## Uninstall
 
     rm -rf /Applications/AEM-Starter.app
-
     rm -Rf ~/Library/Logs/AEM-Starter/
     rm -Rf ~/Library/Application\ Support/AEM-Starter/
-    rm -Rf ~/Library/Application\ Support/AEM\ Starter/
 
+    rm -Rf ~/Library/Application\ Support/AEM\ Starter/
 
 # Icons
 
