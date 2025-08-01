@@ -2,44 +2,38 @@
 
 This document outlines the steps required to enable automatic updates for the AEM-Starter Electron application.
 
-## Current State
+## Current State ✅
 
-The application already has most of the infrastructure in place:
+The application has all the necessary infrastructure in place:
 
 - ✅ `update-electron-app` dependency installed (`^3.1.1`)
-- ✅ `electron-log` dependency installed
-- ✅ GitHub publisher configured in `forge.config.ts`
-- ✅ GitHub Actions workflow for releases
+- ✅ `electron-log` dependency installed (`^5.4.1`)
+- ✅ GitHub publisher configured in `forge.config.ts` with correct repository
+- ✅ GitHub Actions workflow for releases (`.github/workflows/build.yml`)
 - ✅ TypeScript definitions for `update-electron-app`
-- ❌ Auto-update code is commented out in `src/main.ts`
+- ✅ Latest version: `1.0.18` (in `package.json`)
+- ✅ Latest tag: `v1.0.18` (in git)
+- ❌ **Auto-update code is commented out in `src/main.ts` (lines 50-53)**
+
+## Implementation Status
+
+### What's Ready ✅
+1. **Dependencies**: All required packages are installed
+2. **Build System**: Electron Forge is configured with GitHub publisher
+3. **CI/CD**: GitHub Actions workflow builds and releases on tag pushes
+4. **Code Signing**: macOS builds are signed and notarized
+5. **Type Definitions**: TypeScript support is ready
+
+### What Needs to be Done ❌
+1. **Enable Auto-Updates**: Uncomment and configure the auto-update code in `src/main.ts`
+2. **Test the Implementation**: Create a test release to verify updates work
+3. **Add Update UI**: Optionally add update status to the user interface
 
 ## Step 1: Enable Auto-Updates in Main Process
 
 ### 1.1 Update Main Process Code
 
-Edit `src/main.ts` and replace the commented auto-update section (around lines 75-79) with:
-
-```typescript:src/main.ts
-// ... existing imports ...
-import log from 'electron-log';
-
-// ... existing code ...
-
-// Initialize auto-updates
-const { updateElectronApp } = require('update-electron-app');
-updateElectronApp({
-  repo: 'dfoerderreuther/aemstarter',
-  updateInterval: '1 hour',
-  logger: log,
-  notifyUser: true
-});
-
-// ... rest of existing code ...
-```
-
-### 1.2 Environment-Specific Configuration (Recommended)
-
-For better development experience, only enable auto-updates in production:
+Edit `src/main.ts` and replace the commented auto-update section (lines 50-53) with:
 
 ```typescript:src/main.ts
 // ... existing imports ...
@@ -61,11 +55,33 @@ if (process.env.NODE_ENV === 'production') {
 // ... rest of existing code ...
 ```
 
+### 1.2 Alternative: Always Enable (Simpler)
+
+If you want to enable auto-updates in all environments (including development):
+
+```typescript:src/main.ts
+// ... existing imports ...
+import log from 'electron-log';
+
+// ... existing code ...
+
+// Initialize auto-updates
+const { updateElectronApp } = require('update-electron-app');
+updateElectronApp({
+  repo: 'dfoerderreuther/aemstarter',
+  updateInterval: '1 hour',
+  logger: log,
+  notifyUser: true
+});
+
+// ... rest of existing code ...
+```
+
 ## Step 2: Verify GitHub Configuration
 
-### 2.1 Check Forge Config
+### 2.1 Current Configuration ✅
 
-Ensure your `forge.config.ts` has the correct GitHub publisher configuration:
+Your `forge.config.ts` already has the correct GitHub publisher configuration:
 
 ```typescript:forge.config.ts
 publishers: [
@@ -82,44 +98,46 @@ publishers: [
 ]
 ```
 
-### 2.2 Verify GitHub Actions Workflow
+### 2.2 GitHub Actions Workflow ✅
 
-The existing `.github/workflows/build.yml` should already handle:
+The existing `.github/workflows/build.yml` handles:
 - Building for multiple platforms (macOS, Windows, Linux)
 - Code signing and notarization for macOS
 - Creating GitHub releases when tags are pushed
+- Uploading installers to releases
 
 ## Step 3: Testing Auto-Updates
 
-### 3.1 Local Testing
+### 3.1 Local Testing Process
 
-1. **Build current version**:
+1. **Enable auto-updates** (Step 1 above)
+
+2. **Build current version**:
    ```bash
    npm run make:mac
    ```
 
-2. **Create a test release**:
+3. **Create a test release**:
    ```bash
    # Update version in package.json
-   npm version patch
+   npm version patch  # This will create v1.0.19
    
-   # Create and push tag
-   git tag v1.0.19
+   # Push the tag to trigger GitHub Actions
    git push origin v1.0.19
    ```
 
-3. **Test the update**:
-   - Run the built app
+4. **Test the update**:
+   - Run the built app from `out/make/`
    - Check if it detects the new version
    - Verify the update process works
 
-### 3.2 Staging Environment (Optional)
+### 3.2 Expected Behavior
 
-For safer testing, create a separate repository:
-
-1. **Fork the repository** for testing
-2. **Update the repo name** in the auto-update configuration
-3. **Test releases** in the staging environment first
+- **Update Check**: App checks GitHub releases every hour
+- **Version Detection**: Compares current version (`1.0.18`) with latest release (`1.0.19`)
+- **Download**: Downloads appropriate installer for user's platform
+- **Install**: Automatically installs update and restarts app
+- **Notifications**: System notifications for update events
 
 ## Step 4: Release Process
 
@@ -130,22 +148,23 @@ For safer testing, create a separate repository:
    npm version patch  # or minor/major
    ```
 
-2. **Create and push tag**:
+2. **Push tag to trigger release**:
    ```bash
-   git tag v1.0.19
    git push origin v1.0.19
    ```
 
 3. **GitHub Actions will automatically**:
-   - Build for all platforms
+   - Build for all platforms (macOS, Windows, Linux)
    - Create a GitHub release
    - Upload installers to the release
+   - Users will receive auto-updates
 
 ### 4.2 Version Management
 
 - **Current version**: `1.0.18` (in `package.json`)
+- **Latest tag**: `v1.0.18`
+- **Next version**: `1.0.19` (after `npm version patch`)
 - **Version format**: Semantic versioning (`major.minor.patch`)
-- **Tag format**: `v1.0.19`, `v1.1.0`, `v2.0.0`
 
 ## How Auto-Updates Work
 
@@ -297,6 +316,30 @@ For critical issues:
 3. **Investigation**: Analyze what went wrong
 4. **Prevention**: Update release process to prevent recurrence
 
+## Next Steps
+
+### Immediate Actions Required:
+
+1. **Enable Auto-Updates** (5 minutes):
+   - Uncomment and configure the auto-update code in `src/main.ts`
+   - Choose between production-only or always-enabled approach
+
+2. **Test Implementation** (15 minutes):
+   - Build current version: `npm run make:mac`
+   - Create test release: `npm version patch && git push origin v1.0.19`
+   - Test update process with built app
+
+3. **Optional: Add Update UI** (30 minutes):
+   - Add IPC handlers for update status
+   - Create UI components to show update status
+   - Add manual update check button
+
+### Timeline:
+
+- **Day 1**: Enable auto-updates and test with a patch release
+- **Day 2**: Monitor first auto-updates and gather feedback
+- **Week 1**: Add optional UI improvements based on user feedback
+
 ## Summary
 
 After completing these steps:
@@ -307,4 +350,6 @@ After completing these steps:
 4. ✅ Updates will install seamlessly across all platforms
 5. ✅ The release process is fully automated via GitHub Actions
 
-The auto-update system integrates seamlessly with your existing build and release infrastructure, providing a smooth update experience for all users. 
+The auto-update system integrates seamlessly with your existing build and release infrastructure, providing a smooth update experience for all users.
+
+**Current Status**: All infrastructure is ready, only needs the auto-update code to be enabled in `src/main.ts`. 
