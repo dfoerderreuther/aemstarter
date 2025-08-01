@@ -50,27 +50,23 @@ const config: ForgeConfig = {
   makers: [
     new MakerSquirrel({ // Windows installer
       // Windows-specific icon
-      setupIcon: './icons/icon.ico',
-      name: 'AEM-Starter-{{ version }}-Windows-{{ arch }}'
+      setupIcon: './icons/icon.ico'
       // loadingGif: './icons/icon.gif', // Optional: custom loading animation
     }),
     // DMG is the standard macOS distribution format - provides drag & drop to Applications
     new MakerDMG({ // macOS installer
       //background: './icons/icon.png',
-      icon: './icons/icon.icns',
-      name: 'AEM-Starter-{{ version }}-macOS-{{ arch }}'
+      icon: './icons/icon.icns'
     }, ['darwin']),
     //new MakerZIP({}, ['darwin']),
     new MakerRpm({ // Linux installer
       options: {
-        icon: './icons/icon.png',
-        name: 'AEM-Starter-{{ version }}-Linux-{{ arch }}'
+        icon: './icons/icon.png'
       }
     }),
     new MakerDeb({ // Linux installer
       options: {
-        icon: './icons/icon.png',
-        name: 'AEM-Starter-{{ version }}-Linux-{{ arch }}'
+        icon: './icons/icon.png'
       }
     })
   ],
