@@ -22,7 +22,6 @@ import { AemProcessManager } from './main/services/AemProcessManager';
 import { HttpsServiceRegister } from './main/HttpsServiceRegister';
 import { JavaService } from './main/services/JavaService';
 import { FileTreeService } from './main/services/FileTreeService';
-import { AutoStartStopService } from './main/services/AutoStartStopService';
 import { spawn } from 'child_process';
 
 // Set the app name immediately (this affects dock/taskbar display)
