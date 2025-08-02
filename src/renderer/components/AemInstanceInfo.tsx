@@ -1,6 +1,7 @@
-import { Modal, Text, Stack, Group, Badge, Code, ScrollArea, Box, Divider, Accordion } from '@mantine/core';
+import { Modal, Text, Stack, Group, Badge, Code, ScrollArea, Box, Divider, Accordion, Button, ActionIcon, TextInput } from '@mantine/core';
 import { InstanceStartData } from '../../types/InstanceStartData';
-import { IconClock, IconSettings, IconTerminal, IconDatabase, IconCode } from '@tabler/icons-react';
+import { IconClock, IconSettings, IconTerminal, IconDatabase, IconCode, IconCopy, IconCheck, IconSearch } from '@tabler/icons-react';
+import { useState } from 'react';
 
 interface AemInstanceInfoProps {
   opened: boolean;
@@ -18,6 +19,18 @@ export const AemInstanceInfo = ({
   instanceType, 
   startData 
 }: AemInstanceInfoProps) => {
+  const [copied, setCopied] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  };
   const formatTimestamp = (timestamp: Date | string) => {
     // Handle case where timestamp is serialized as string from IPC
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
@@ -62,8 +75,17 @@ export const AemInstanceInfo = ({
       .join('\n');
   };
 
-  const formatProcessEnvWithHighlighting = (processEnv: { [key: string]: string | null }) => {
-    const allEntries = Object.entries(processEnv || {});
+  const formatProcessEnvWithHighlighting = (processEnv: { [key: string]: string | null }, filter?: string) => {
+    let allEntries = Object.entries(processEnv || {});
+    
+    // Filter entries if search term is provided
+    if (filter && filter.trim()) {
+      const searchLower = filter.toLowerCase();
+      allEntries = allEntries.filter(([key, value]) => {
+        const line = `${key}=${value || ''}`;
+        return line.toLowerCase().includes(searchLower);
+      });
+    }
     
     return allEntries.map(([key, value]) => {
       const line = `${key}=${value || ''}`;
@@ -76,10 +98,27 @@ export const AemInstanceInfo = ({
       return (
         <div key={key} style={{ marginBottom: '2px' }}>
           <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{beforeEqual}</span>
-          {afterEqual}
+              {afterEqual}
         </div>
       );
     });
+  };
+
+  const formatProcessEnvAsText = (processEnv: { [key: string]: string | null }, filter?: string) => {
+    let allEntries = Object.entries(processEnv || {});
+    
+    // Filter entries if search term is provided
+    if (filter && filter.trim()) {
+      const searchLower = filter.toLowerCase();
+      allEntries = allEntries.filter(([key, value]) => {
+        const line = `${key}=${value || ''}`;
+        return line.toLowerCase().includes(searchLower);
+      });
+    }
+    
+    return allEntries
+      .map(([key, value]) => `${key}=${value || ''}`)
+      .join('\n');
   };
 
   return (
@@ -165,9 +204,29 @@ export const AemInstanceInfo = ({
                 </Accordion.Control>
                 <Accordion.Panel>
                   {Object.keys(startData.usedProcessEnv).length > 0 ? (
-                    <Box style={{ fontFamily: 'monospace', fontSize: '12px', maxHeight: '400px', overflow: 'auto' }}>
-                      {formatProcessEnvWithHighlighting(startData.usedProcessEnv)}
-                    </Box>
+                    <>
+                      <Group justify="space-between" mb="xs">
+                        <TextInput
+                          placeholder="Search environment variables..."
+                          value={searchTerm}
+                          onChange={(event) => setSearchTerm(event.currentTarget.value)}
+                          leftSection={<IconSearch size={16} />}
+                          size="xs"
+                          style={{ flex: 1, maxWidth: '300px' }}
+                        />
+                        <ActionIcon
+                          variant="subtle"
+                          color={copied ? 'green' : 'gray'}
+                          onClick={() => copyToClipboard(formatProcessEnvAsText(startData.usedProcessEnv, searchTerm))}
+                          title="Copy filtered results to clipboard"
+                        >
+                          {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                        </ActionIcon>
+                      </Group>
+                      <Box style={{ fontFamily: 'monospace', fontSize: '12px', maxHeight: '400px', overflow: 'auto' }}>
+                        {formatProcessEnvWithHighlighting(startData.usedProcessEnv, searchTerm)}
+                      </Box>
+                    </>
                   ) : (
                     <Text size="sm" c="dimmed" ta="center" py="md">
                       No process environment variables available.
