@@ -121,7 +121,26 @@ export const TerminalTabQuickCommands = ({
         { command: 'aio aem:rde:install ', name: 'Install to RDE' }, 
         { command: 'aio aem:rde:logs', name: 'Follow RDE Logs' }, 
         { command: 'aio aem:rde:logs -s author', name: 'Follow RDE Author Logs' }, 
-        { command: 'aio aem:rde:logs -s publish', name: 'Follow RDE Publish Logs' }
+        { command: 'aio aem:rde:logs -s publish', name: 'Follow RDE Publish Logs' },
+        { command: 'aio aem:rde:reset', name: 'Reset RDE' }
+      ]
+    },
+    'GIT': {
+      type: 'dev',
+      items: [
+        { url: 'https://git-scm.com/docs/git', name: 'GIT CLI Reference' },
+        { command: 'git status', name: 'Check Git Status' },
+        { command: 'git add .', name: 'Add all files to Git' },
+        { command: 'git commit -am "<message>"', name: 'Commit changes to Git' },
+        { command: 'git push', name: 'Push changes to Git' }, 
+        { command: 'git pull', name: 'Pull changes from Git' },
+        { command: 'git branch', name: 'List Git Branches' },
+        { command: 'git checkout <branch>', name: 'Checkout a Git Branch' },
+        { command: 'git merge <branch>', name: 'Merge a Git Branch' },
+        { command: 'git rebase <branch>', name: 'Rebase a Git Branch' },
+        { command: 'git branch -a', name: 'List all Git Branches' },
+        { command: 'git reset --hard', name: 'Reset Git to a specific commit' },
+        { command: 'git clean -fd', name: 'Clean Git' }
       ]
     },
     'AEM-Starter Logging': {

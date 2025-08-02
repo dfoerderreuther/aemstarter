@@ -47,12 +47,12 @@ log.info('Main process logging initialized');
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-// Initialize auto-updates (only in production)
-if (process.env.NODE_ENV === 'production') {
+// Initialize auto-updates (when not in development)
+if (process.env.NODE_ENV !== 'development') {
   const { updateElectronApp } = require('update-electron-app');
   updateElectronApp({
     repo: 'dfoerderreuther/aemstarter',
-    updateInterval: '1 hour',
+    updateInterval: '15 minutes',
     logger: log,
     notifyUser: true
   });
