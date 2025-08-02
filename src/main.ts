@@ -22,6 +22,7 @@ import { AemProcessManager } from './main/services/AemProcessManager';
 import { HttpsServiceRegister } from './main/HttpsServiceRegister';
 import { JavaService } from './main/services/JavaService';
 import { FileTreeService } from './main/services/FileTreeService';
+import { CustomUpdateService } from './main/services/CustomUpdateService';
 import { spawn } from 'child_process';
 
 // Set the app name immediately (this affects dock/taskbar display)
@@ -47,14 +48,48 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 
-// Initialize auto-updates 
-const { updateElectronApp } = require('update-electron-app');
-updateElectronApp({
-  repo: 'dfoerderreuther/aemstarter',
-  updateInterval: '5 minutes',
-  logger: log,
-  notifyUser: true
+// Initialize auto-updates with custom hooks
+const updateService = new CustomUpdateService();
+
+// Add your pre-update hooks here
+updateService.addPreUpdateHook({
+  name: 'Save User Data',
+  execute: async () => {
+    // Save any unsaved user data
+    log.info('Saving user data before update');
+    // Add your save logic here
+  }
 });
+
+updateService.addPreUpdateHook({
+  name: 'Close AEM Instances',
+  execute: async () => {
+    // Close any running AEM instances
+    log.info('Closing AEM instances before update');
+    // Add your AEM shutdown logic here
+  }
+});
+
+updateService.addPreInstallHook({
+  name: 'Create Backup',
+  execute: async () => {
+    // Create a backup of current state
+    log.info('Creating backup before installing update');
+    // Add your backup logic here
+  }
+});
+
+updateService.addBeforeQuitHook({
+  name: 'Final Cleanup',
+  execute: async () => {
+    // Final cleanup before app quits
+    log.info('Performing final cleanup before update');
+    // Add your final cleanup logic here
+  }
+});
+
+// Initialize the update service
+updateService.initializeUpdateService('dfoerderreuther/aemstarter', '5 minutes');
 
 
 // Store reference to main window for menu actions
