@@ -33,7 +33,8 @@
     "version:patch": "npm version patch && git push origin main && git push origin $(git describe --tags --abbrev=0)",
     "version:minor": "npm version minor && git push origin main && git push origin $(git describe --tags --abbrev=0)",
     "version:major": "npm version major && git push origin main && git push origin $(git describe --tags --abbrev=0)",
-    "version:show": "echo \"Current version: $(node -p \"require('./package.json').version\")\""
+    "version:show": "echo \"Current version: $(node -p \"require('./package.json').version\")\"",
+    "retag": "node scripts/retag.js"
   },
   "keywords": [],
   "author": {

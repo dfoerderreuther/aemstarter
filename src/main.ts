@@ -47,16 +47,16 @@ log.info('Main process logging initialized');
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-// Initialize auto-updates (when not in development)
-if (process.env.NODE_ENV !== 'development') {
-  const { updateElectronApp } = require('update-electron-app');
-  updateElectronApp({
-    repo: 'dfoerderreuther/aemstarter',
-    updateInterval: '15 minutes',
-    logger: log,
-    notifyUser: true
-  });
-}
+
+// Initialize auto-updates 
+const { updateElectronApp } = require('update-electron-app');
+updateElectronApp({
+  repo: 'dfoerderreuther/aemstarter',
+  updateInterval: '5 minutes',
+  logger: log,
+  notifyUser: true
+});
+
 
 // Store reference to main window for menu actions
 let mainWindow: BrowserWindow | null = null;
