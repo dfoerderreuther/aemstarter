@@ -58,7 +58,7 @@ const config: ForgeConfig = {
       //background: './icons/icon.png',
       icon: './icons/icon.icns'
     }, ['darwin']),
-    //new MakerZIP({}, ['darwin']),
+    new MakerZIP({}, ['darwin']),
     new MakerRpm({ // Linux installer
       options: {
         icon: './icons/icon.png'

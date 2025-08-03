@@ -48,6 +48,10 @@ Then go to https://github.com/dfoerderreuther/aemstarter/releases and download /
 
     rm -Rf ~/Library/Application\ Support/AEM\ Starter/
 
+# test update service
+
+curl -s "https://update.electronjs.org/dfoerderreuther/aemstarter/darwin-arm64/1.1.7" 
+
 # Icons
 
 ### For macOS (.icns file):
