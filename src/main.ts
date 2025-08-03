@@ -18,7 +18,6 @@ import { DispatcherManagerRegister } from './main/DispatcherManagerRegister';
 import { ProjectManagerRegister } from './main/ProjectManagerRegister';
 import { Automation } from './main/services/automation/Automation';
 import { TerminalService } from './main/services/TerminalService';
-import { AemProcessManager } from './main/services/AemProcessManager';
 import { HttpsServiceRegister } from './main/HttpsServiceRegister';
 import { JavaService } from './main/services/JavaService';
 import { FileTreeService } from './main/services/FileTreeService';
@@ -1116,7 +1115,6 @@ ipcMain.handle('open-dev-project', async (_, project: Project, type: 'files' | '
 
 // Terminal management
 let terminalService: TerminalService;
-let aemProcessManager: AemProcessManager;
 
 function initializeTerminalService() {
   if (!terminalService) {
@@ -1127,14 +1125,7 @@ function initializeTerminalService() {
   }
 }
 
-function initializeAemProcessManager() {
-  if (!aemProcessManager) {
-    aemProcessManager = new AemProcessManager();
-    if (mainWindow) {
-      aemProcessManager.setMainWindow(mainWindow);
-    }
-  }
-}
+
 
 // Terminal IPC handlers
 ipcMain.handle('create-terminal', async (_, options: { cwd?: string; shell?: string }) => {
@@ -1157,16 +1148,7 @@ ipcMain.handle('kill-terminal', async (_, terminalId: string) => {
   return terminalService.killTerminal(terminalId);
 });
 
-// AEM Process Manager IPC handlers
-ipcMain.handle('start-aem-process', async (_, project: Project, options: any) => {
-  initializeAemProcessManager();
-  return aemProcessManager.startAemProcess(project, options);
-});
 
-ipcMain.handle('stop-aem-process', async (_, processId: string) => {
-  initializeAemProcessManager();
-  return aemProcessManager.stopAemProcess(processId);
-});
 
 // Clear all terminals (used when switching projects)
 ipcMain.handle('clear-all-terminals', async () => {
@@ -1610,10 +1592,61 @@ app.on('ready', () => {
     log.info('[app] SIGTERM received, forcing quit');
     app.quit();
   });
+
+  let isShuttingDown = false;
   
-  // Add a simple quit handler for testing
-  app.on('quit', () => {
-    log.info('[app] quit: App is quitting');
+  // Handle graceful shutdown when user tries to quit the app
+  app.on('before-quit', async (event) => {
+    if (isShuttingDown) {
+      log.info('[app] before-quit: Already shutting down, skipping');
+      return;
+    }
+
+    isShuttingDown = true;
+    event.preventDefault();
+    log.info('[app] before-quit: Quit requested');
+    
+    try {
+      // Simple cleanup - just kill terminals
+      if (terminalService) {
+        log.info('[app] before-quit: Cleaning up terminals...');
+        terminalService.cleanup();
+      }
+  
+      const project = await getCurrentProject();
+      if (project) {
+        const aemInstanceManager = AemInstanceManagerRegister.getInstanceManager(project);
+        const dispatcherInstance = DispatcherManagerRegister.getManager(project);
+
+        const stopPromises: Promise<void>[] = [];
+        
+        if (aemInstanceManager.isInstanceRunning('author')) {
+          log.info('[app] before-quit: Stopping author...');
+          stopPromises.push(aemInstanceManager.stopInstance('author'));
+        }
+        if (aemInstanceManager.isInstanceRunning('publisher')) {
+          log.info('[app] before-quit: Stopping publisher...');
+          stopPromises.push(aemInstanceManager.stopInstance('publisher'));
+        }
+        if (dispatcherInstance.isDispatcherRunning()) {
+          log.info('[app] before-quit: Stopping dispatcher...');
+          stopPromises.push(dispatcherInstance.stopDispatcher());
+        }
+        if (stopPromises.length > 0) {
+          stopPromises.push(new Promise(resolve => setTimeout(resolve, 3000)));
+          await Promise.all(stopPromises);
+          log.info('[app] before-quit: Done stopping instances. Now quit');
+        }
+        
+      }
+      
+      // TODO: Stop all AEM process
+  
+      log.info('[app] before-quit: Cleanup completed, allowing quit');
+    } catch (error) {
+      log.error('[app] before-quit: Error during shutdown:', error);
+    }
+    app.quit();
   });
   
   app.on('will-quit', () => {
@@ -1621,30 +1654,7 @@ app.on('ready', () => {
   });
 });
 
-// Track if we're already shutting down to prevent multiple shutdown attempts
-let isShuttingDown = false;
 
-// Handle graceful shutdown when user tries to quit the app
-app.on('before-quit', (event) => {
-  log.info('[app] before-quit: Quit requested');
-  
-  try {
-    // Simple cleanup - just kill terminals
-    if (terminalService) {
-      log.info('[app] before-quit: Cleaning up terminals...');
-      terminalService.cleanup();
-    }
-    
-    if (aemProcessManager) {
-      log.info('[app] before-quit: Cleaning up AEM process manager...');
-      aemProcessManager.cleanup();
-    }
-    
-    log.info('[app] before-quit: Cleanup completed, allowing quit');
-  } catch (error) {
-    log.error('[app] before-quit: Error during shutdown:', error);
-  }
-});
 
 // Quit when all windows are closed on all platforms
 app.on('window-all-closed', () => {

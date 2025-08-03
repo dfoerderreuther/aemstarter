@@ -29,24 +29,19 @@ This document outlines the implementation plan to make the AEM-Starter applicati
 - Proper terminal emulation settings for Windows console
 - Flow control support for better performance
 
-### Phase 2: New AemProcessManager ✅
+### Phase 2: New AemProcessManager ❌ (Removed)
 
-**File**: `src/main/services/AemProcessManager.ts`
+**File**: `src/main/services/AemProcessManager.ts` (DELETED)
 
-**Purpose**: Dedicated service for managing AEM processes with proper terminal environment
+**Status**: This component was removed as it was not being used effectively in the application.
 
-**Key Features**:
-- **Windows**: Uses `node-pty` to spawn AEM processes in proper terminal environment
-- **Unix/Mac**: Uses traditional `child_process.spawn` (maintains existing behavior)
-- Platform-specific environment configuration
-- Proper process lifecycle management
-- Integrated logging and status updates
+**Reason for Removal**:
+- The AemProcessManager was not integrated into the UI components
+- The existing AemInstanceManager already handles AEM process management effectively
+- The IPC handlers for `start-aem-process` and `stop-aem-process` were not being called
+- Simplified the codebase by removing unused functionality
 
-**Benefits**:
-- Prevents AEM processes from starting as GUI windows on Windows
-- Maintains existing Mac functionality
-- Better process isolation and management
-- Integrated with existing IPC system
+**Alternative**: The existing AemInstanceManager continues to handle all AEM process management with proper Windows compatibility through enhanced TerminalService and log tailing improvements.
 
 ### Phase 3: Enhanced Log Tailing ✅
 
