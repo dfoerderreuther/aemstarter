@@ -1,13 +1,32 @@
 # Development instructions
 
-
-## github actions
+## Actual
 
 ### release: 
 
+```
 npm run version:patch
+```
 
-old: 
+### uninstall
+
+```
+rm -rf /Applications/AEM-Starter.app
+rm -Rf ~/Library/Logs/AEM-Starter/
+rm -Rf ~/Library/Application\ Support/AEM-Starter/
+```
+
+### local production build
+
+```
+npm run clean
+npm run make:verbose
+```
+
+--- 
+
+
+## old docs: 
 
 1. Regular commits → Only builds (no release)
 2. Create tag (git tag v1.0.18 && git push --tags) → Builds + Creates Release
