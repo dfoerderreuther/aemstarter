@@ -1595,6 +1595,13 @@ app.on('ready', () => {
 
   let isShuttingDown = false;
   
+  // Add IPC handler for force quit
+  ipcMain.handle('force-quit', async () => {
+    log.info('[app] Force quit requested');
+    isShuttingDown = true; // Set the flag to bypass graceful shutdown
+    app.quit();
+  });
+  
   // Handle graceful shutdown when user tries to quit the app
   app.on('before-quit', async (event) => {
     if (isShuttingDown) {
@@ -1633,6 +1640,11 @@ app.on('ready', () => {
           stopPromises.push(dispatcherInstance.stopDispatcher());
         }
         if (stopPromises.length > 0) {
+          // Show shutdown modal to user
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('show-shutdown-modal');
+          }
+          
           stopPromises.push(new Promise(resolve => setTimeout(resolve, 3000)));
           await Promise.all(stopPromises);
           log.info('[app] before-quit: Done stopping instances. Now quit');

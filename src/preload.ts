@@ -434,5 +434,20 @@ contextBridge.exposeInMainWorld(
         ipcRenderer.removeListener('ssl-proxy-status', handler);
       };
     },
+
+    // Shutdown modal
+    forceQuit: () =>
+      ipcRenderer.invoke('force-quit'),
+
+    // Shutdown modal event listeners
+    onShowShutdownModal: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on('show-shutdown-modal', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('show-shutdown-modal', handler);
+      };
+    },
   }
 );

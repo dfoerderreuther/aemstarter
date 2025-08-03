@@ -8,6 +8,7 @@ import { IconPlus } from '@tabler/icons-react';
 import AemLogo from './assets/AEM.svg';
 import { SystemCheckView } from './components/SystemCheckView';
 import { AboutModal } from './components/AboutModal';
+import { ShutdownModal } from './components/ShutdownModal';
 
 const theme = createTheme({
   primaryColor: 'blue',
@@ -28,6 +29,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  const [shutdownModalOpen, setShutdownModalOpen] = useState(false);
   const [shouldRunAutomation, setShouldRunAutomation] = useState(false);
 
   // Clear terminals when project switches
@@ -99,11 +101,16 @@ const App: React.FC = () => {
       setAboutModalOpen(true);
     });
 
+    const cleanupShutdownModal = window.electronAPI.onShowShutdownModal(() => {
+      setShutdownModalOpen(true);
+    });
+
     // Cleanup function
     return () => {
       cleanupNewProject();
       cleanupOpenProject();
       cleanupOpenAbout();
+      cleanupShutdownModal();
     };
   }, []);
 
@@ -125,6 +132,15 @@ const App: React.FC = () => {
       cleanupRecentProject();
     };
   }, [projects]);
+
+  // Handle force quit
+  const handleForceQuit = async () => {
+    try {
+      await window.electronAPI.forceQuit();
+    } catch (error) {
+      console.error('Error during force quit:', error);
+    }
+  };
 
   // Handle check and open new project
   const handleCheckAndOpenNewProject = async () => {
@@ -259,6 +275,11 @@ const App: React.FC = () => {
         <AboutModal
           opened={aboutModalOpen}
           onClose={() => setAboutModalOpen(false)}
+        />
+
+        <ShutdownModal
+          opened={shutdownModalOpen}
+          onForceQuit={handleForceQuit}
         />
 
         <AppShell.Main>
