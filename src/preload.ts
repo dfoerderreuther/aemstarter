@@ -128,6 +128,8 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('create-package', project, name, instance, paths),
     deletePackage: (project: Project, packageName: string) =>
       ipcRenderer.invoke('delete-package', project, packageName),
+    downloadWebPackage: (project: Project, packageUrl: string) =>
+      ipcRenderer.invoke('download-web-package', project, packageUrl),
 
     // Replication Settings
     setupReplication: (project: Project, instance: 'author' | 'publisher' | 'dispatcher') =>

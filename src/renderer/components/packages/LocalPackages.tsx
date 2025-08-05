@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { 
   Stack, 
   Text, 
@@ -40,7 +40,7 @@ interface LocalPackagesProps {
   isPublisherRunning: boolean;
 }
 
-export const LocalPackages: React.FC<LocalPackagesProps> = ({ project, isAuthorRunning, isPublisherRunning }) => {
+export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }, LocalPackagesProps>(({ project, isAuthorRunning, isPublisherRunning }, ref) => {
   const [packages, setPackages] = useState<PackageInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -107,6 +107,10 @@ export const LocalPackages: React.FC<LocalPackagesProps> = ({ project, isAuthorR
     setError(null);
     loadPackages();
   }, [project]);
+
+  useImperativeHandle(ref, () => ({
+    refreshPackages: loadPackages
+  }));
 
   const handleCreate = async () => {
     if (!packageName.trim()) {
@@ -481,4 +485,4 @@ export const LocalPackages: React.FC<LocalPackagesProps> = ({ project, isAuthorR
       </Modal>
     </>
   );
-};
+});

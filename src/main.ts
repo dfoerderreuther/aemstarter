@@ -871,6 +871,17 @@ ipcMain.handle('rebuild-package', async (_, project: Project, name: string, inst
   }
 });
 
+ipcMain.handle('download-web-package', async (_, project: Project, packageUrl: string) => {
+  try {
+    const packageManager = new PackageManager(project);
+    const downloadedPackageName = await packageManager.downloadWebPackage(packageUrl);
+    return downloadedPackageName;
+  } catch (error) {
+    log.error('Error downloading web package:', error);
+    throw error;
+  }
+});
+
 // Replication Settings
 ipcMain.handle('setup-replication', async (_, project: Project, instance: 'author' | 'publisher' | 'dispatcher') => {
   try {

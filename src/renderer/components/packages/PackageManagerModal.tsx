@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { 
   Modal, 
   Flex,
@@ -10,7 +10,9 @@ import { IconPackage, IconFolder, IconWorld } from '@tabler/icons-react';
 import { LocalPackages } from './LocalPackages';
 import { WebPackages } from './WebPackages';
 
-
+interface LocalPackagesRef {
+  refreshPackages: () => Promise<void>;
+}
 
 interface PackageManagerModalProps {
   opened: boolean;
@@ -21,6 +23,14 @@ interface PackageManagerModalProps {
 }
 
 export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened, onClose, project, isAuthorRunning, isPublisherRunning }) => {
+  const localPackagesRef = useRef<LocalPackagesRef>(null);
+
+  const handlePackageDownloaded = async () => {
+    // Refresh local packages list when a web package is downloaded
+    if (localPackagesRef.current) {
+      await localPackagesRef.current.refreshPackages();
+    }
+  };
 
 
 
@@ -57,6 +67,7 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
 
         <Tabs.Panel value="local" pt="md" style={{ flex: 1, overflow: 'auto' }}>
           <LocalPackages 
+            ref={localPackagesRef}
             project={project}
             isAuthorRunning={isAuthorRunning}
             isPublisherRunning={isPublisherRunning}
@@ -64,7 +75,12 @@ export const PackageManagerModal: React.FC<PackageManagerModalProps> = ({ opened
         </Tabs.Panel>
 
         <Tabs.Panel value="web" pt="md" style={{ flex: 1, overflow: 'auto' }}>
-          <WebPackages project={project} />
+          <WebPackages 
+            project={project}
+            isAuthorRunning={isAuthorRunning}
+            isPublisherRunning={isPublisherRunning}
+            onPackageDownloaded={handlePackageDownloaded}
+          />
         </Tabs.Panel>
       </Tabs>
     </Modal>

@@ -436,6 +436,31 @@ ${filterEntries}
         }
     }
 
+    public async downloadWebPackage(packageUrl: string): Promise<string> {
+        // Create packages directory if it doesn't exist
+        const packagesDir = path.join(this.project.folderPath, 'packages');
+        if (!fs.existsSync(packagesDir)) {
+            fs.mkdirSync(packagesDir, { recursive: true });
+            log.info(`[PackageManager] Created packages directory: ${packagesDir}`);
+        }
+
+        // Extract filename from URL (use original filename)
+        const fileName = path.basename(packageUrl);
+        const filePath = path.join(packagesDir, fileName);
+
+        log.info(`[PackageManager] Downloading web package from ${packageUrl} to ${filePath}`);
+
+        try {
+            // Download the package
+            await this.atomicDownloadWithAuth(packageUrl, filePath);
+            log.info(`[PackageManager] Successfully downloaded web package: ${fileName}`);
+            return path.basename(filePath, '.zip'); // Return package name without extension
+        } catch (error) {
+            log.error(`[PackageManager] Error downloading web package:`, error);
+            throw error;
+        }
+    }
+
 
 
     async installPackage(instance: 'author' | 'publisher', packageName: string): Promise<void> {
