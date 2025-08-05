@@ -5,7 +5,6 @@ import { Terminal as XTerm } from '@xterm/xterm';
 import { LogTerminal, LogTerminalRef } from './LogTerminal';
 import { Screenshot } from './Screenshot';
 import { OakRunMenu } from './OakRunMenu';
-import { PackageMenu } from './PackageMenu';
 import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser, IconExternalLink, IconInfoCircle } from '@tabler/icons-react';
 import { LogFileSelector } from './LogFileSelector';
 import { AemInstanceInfo } from './AemInstanceInfo';
@@ -523,11 +522,7 @@ export const AemInstanceView = ({
                   paddingTop: viewMode === 'columns' ? '0' : '12px'
                 }}>
                   <Stack gap="xs" style={{ alignItems: 'flex-start' }}>
-                    <PackageMenu
-                      project={project}
-                      instance={instance}
-                      isRunning={isRunning}
-                    />
+
                     <OakRunMenu
                       project={project}
                       instance={instance}
