@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Stack, TextInput, Group, Button, Anchor, Checkbox, ActionIcon, Text, Paper, Space } from '@mantine/core';
+import { Modal, Stack, TextInput, Group, Button, Anchor, Checkbox, ActionIcon, Text, Paper } from '@mantine/core';
 import { IconFolder, IconAlertTriangle } from '@tabler/icons-react';
 import { Project } from '../../types/Project';
 import { SystemCheckView } from './SystemCheckView';
@@ -405,8 +405,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               label="Run first start and initial setup"
               checked={runFirstStartSetup}
               onChange={(e) => setRunFirstStartSetup(e.target.checked)}
-              description="This will start all instances, configure replication between Author, Publisher, and Dispatcher instances, load matching oak-run.jar and install the WKND packages."
-              disabled={classic}
+              description="This will start all instances, configure replication between Author, Publisher, and Dispatcher instances and load matching oak-run.jar."
+              
             />
           </Stack>
         </Paper>

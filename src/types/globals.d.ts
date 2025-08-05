@@ -176,6 +176,10 @@ declare global {
       onOpenProjectFolder: (callback: (folderPath: string) => void) => () => void;
       onOpenRecentProject: (callback: (projectId: string) => void) => () => void;
       onOpenAboutDialog: (callback: () => void) => () => void;
+      onShowShutdownModal: (callback: () => void) => () => void;
+      
+      // App control
+      forceQuit: () => Promise<void>;
 
       // Dispatcher Management
       startDispatcher: (project: Project) => Promise<boolean>;

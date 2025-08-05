@@ -53,7 +53,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
           task: 'first-start-and-initial-setup',
           parameters: {
             replication: true,
-            wknd: true
+            wknd: false
           }
         });
         setShowAutomation(true);
