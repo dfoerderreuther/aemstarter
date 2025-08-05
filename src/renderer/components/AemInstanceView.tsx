@@ -528,6 +528,12 @@ export const AemInstanceView = ({
                       instance={instance}
                       isRunning={isRunning}
                     />
+                    <OakRunMenu
+                      project={project}
+                      instance={instance}
+                      isRunning={isRunning}
+                      onLogFileSwitch={handleLogFileChange}
+                    />
 
                     <Button
                       size="xs"
