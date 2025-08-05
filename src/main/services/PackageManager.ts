@@ -220,7 +220,7 @@ ${filterEntries}
         }
     }
 
-    public async createPackage(name: string, instances: string[], paths: string[]): Promise<void> {
+    public async createPackage(name: string, instance: string, paths: string[]): Promise<void> {
         // Create packages directory if it doesn't exist
         const packagesDir = path.join(this.project.folderPath, 'packages');
         if (!fs.existsSync(packagesDir)) {

@@ -838,10 +838,10 @@ ipcMain.handle('list-packages', async (_, project: Project) => {
   }
 });
 
-ipcMain.handle('create-package', async (_, project: Project, name: string, instances: string[], paths: string[]) => {
+ipcMain.handle('create-package', async (_, project: Project, name: string, instance: string, paths: string[]) => {
   try {
     const packageManager = new PackageManager(project);
-    await packageManager.createPackage(name, instances, paths);
+    await packageManager.createPackage(name, instance, paths);
     return true;
   } catch (error) {
     log.error('Error creating package:', error);
