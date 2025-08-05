@@ -1,5 +1,5 @@
-import React from 'react';
-import { Text, Group, Badge } from '@mantine/core';
+import React, { useState } from 'react';
+import { Text, Group, Badge, Checkbox } from '@mantine/core';
 import { IconPackage } from '@tabler/icons-react';
 import { Project } from '../../../../types/Project';
 import { AutomationTaskTeaser } from '../AutomationTaskTeaser';
@@ -13,6 +13,8 @@ export const ReinstallTeaser: React.FC<ReinstallTeaserProps> = ({
   project, 
   onTaskStart 
 }) => {
+  const [andStart, setAndStart] = useState(true);
+
   return (
     <AutomationTaskTeaser 
       task="reinstall" 
@@ -20,6 +22,9 @@ export const ReinstallTeaser: React.FC<ReinstallTeaserProps> = ({
       icon={IconPackage}
       taskTitle="Reinstall AEM"
       onTaskStart={onTaskStart}
+      parameters={{
+        andStart: andStart
+      }}
     >
       <div>
         <Text fw={500} size="sm" mb={4}>Reinstall AEM</Text>
@@ -27,9 +32,15 @@ export const ReinstallTeaser: React.FC<ReinstallTeaserProps> = ({
           Completely reinstall AEM instances. This will delete existing folders, 
           create new ones, copy license files, and unzip the SDK package.
         </Text>
-        <Group gap="xs">
+        <Group gap="xs" mb={8}>
           <Badge variant="outline" color="orange" size="xs">Destructive</Badge>
         </Group>
+        <Checkbox
+          label="And start instances after reinstall"
+          checked={andStart}
+          onChange={(event) => setAndStart(event.currentTarget.checked)}
+          size="xs"
+        />
       </div>
     </AutomationTaskTeaser>
   );

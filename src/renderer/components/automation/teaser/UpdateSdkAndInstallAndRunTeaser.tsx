@@ -123,7 +123,7 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
                         </Button>
                     </Group>
                     <MultiSelect
-                        label="Author packages (installed in order)"
+                        label="Author packages"
                         placeholder="Select packages for Author instance"
                         data={availablePackages}
                         value={authorPackages}
@@ -136,7 +136,7 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
                         description="Packages will be installed in the selected order"
                     />
                     <MultiSelect
-                        label="Publisher packages (installed in order)"
+                        label="Publisher packages"
                         placeholder="Select packages for Publisher instance"
                         data={availablePackages}
                         value={publisherPackages}

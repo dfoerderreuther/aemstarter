@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge, Loader, Title, ThemeIcon, Accordion } from '@mantine/core';
-import { IconRefresh, IconPlayerPlay, IconPackage, IconHistory, IconRobot } from '@tabler/icons-react';
+import { IconRefresh, IconPlayerPlay, IconRobot, IconDeviceFloppy, IconServer } from '@tabler/icons-react';
 import { Project } from '../../../types/Project';
 
 import { BackupAndStartTeaser } from './teaser/BackupAndStartTeaser';
@@ -304,7 +304,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
                 <Accordion.Control>
                   <Group gap="sm">
                     <ThemeIcon size="sm" variant="light" color="green">
-                      <IconPlayerPlay size={14} />
+                      <IconDeviceFloppy size={14} />
                     </ThemeIcon>
                     <Text fw={500}>Backup & Restore</Text>
                   </Group>
@@ -357,7 +357,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
                 <Accordion.Control>
                   <Group gap="sm">
                     <ThemeIcon size="sm" variant="light" color="violet">
-                      <IconPackage size={14} />
+                      <IconServer size={14} />
                     </ThemeIcon>
                     <Text fw={500}>Setup & Maintenance</Text>
                   </Group>

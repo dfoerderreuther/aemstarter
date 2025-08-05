@@ -17,17 +17,21 @@ export class ReinstallAndRun implements AutoTask {
 
     public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const progress = progressCallback || (() => { log.info('Progress callback not provided'); });
+        const andStart = parameters?.andStart !== false; // Default to true if not specified
         
         progress('Initiating automated AEM reinstallation process...');
         await this.startStopService.stop();
         
-        progress('Removing existing AEM installation and preparing for fresh install...');
+        progress('Removing existing AEM installation and fresh install...');
         await this.reinstall();
         
-        progress('Starting AEM author and publisher instances...');
-        await this.startStopService.start();
-        
-        progress('AEM reinstallation completed successfully - all services are running');
+        if (andStart) {
+            progress('Starting AEM author and publisher instances...');
+            await this.startStopService.start();
+            progress('AEM reinstallation completed successfully - all services are running');
+        } else {
+            progress('AEM reinstallation completed successfully - instances not started');
+        }
     }
 
 

@@ -26,14 +26,14 @@ export class FirstStartAndInitialSetup implements AutoTask {
         this.startStopService = new AutoStartStopService(project);
     }
 
-    public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
+    public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number | string[] }) : Promise<void> {
         const progress = progressCallback || (() => { log.info('Progress callback not provided'); });
 
-        const wknd = parameters?.wknd === true;
-        const localPackage: string = (parameters?.localPackage ?? '') as string;
+        const authorPackages: string[] = (parameters?.authorPackages ?? []) as string[];
+        const publisherPackages: string[] = (parameters?.publisherPackages ?? []) as string[];
         const replication = parameters?.replication === true;
 
-        progress(`Starting first start and initial setup. (wknd: ${wknd}, replication: ${replication}, custom package: ${localPackage ? `'${localPackage}'` : 'false'})`);
+        progress(`Starting first start and initial setup. (replication: ${replication}, author packages: ${authorPackages.length}, publisher packages: ${publisherPackages.length})`);
 
         if (!await this.awaitInstallComplete()) {
             progress('Error: Install did not complete in time');
@@ -63,19 +63,22 @@ export class FirstStartAndInitialSetup implements AutoTask {
             await replicationSettings.setReplication(this.project, 'dispatcher');
         }
 
-        if (wknd) {
-            progress('Installing WKND package');
-            const packageInstaller = new PackageInstaller(this.project);
-            const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip"
-            await packageInstaller.installPackage('author', wkndUrl);
-            await packageInstaller.installPackage('publisher', wkndUrl);
+        if (authorPackages.length > 0) {
+            progress(`Installing ${authorPackages.length} packages to Author instance`);
+            const packageManager = new PackageManager(this.project);
+            for (const packageName of authorPackages) {
+                progress(`Installing package '${packageName}' to Author`);
+                await packageManager.installPackage('author', packageName);
+            }
         }
 
-        if (localPackage) {
-            progress('Installing local package');
-            const packageInstaller = new PackageManager(this.project);
-            await packageInstaller.installPackage('author', localPackage);
-            await packageInstaller.installPackage('publisher', localPackage);
+        if (publisherPackages.length > 0) {
+            progress(`Installing ${publisherPackages.length} packages to Publisher instance`);
+            const packageManager = new PackageManager(this.project);
+            for (const packageName of publisherPackages) {
+                progress(`Installing package '${packageName}' to Publisher`);
+                await packageManager.installPackage('publisher', packageName);
+            }
         }
 
         progress('Restarting dispatcher');
