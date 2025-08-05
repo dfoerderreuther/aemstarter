@@ -228,157 +228,123 @@ ${filterEntries}
             log.info(`[PackageManager] Created packages directory: ${packagesDir}`);
         }
 
-        // Create package-specific directory
-        const packageDir = path.join(packagesDir, name);
-        if (fs.existsSync(packageDir)) {
+        // Check if package already exists
+        const packagePath = path.join(packagesDir, `${name}.zip`);
+        if (fs.existsSync(packagePath)) {
             throw new Error(`Package '${name}' already exists. Please choose a different name.`);
         }
-        fs.mkdirSync(packageDir, { recursive: true });
-        log.info(`[PackageManager] Created package directory: ${packageDir}`);
-
-        // Initialize package metadata
-        const packageMetadata: any = {
-            name: name,
-            createdDate: new Date(),
-            paths: paths,
-            hasAuthor: instances.includes('author'),
-            hasPublisher: instances.includes('publisher'),
-            authorAemPath: undefined,
-            publisherAemPath: undefined
-        };
 
         // Get instance settings
         const settings = this.project.settings;
-
-        for (const instance of instances) {
-            const instanceKey = instance as 'author' | 'publisher';
-            const instanceSettings = settings[instanceKey];
-            if (!instanceSettings) {
-                throw new Error(`Instance settings not found for: ${instance}`);
-            }
-            
-            const port = instanceSettings.port;
-            const host = 'localhost';
-            const packageName = `${name}-${instance}`;
-            
-            log.info(`[PackageManager] Creating package ${packageName} with paths: ${paths.join(', ')} on ${instance} instance`);
-            
-            try {
-                // Create package zip with filter.xml
-                const packageBuffer = this.createPackageZip(packageName, paths);
-                
-                // Save package locally first for debugging
-                const tempPackagePath = path.join(packageDir, `${packageName}.zip`);
-                fs.writeFileSync(tempPackagePath, packageBuffer);
-                log.info(`[PackageManager] Created package zip at: ${tempPackagePath}`);
-                log.info(`[PackageManager] Package size: ${packageBuffer.length} bytes`);
-                
-                // Debug: Check zip contents
-                try {
-                    const testZip = new AdmZip(tempPackagePath);
-                    const entries = testZip.getEntries();
-                    log.info(`[PackageManager] Zip contains ${entries.length} entries:`);
-                    entries.forEach(entry => {
-                        log.info(`  - ${entry.entryName} (${entry.header.size} bytes)`);
-                    });
-                } catch (zipError) {
-                    log.error(`[PackageManager] Error reading zip contents:`, zipError);
-                }
-                
-                // Upload package to package manager using proper form data
-                const boundary = `----WebKitFormBoundary${randomUUID()}`;
-                const formData = this.createSimpleMultipartFormData(boundary, packageBuffer, `${packageName}.zip`);
-                
-                const uploadUrl = `http://${host}:${port}/crx/packmgr/service/.json`;
-                log.info(`[PackageManager] Uploading package to: ${uploadUrl}`);
-                log.info(`[PackageManager] Form data size: ${formData.length} bytes`);
-                log.info(`[PackageManager] Boundary: ${boundary}`);
-                
-                const uploadResponse = await fetch(uploadUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64'),
-                        'Content-Type': `multipart/form-data; boundary=${boundary}`
-                    },
-                    body: formData
-                });
-                
-                const uploadResponseText = await uploadResponse.text();
-                log.info(`[PackageManager] Upload response status: ${uploadResponse.status}`);
-                log.info(`[PackageManager] Upload response text:`, uploadResponseText);
-                
-                if (!uploadResponse.ok) {
-                    throw new Error(`Failed to upload package: ${uploadResponse.status} ${uploadResponse.statusText}. Response: ${uploadResponseText}`);
-                }
-                
-                // Extract package path from response
-                let packagePath;
-                try {
-                    const responseJson = JSON.parse(uploadResponseText);
-                    if (responseJson.success && responseJson.path) {
-                        packagePath = responseJson.path;
-                        log.info(`[PackageManager] Package uploaded to: ${packagePath}`);
-                    } else {
-                        throw new Error(`Upload response indicates failure: ${uploadResponseText}`);
-                    }
-                } catch (parseError) {
-                    log.info(`[PackageManager] Could not parse upload response as JSON, trying to extract path from HTML response`);
-                    // Try to extract path from HTML response
-                    const pathMatch = uploadResponseText.match(/\/etc\/packages\/[^"]+\.zip/);
-                    if (pathMatch) {
-                        packagePath = pathMatch[0];
-                        log.info(`[PackageManager] Extracted package path: ${packagePath}`);
-                    } else {
-                        throw new Error(`Could not determine package path from upload response: ${uploadResponseText}`);
-                    }
-                }
-
-                // Store the actual AEM package path in metadata
-                if (instance === 'author') {
-                    packageMetadata.authorAemPath = packagePath;
-                } else if (instance === 'publisher') {
-                    packageMetadata.publisherAemPath = packagePath;
-                }
-                
-                // Build the package
-                const buildUrl = `http://${host}:${port}/crx/packmgr/service/.json${packagePath}?cmd=build`;
-                log.info(`[PackageManager] Building package: ${buildUrl}`);
-                
-                const buildResponse = await fetch(buildUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64')
-                    }
-                });
-                
-                const buildResponseText = await buildResponse.text();
-                log.info(`[PackageManager] Build response status: ${buildResponse.status}`);
-                log.info(`[PackageManager] Build response text:`, buildResponseText);
-                
-                if (!buildResponse.ok) {
-                    throw new Error(`Failed to build package: ${buildResponse.status} ${buildResponse.statusText}. Response: ${buildResponseText}`);
-                }
-                
-                // Download the built package
-                const downloadUrl = `http://${host}:${port}${packagePath}`;
-                log.info(`[PackageManager] Downloading package from ${downloadUrl} to ${tempPackagePath}`);
-                await this.atomicDownloadWithAuth(downloadUrl, tempPackagePath);
-                
-                log.info(`[PackageManager] Successfully created, built and downloaded package: ${packageName}`);
-                
-            } catch (error) {
-                log.error(`[PackageManager] Error creating/building/downloading package ${packageName}:`, error);
-                throw error;
-            }
+        const instanceKey = instance as 'author' | 'publisher';
+        const instanceSettings = settings[instanceKey];
+        if (!instanceSettings) {
+            throw new Error(`Instance settings not found for: ${instance}`);
         }
-
-        // Save package metadata to file
-        const metadataPath = path.join(packageDir, 'package.json');
+        
+        const port = instanceSettings.port;
+        const host = 'localhost';
+        
+        log.info(`[PackageManager] Creating package ${name} with paths: ${paths.join(', ')} from ${instance} instance`);
+        
         try {
-            fs.writeFileSync(metadataPath, JSON.stringify(packageMetadata, null, 2));
-            log.info(`[PackageManager] Saved package metadata to: ${metadataPath}`);
+            // Create package zip with filter.xml
+            const packageBuffer = this.createPackageZip(name, paths);
+            
+            // Save package locally first for debugging
+            fs.writeFileSync(packagePath, packageBuffer);
+            log.info(`[PackageManager] Created package zip at: ${packagePath}`);
+            log.info(`[PackageManager] Package size: ${packageBuffer.length} bytes`);
+            
+            // Debug: Check zip contents
+            try {
+                const testZip = new AdmZip(packagePath);
+                const entries = testZip.getEntries();
+                log.info(`[PackageManager] Zip contains ${entries.length} entries:`);
+                entries.forEach(entry => {
+                    log.info(`  - ${entry.entryName} (${entry.header.size} bytes)`);
+                });
+            } catch (zipError) {
+                log.error(`[PackageManager] Error reading zip contents:`, zipError);
+            }
+            
+            // Upload package to package manager using proper form data
+            const boundary = `----WebKitFormBoundary${randomUUID()}`;
+            const formData = this.createSimpleMultipartFormData(boundary, packageBuffer, `${name}.zip`);
+            
+            const uploadUrl = `http://${host}:${port}/crx/packmgr/service/.json`;
+            log.info(`[PackageManager] Uploading package to: ${uploadUrl}`);
+            log.info(`[PackageManager] Form data size: ${formData.length} bytes`);
+            log.info(`[PackageManager] Boundary: ${boundary}`);
+            
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64'),
+                    'Content-Type': `multipart/form-data; boundary=${boundary}`
+                },
+                body: formData
+            });
+            
+            const uploadResponseText = await uploadResponse.text();
+            log.info(`[PackageManager] Upload response status: ${uploadResponse.status}`);
+            log.info(`[PackageManager] Upload response text:`, uploadResponseText);
+            
+            if (!uploadResponse.ok) {
+                throw new Error(`Failed to upload package: ${uploadResponse.status} ${uploadResponse.statusText}. Response: ${uploadResponseText}`);
+            }
+            
+            // Extract package path from response
+            let aemPackagePath;
+            try {
+                const responseJson = JSON.parse(uploadResponseText);
+                if (responseJson.success && responseJson.path) {
+                    aemPackagePath = responseJson.path;
+                    log.info(`[PackageManager] Package uploaded to: ${aemPackagePath}`);
+                } else {
+                    throw new Error(`Upload response indicates failure: ${uploadResponseText}`);
+                }
+            } catch (parseError) {
+                log.info(`[PackageManager] Could not parse upload response as JSON, trying to extract path from HTML response`);
+                // Try to extract path from HTML response
+                const pathMatch = uploadResponseText.match(/\/etc\/packages\/[^"]+\.zip/);
+                if (pathMatch) {
+                    aemPackagePath = pathMatch[0];
+                    log.info(`[PackageManager] Extracted package path: ${aemPackagePath}`);
+                } else {
+                    throw new Error(`Could not determine package path from upload response: ${uploadResponseText}`);
+                }
+            }
+            
+            // Build the package
+            const buildUrl = `http://${host}:${port}/crx/packmgr/service/.json${aemPackagePath}?cmd=build`;
+            log.info(`[PackageManager] Building package: ${buildUrl}`);
+            
+            const buildResponse = await fetch(buildUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Basic ' + Buffer.from('admin:admin').toString('base64')
+                }
+            });
+            
+            const buildResponseText = await buildResponse.text();
+            log.info(`[PackageManager] Build response status: ${buildResponse.status}`);
+            log.info(`[PackageManager] Build response text:`, buildResponseText);
+            
+            if (!buildResponse.ok) {
+                throw new Error(`Failed to build package: ${buildResponse.status} ${buildResponse.statusText}. Response: ${buildResponseText}`);
+            }
+            
+            // Download the built package
+            const downloadUrl = `http://${host}:${port}${aemPackagePath}`;
+            log.info(`[PackageManager] Downloading package from ${downloadUrl} to ${packagePath}`);
+            await this.atomicDownloadWithAuth(downloadUrl, packagePath);
+            
+            log.info(`[PackageManager] Successfully created, built and downloaded package: ${name}`);
+            
         } catch (error) {
-            log.error(`[PackageManager] Error saving package metadata:`, error);
+            log.error(`[PackageManager] Error creating/building/downloading package ${name}:`, error);
+            throw error;
         }
     }
 
@@ -389,131 +355,70 @@ ${filterEntries}
         }
 
         const packages: PackageInfo[] = [];
-        for (const packageFolder of fs.readdirSync(packagesDir)) {
-            const packageFolderPath = path.join(packagesDir, packageFolder);
+        for (const fileName of fs.readdirSync(packagesDir)) {
+            const filePath = path.join(packagesDir, fileName);
             
-            // Skip if not a directory
-            if (!fs.statSync(packageFolderPath).isDirectory()) {
+            // Skip if not a zip file
+            if (!fileName.endsWith('.zip') || !fs.statSync(filePath).isFile()) {
                 continue;
             }
             
             try {
-                // Check for author and publisher zip files
-                const authorZipPath = path.join(packageFolderPath, `${packageFolder}-author.zip`);
-                const publisherZipPath = path.join(packageFolderPath, `${packageFolder}-publisher.zip`);
+                // Get package name without .zip extension
+                const packageName = fileName.replace('.zip', '');
                 
-                const hasAuthor = fs.existsSync(authorZipPath);
-                const hasPublisher = fs.existsSync(publisherZipPath);
+                // Get file stats
+                const stats = fs.statSync(filePath);
                 
-                // Load package metadata if available
-                const metadataPath = path.join(packageFolderPath, 'package.json');
-                let packageMetadata: any = {};
-                
-                if (fs.existsSync(metadataPath)) {
-                    try {
-                        const metadataContent = fs.readFileSync(metadataPath, 'utf8');
-                        packageMetadata = JSON.parse(metadataContent);
-                    } catch (error) {
-                        log.error(`[PackageManager] Error loading package metadata for ${packageFolder}:`, error);
-                    }
-                }
-                
-                // Get file sizes
-                let authorSize: number | undefined;
-                let publisherSize: number | undefined;
-                
-                if (hasAuthor) {
-                    try {
-                        const authorStats = fs.statSync(authorZipPath);
-                        authorSize = authorStats.size;
-                    } catch (error) {
-                        log.error(`[PackageManager] Error getting author package size for ${packageFolder}:`, error);
-                    }
-                }
-                
-                if (hasPublisher) {
-                    try {
-                        const publisherStats = fs.statSync(publisherZipPath);
-                        publisherSize = publisherStats.size;
-                    } catch (error) {
-                        log.error(`[PackageManager] Error getting publisher package size for ${packageFolder}:`, error);
-                    }
-                }
-                
-                // Get folder creation date
-                const stats = fs.statSync(packageFolderPath);
-                
-                // Extract paths from one of the zip files (they should be the same)
+                // Extract paths from filter.xml in the zip file
                 const paths: string[] = [];
-                let zipToRead = hasAuthor ? authorZipPath : (hasPublisher ? publisherZipPath : null);
-                
-                if (zipToRead) {
-                    try {
-                        const zip = new AdmZip(zipToRead);
-                        const entries = zip.getEntries();
-                        const filterEntry = entries.find(entry => entry.entryName === 'META-INF/vault/filter.xml');
-                        
-                        if (filterEntry) {
-                            try {
-                                let filterXmlContent: string;
-                                
-                                if (filterEntry.data) {
-                                    // Try the direct data approach first
-                                    filterXmlContent = filterEntry.data.toString('utf8');
+                try {
+                    const zip = new AdmZip(filePath);
+                    const entries = zip.getEntries();
+                    const filterEntry = entries.find(entry => entry.entryName === 'META-INF/vault/filter.xml');
+                    
+                    if (filterEntry) {
+                        try {
+                            let filterXmlContent: string;
+                            
+                            if (filterEntry.data) {
+                                // Try the direct data approach first
+                                filterXmlContent = filterEntry.data.toString('utf8');
+                            } else {
+                                // Try alternative method using zip.readFile()
+                                const data = zip.readFile('META-INF/vault/filter.xml');
+                                if (data) {
+                                    filterXmlContent = data.toString('utf8');
                                 } else {
-                                    // Try alternative method using zip.readFile()
-                                    const data = zip.readFile('META-INF/vault/filter.xml');
-                                    if (data) {
-                                        filterXmlContent = data.toString('utf8');
-                                    } else {
-                                        throw new Error('Could not read filter.xml content using any method');
-                                    }
+                                    throw new Error('Could not read filter.xml content using any method');
                                 }
-                                
-                                const pathsMatch = filterXmlContent.match(/<filter root="([^"]+)"/g);
-                                if (pathsMatch) {
-                                    for (const match of pathsMatch) {
-                                        const pathMatch = match.match(/root="([^"]+)"/);
-                                        if (pathMatch) {
-                                            paths.push(pathMatch[1]);
-                                        }
-                                    }
-                                }
-                            } catch (filterError) {
-                                log.error(`[PackageManager] Error reading filter.xml content for ${packageFolder}:`, filterError);
                             }
+                            
+                            const pathsMatch = filterXmlContent.match(/<filter root="([^"]+)"/g);
+                            if (pathsMatch) {
+                                for (const match of pathsMatch) {
+                                    const pathMatch = match.match(/root="([^"]+)"/);
+                                    if (pathMatch) {
+                                        paths.push(pathMatch[1]);
+                                    }
+                                }
+                            }
+                        } catch (filterError) {
+                            log.error(`[PackageManager] Error reading filter.xml content for ${packageName}:`, filterError);
                         }
-                    } catch (zipError) {
-                        log.error(`[PackageManager] Error reading zip file for ${packageFolder}:`, zipError);
                     }
+                } catch (zipError) {
+                    log.error(`[PackageManager] Error reading zip file for ${packageName}:`, zipError);
                 }
                 
                 packages.push({
-                    name: packageFolder,
-                    createdDate: packageMetadata.createdDate ? new Date(packageMetadata.createdDate) : (stats.birthtime || stats.ctime),
-                    paths: packageMetadata.paths || paths,
-                    hasAuthor: hasAuthor,
-                    hasPublisher: hasPublisher,
-                    authorSize: authorSize,
-                    publisherSize: publisherSize,
-                    authorAemPath: packageMetadata.authorAemPath,
-                    publisherAemPath: packageMetadata.publisherAemPath
+                    name: packageName,
+                    createdDate: stats.birthtime || stats.ctime,
+                    paths: paths,
+                    size: stats.size
                 });
             } catch (error) {
-                log.error(`[PackageManager] Error reading package folder ${packageFolder}:`, error);
-                // Still add the package with basic info if folder reading fails
-                try {
-                    const stats = fs.statSync(packageFolderPath);
-                    packages.push({
-                        name: packageFolder,
-                        createdDate: stats.birthtime || stats.ctime,
-                        paths: [],
-                        hasAuthor: false,
-                        hasPublisher: false
-                    });
-                } catch (statsError) {
-                    log.error(`[PackageManager] Error getting stats for ${packageFolder}:`, statsError);
-                }
+                log.error(`[PackageManager] Error reading package file ${fileName}:`, error);
             }
         }
         return packages;
@@ -521,55 +426,31 @@ ${filterEntries}
 
     public async deletePackage(packageName: string): Promise<void> {
         const packagesDir = path.join(this.project.folderPath, 'packages');
-        const packageFolderPath = path.join(packagesDir, packageName);
+        const packageFilePath = path.join(packagesDir, `${packageName}.zip`);
         
-        if (fs.existsSync(packageFolderPath)) {
-            // Remove the entire package folder and its contents
-            fs.rmSync(packageFolderPath, { recursive: true, force: true });
-            log.info(`[PackageManager] Deleted package folder: ${packageName}`);
+        if (fs.existsSync(packageFilePath)) {
+            fs.unlinkSync(packageFilePath);
+            log.info(`[PackageManager] Deleted package file: ${packageName}.zip`);
         } else {
-            log.info(`[PackageManager] Package folder not found: ${packageName}`);
+            log.info(`[PackageManager] Package file not found: ${packageName}.zip`);
         }
     }
 
+
+
     async installPackage(instance: 'author' | 'publisher', packageName: string): Promise<void> {
         const packagesDir = path.join(this.project.folderPath, 'packages');
-        const packageFolderPath = path.join(packagesDir, packageName);
-        const zipFileName = `${packageName}-${instance}.zip`;
-        const zipFilePath = path.join(packageFolderPath, zipFileName);
+        const zipFilePath = path.join(packagesDir, `${packageName}.zip`);
 
         if (!fs.existsSync(zipFilePath)) {
             throw new Error(`Package file not found: ${zipFilePath}`);
         }
 
-        log.info(`[PackageManager] Installing package ${packageName} for ${instance} instance from ${zipFilePath}`);
+        log.info(`[PackageManager] Installing package ${packageName} to ${instance} instance from ${zipFilePath}`);
         return this.installPackageFromFile(instance, zipFilePath);
     }
 
-    async installPackageAll(packageName: string): Promise<void> {
-        const packagesDir = path.join(this.project.folderPath, 'packages');
-        const packageFolderPath = path.join(packagesDir, packageName);
-        
-        const authorZipPath = path.join(packageFolderPath, `${packageName}-author.zip`);
-        const publisherZipPath = path.join(packageFolderPath, `${packageName}-publisher.zip`);
-        
-        const promises: Promise<void>[] = [];
-        
-        if (fs.existsSync(authorZipPath)) {
-            promises.push(this.installPackageFromFile('author', authorZipPath));
-        }
-        
-        if (fs.existsSync(publisherZipPath)) {
-            promises.push(this.installPackageFromFile('publisher', publisherZipPath));
-        }
-        
-        if (promises.length === 0) {
-            throw new Error(`No package files found for: ${packageName}`);
-        }
-        
-        await Promise.all(promises);
-        log.info(`[PackageManager] Successfully installed all packages for ${packageName}`);
-    }
+
 
     private async installPackageFromFile(instance: 'author' | 'publisher', filePath: string): Promise<void> {
 

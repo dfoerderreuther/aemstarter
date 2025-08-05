@@ -5,7 +5,7 @@ import { Project } from '../../types/Project';
 import { SettingsModal } from './SettingsModal';
 import { BackupModal } from './BackupModal';
 import { AutomationModal } from './automation/AutomationModal';
-import { PackageManagerModal } from './PackageManagerModal';
+import { PackageManagerModal } from './packages/PackageManagerModal';
 
 
 interface MainActionsViewProps {
@@ -728,7 +728,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                   variant="filled" 
                   size="xs"
                   styles={secondButtonStyles}
-                  disabled={!isAuthorRunning && !isPublisherRunning}
                   onClick={() => setShowPackageManager(true)}
                 >
                   <IconPackage size={16} />
@@ -865,6 +864,8 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
         opened={showPackageManager}
         onClose={() => setShowPackageManager(false)}
         project={project}
+        isAuthorRunning={isAuthorRunning}
+        isPublisherRunning={isPublisherRunning}
       />
     </>
   );
