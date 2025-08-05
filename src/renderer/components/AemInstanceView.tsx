@@ -7,7 +7,6 @@ import { Screenshot } from './Screenshot';
 import { OakRunMenu } from './OakRunMenu';
 import { PackageMenu } from './PackageMenu';
 import { IconX, IconChevronLeft, IconChevronRight, IconTextSize, IconEraser, IconExternalLink, IconInfoCircle } from '@tabler/icons-react';
-import { SettingsMenu } from "./SettingsMenu";
 import { LogFileSelector } from './LogFileSelector';
 import { AemInstanceInfo } from './AemInstanceInfo';
 
@@ -530,17 +529,6 @@ export const AemInstanceView = ({
                       isRunning={isRunning}
                     />
 
-                    <OakRunMenu
-                      project={project}
-                      instance={instance}
-                      isRunning={isRunning}
-                      onLogFileSwitch={handleLogFileChange}
-                    />
-                    <SettingsMenu 
-                      project={project}
-                      instance={instance}
-                      isRunning={isRunning}
-                    />
                     <Button
                       size="xs"
                       variant="subtle"
