@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge, Loader, Title, ThemeIcon } from '@mantine/core';
-import { IconRefresh, IconPlayerPlay, IconAlertCircle, IconBug, IconPackage, IconHistory, IconRobot } from '@tabler/icons-react';
+import { Modal, Stack, Text, Paper, Group, Button, ScrollArea, Divider, Badge, Loader, Title, ThemeIcon, Accordion } from '@mantine/core';
+import { IconRefresh, IconPlayerPlay, IconPackage, IconHistory, IconRobot } from '@tabler/icons-react';
 import { Project } from '../../../types/Project';
-import { AutomationTaskTeaser } from './AutomationTaskTeaser';
+
 import { BackupAndStartTeaser } from './teaser/BackupAndStartTeaser';
 import { LastBackupAndRunTeaser } from './teaser/LastBackupAndRunTeaser';
 import { LastBackupAndDebugTeaser } from './teaser/LastBackupAndDebugTeaser';
@@ -10,7 +10,6 @@ import { FirstBackupAndRunTeaser } from './teaser/FirstBackupAndRunTeaser';
 import { ReinstallTeaser } from './teaser/ReinstallTeaser';
 import { FirstStartAndInitialSetupTeaser } from './teaser/FirstStartAndInitialSetupTeaser';
 import { SetUpReplicationTeaser } from './teaser/SetUpReplicationTeaser';
-import { UpdateSdkAndRunTeaser } from './teaser/UpdateSdkAndRunTeaser';
 import { UpdateSdkAndInstallAndRunTeaser } from './teaser/UpdateSdkAndInstallAndRunTeaser';
 
 interface AutomationModalProps {
@@ -21,7 +20,7 @@ interface AutomationModalProps {
   isPublisherRunning: boolean;
   isDispatcherRunning: boolean;
   autoStartTask?: string;
-  autoStartTaskParameters?: { [key: string]: string | boolean | number };
+  autoStartTaskParameters?: { [key: string]: string | boolean | number | string[] };
   onAutoTaskStarted?: () => void;
 }
 
@@ -299,88 +298,124 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
         ) : (
           // Show normal task list when no task is running
           <ScrollArea style={{ height: '400px' }}>
-            <Stack gap={0}>
-
-              <LastBackupAndRunTeaser 
-                project={project}
-                onTaskStart={handleTaskStart}
-              />
-              <Divider />
-
-              <LastBackupAndDebugTeaser 
-                project={project}
-                onTaskStart={handleTaskStart}
-              />
-              <Divider />
+            <Accordion variant="separated" multiple defaultValue={['quick-start', 'backup-restore']}>
               
-              <BackupAndStartTeaser 
-                project={project}
-                onTaskStart={handleTaskStart}
-              />
-              <Divider />
+              <Accordion.Item value="quick-start">
+                <Accordion.Control>
+                  <Group gap="sm">
+                    <ThemeIcon size="sm" variant="light" color="green">
+                      <IconPlayerPlay size={14} />
+                    </ThemeIcon>
+                    <Text fw={500}>Backup & Restore</Text>
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Stack gap={0}>
+                    <LastBackupAndRunTeaser 
+                      project={project}
+                      onTaskStart={handleTaskStart}
+                    />
+                    <Divider />
+                    <LastBackupAndDebugTeaser 
+                      project={project}
+                      onTaskStart={handleTaskStart}
+                    />
+                    <Divider />
+                    <BackupAndStartTeaser 
+                      project={project}
+                      onTaskStart={handleTaskStart}
+                    />
+                    <Divider />
+                    <FirstBackupAndRunTeaser 
+                      project={project}
+                      onTaskStart={handleTaskStart}
+                    />
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
 
-              <FirstBackupAndRunTeaser 
-                project={project}
-                onTaskStart={handleTaskStart}
-              />
-              <Divider />
+              <Accordion.Item value="sdk-updates">
+                <Accordion.Control>
+                  <Group gap="sm">
+                    <ThemeIcon size="sm" variant="light" color="orange">
+                      <IconRefresh size={14} />
+                    </ThemeIcon>
+                    <Text fw={500}>SDK Updates</Text>
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Stack gap={0}>
+                    <UpdateSdkAndInstallAndRunTeaser 
+                      project={project}
+                      onTaskStart={handleTaskStart}
+                    />
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
 
-              <UpdateSdkAndInstallAndRunTeaser 
-                project={project}
-                onTaskStart={handleTaskStart}
-              />
+              <Accordion.Item value="setup-maintenance">
+                <Accordion.Control>
+                  <Group gap="sm">
+                    <ThemeIcon size="sm" variant="light" color="violet">
+                      <IconPackage size={14} />
+                    </ThemeIcon>
+                    <Text fw={500}>Setup & Maintenance</Text>
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Stack gap={0}>
+                    <FirstStartAndInitialSetupTeaser 
+                      project={project}
+                      onTaskStart={handleTaskStart}
+                    />
+                    <Divider />
+                    <SetUpReplicationTeaser 
+                      project={project}
+                      isSettingUpReplication={isSettingUpReplication}
+                      allInstancesRunning={allInstancesRunning}
+                      onSetupReplication={handleSetupReplication}
+                      taskItemStyles={taskItemStyles}
+                    />
+                    <Divider />
+                    <ReinstallTeaser 
+                      project={project}
+                      onTaskStart={handleTaskStart}
+                    />
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
 
-              <Divider />
-
-              <UpdateSdkAndRunTeaser 
-                project={project}
-                onTaskStart={handleTaskStart}
-              />
-
-              <Divider />
-
-              <FirstStartAndInitialSetupTeaser 
-                project={project}
-                onTaskStart={handleTaskStart}
-              />
-
-              <Divider />
-              
-              <SetUpReplicationTeaser 
-                project={project}
-                isSettingUpReplication={isSettingUpReplication}
-                allInstancesRunning={allInstancesRunning}
-                onSetupReplication={handleSetupReplication}
-                taskItemStyles={taskItemStyles}
-              />
-
-              <Divider />
-
-              <ReinstallTeaser 
-                project={project}
-                onTaskStart={handleTaskStart}
-              />
-              <Divider />
-
-              {/* Placeholder for future tasks */}
-              <Paper style={{...taskItemStyles, opacity: 0.6, cursor: 'default'}} radius={0}>
-                <Group align="flex-start" gap="md">
-                  <ThemeIcon size="xl" variant="light" color="gray" radius="md">
-                    <IconPlayerPlay size={24} />
-                  </ThemeIcon>
-                  
-                  <div style={{ flex: 1 }}>
-                    <Group gap="sm" mb="xs">
-                      <Text fw={500} size="sm" c="dimmed">More Tasks Coming Soon...</Text>
-                      <Badge variant="outline" color="gray" size="xs">Soon</Badge>
+              <Accordion.Item value="coming-soon">
+                <Accordion.Control>
+                  <Group gap="sm">
+                    <ThemeIcon size="sm" variant="light" color="gray">
+                      <IconRobot size={14} />
+                    </ThemeIcon>
+                    <Text fw={500} c="dimmed">Coming Soon</Text>
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Paper style={{...taskItemStyles, opacity: 0.6, cursor: 'default'}} radius={0}>
+                    <Group align="flex-start" gap="md">
+                      <ThemeIcon size="xl" variant="light" color="gray" radius="md">
+                        <IconPlayerPlay size={24} />
+                      </ThemeIcon>
+                      
+                      <div style={{ flex: 1 }}>
+                        <Group gap="sm" mb="xs">
+                          <Text fw={500} size="sm" c="dimmed">More Tasks Coming Soon...</Text>
+                          <Badge variant="outline" color="gray" size="xs">Soon</Badge>
+                        </Group>
+                        <Text size="xs" c="dimmed">
+                          Additional automation tasks will be added in future updates.
+                        </Text>
+                      </div>
                     </Group>
-                    <Text size="xs" c="dimmed">
-                      Additional automation tasks will be added in future updates.
-                    </Text>
-                  </div>
-                </Group>
-              </Paper>
-            </Stack>
+                  </Paper>
+                </Accordion.Panel>
+              </Accordion.Item>
+
+            </Accordion>
           </ScrollArea>
         )}
       </Modal>

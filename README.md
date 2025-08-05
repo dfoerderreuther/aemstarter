@@ -29,19 +29,13 @@ AEM-Starter is a desktop application that streamlines the setup and management o
 
 **[Download the latest release](https://github.com/dfoerderreuther/aemstarter/releases/latest)**
 
-### Option A: Download DMG
+### Download DMG
 
 1. Go to the latest release page and download the `.dmg` file
 2. Open the DMG file
 3. Drag AEM-Starter to your Applications folder
 4. Launch AEM-Starter from Applications
 
-### Option B: Download ZIP Archive
-
-1. Go to the latest release page and download the `.zip` file
-2. Extract the ZIP file
-3. Move the extracted AEM-Starter app to your Applications folder
-4. Launch AEM-Starter from Applications
 
 ## How to start
 
@@ -75,13 +69,16 @@ This initial start and setup will take several minutes. During this time, the sy
 - Start Author, Publisher, and Dispatcher
 - Load oak-run.jar matching your AEM version
 - Set up Author to Publisher replication, Publisher invalidation, and Dispatcher invalidation request rights
-- Install WKND on Author and Publisher
 
 The system is now up and running and ready for exploration. AEM login credentials are the SDK default (admin/admin).
 
 ![Up and running](doc/screenshots/howtostart5.png)
 
 ## Next steps
+
+### Package Manager
+
+Use the Package Manager to install WKND project.
 
 ### Backup
 

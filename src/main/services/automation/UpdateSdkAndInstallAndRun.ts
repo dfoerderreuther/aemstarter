@@ -7,7 +7,6 @@ import { AemInstanceManager } from "../AemInstanceManager";
 import { AemInstanceManagerRegister } from "../../AemInstanceManagerRegister";
 import { DispatcherManagerRegister } from "../../DispatcherManagerRegister";
 import { ReplicationSettings } from "../ReplicationSettings";
-import { PackageInstaller } from "../PackageInstaller";
 import { PackageManager } from "../PackageManager";
 import { AutoStartStopService } from "../AutoStartStopService";
 import { Installer } from "../Installer";
@@ -27,11 +26,11 @@ export class UpdateSdkAndInstallAndRun implements AutoTask {
         this.startStopService = new AutoStartStopService(project);
     }
 
-    public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
+    public async run(progressCallback?: (message: string) => void, parameters?: { [key: string]: string | boolean | number | string[] }) : Promise<void> {
         const progress = progressCallback || (() => { log.info('Progress callback not provided'); });
 
-        const wknd = parameters?.wknd === true;
-        const localPackage: string = (parameters?.localPackage ?? '') as string;
+        const authorPackages: string[] = (parameters?.authorPackages as string[]) || [];
+        const publisherPackages: string[] = (parameters?.publisherPackages as string[]) || [];
         const replication = parameters?.replication === true;
         const sdkPath = parameters?.sdkPath ? String(parameters.sdkPath) : null
 
@@ -63,7 +62,7 @@ export class UpdateSdkAndInstallAndRun implements AutoTask {
         }
         progress('AEM SDK update completed successfully - all services are running');
 
-        progress(`Starting first start and initial setup. (wknd: ${wknd}, replication: ${replication}, custom package: ${localPackage ? `'${localPackage}'` : 'false'})`);
+        progress(`Starting first start and initial setup. (replication: ${replication}, author packages: ${authorPackages.length}, publisher packages: ${publisherPackages.length})`);
 
         progress('Loading Oak jar');
         this.aemInstanceManager.loadOakJar();
@@ -76,19 +75,24 @@ export class UpdateSdkAndInstallAndRun implements AutoTask {
             await replicationSettings.setReplication(this.project, 'dispatcher');
         }
 
-        if (wknd) {
-            progress('Installing WKND package');
-            const packageInstaller = new PackageInstaller(this.project);
-            const wkndUrl = "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip"
-            await packageInstaller.installPackage('author', wkndUrl);
-            await packageInstaller.installPackage('publisher', wkndUrl);
+        if (authorPackages.length > 0) {
+            progress(`Installing ${authorPackages.length} package(s) to Author instance in order`);
+            const packageManager = new PackageManager(this.project);
+            for (let i = 0; i < authorPackages.length; i++) {
+                const packageName = authorPackages[i];
+                progress(`Installing Author package ${i + 1}/${authorPackages.length}: ${packageName}`);
+                await packageManager.installPackage('author', packageName);
+            }
         }
 
-        if (localPackage) {
-            progress('Installing local package');
-            const packageInstaller = new PackageManager(this.project);
-            await packageInstaller.installPackage('author', localPackage);
-            await packageInstaller.installPackage('publisher', localPackage);
+        if (publisherPackages.length > 0) {
+            progress(`Installing ${publisherPackages.length} package(s) to Publisher instance in order`);
+            const packageManager = new PackageManager(this.project);
+            for (let i = 0; i < publisherPackages.length; i++) {
+                const packageName = publisherPackages[i];
+                progress(`Installing Publisher package ${i + 1}/${publisherPackages.length}: ${packageName}`);
+                await packageManager.installPackage('publisher', packageName);
+            }
         }
 
         progress('Restarting dispatcher');

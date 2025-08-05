@@ -1,6 +1,6 @@
 import { AutomationTaskTeaser } from "../AutomationTaskTeaser";
 import { Project } from '../../../../types/Project';
-import { Text, TextInput, Group, Button, Badge, Stack, Checkbox, Select } from '@mantine/core';
+import { Text, TextInput, Group, Button, Badge, Stack, Checkbox, MultiSelect } from '@mantine/core';
 import { useEffect, useState } from "react";
 import { PackageInfo } from "../../../../types/PackageInfo";
 import { IconRocket } from "@tabler/icons-react";
@@ -16,8 +16,8 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
     onTaskStart
 }) => {
     const [sdkPath, setSdkPath] = useState('');
-    const [wknd, setWknd] = useState(false);
-    const [localPackage, setLocalPackage] = useState('');
+    const [authorPackages, setAuthorPackages] = useState<string[]>([]);
+    const [publisherPackages, setPublisherPackages] = useState<string[]>([]);
     const [replication, setReplication] = useState(true);
     const [availablePackages, setAvailablePackages] = useState<string[]>([]);
     const [loadingPackages, setLoadingPackages] = useState(false);
@@ -46,8 +46,7 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
           typeof (item as any).name === 'string' && 
           ((item as any).createdDate || (item as any).size) && 
           Array.isArray((item as any).paths) &&
-          typeof (item as any).hasAuthor === 'boolean' &&
-          typeof (item as any).hasPublisher === 'boolean'
+          typeof (item as any).size === 'number'
         );
       };
   
@@ -76,8 +75,12 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
         loadPackages();
       }, [project]);
   
-      const handlePackageSelection = (value: string | null) => {
-        setLocalPackage(value || '');
+      const handleAuthorPackageSelection = (values: string[]) => {
+        setAuthorPackages(values);
+      };
+
+      const handlePublisherPackageSelection = (values: string[]) => {
+        setPublisherPackages(values);
       };
 
     return (
@@ -89,8 +92,8 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
             color="pink"
             parameters={{
                 sdkPath : sdkPath, 
-                wknd: wknd, 
-                localPackage: localPackage, 
+                authorPackages: authorPackages, 
+                publisherPackages: publisherPackages, 
                 replication: replication
             }}
         >
@@ -100,7 +103,7 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
                     This will update the SDK, 
                     configure replication between Author, Publisher, and Dispatcher instances, 
                     load matching oak-run.jar
-                    and can install WKND or any local package.
+                    and can install local packages to Author and/or Publisher instances in the specified order.
                 </Text>        
                 <Stack gap="xs" mb="md">
                     <Group align="end" gap="xs" mb="md">
@@ -119,23 +122,31 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
                             Browse
                         </Button>
                     </Group>
-                    <Checkbox
-                        label="WKND"
-                        checked={wknd}
-                        onChange={(e) => setWknd(e.target.checked)}
+                    <MultiSelect
+                        label="Author packages (installed in order)"
+                        placeholder="Select packages for Author instance"
+                        data={availablePackages}
+                        value={authorPackages}
+                        onChange={handleAuthorPackageSelection}
+                        disabled={loadingPackages}
+                        searchable
+                        clearable
+                        nothingFoundMessage="No packages found"
                         size="xs"
+                        description="Packages will be installed in the selected order"
                     />
-                    <Select
-                    label="Local package"
-                    placeholder="Select a package"
-                    data={availablePackages}
-                    value={localPackage}
-                    onChange={handlePackageSelection}
-                    disabled={loadingPackages}
-                    searchable
-                    clearable
-                    nothingFoundMessage="No packages found"
-                    size="xs"
+                    <MultiSelect
+                        label="Publisher packages (installed in order)"
+                        placeholder="Select packages for Publisher instance"
+                        data={availablePackages}
+                        value={publisherPackages}
+                        onChange={handlePublisherPackageSelection}
+                        disabled={loadingPackages}
+                        searchable
+                        clearable
+                        nothingFoundMessage="No packages found"
+                        size="xs"
+                        description="Packages will be installed in the selected order"
                     />
                     <Checkbox
                         label="Replication"

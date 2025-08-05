@@ -4,6 +4,7 @@ import fs from 'fs';
 import { randomUUID } from 'crypto';
 import log from 'electron-log';
 
+/** deprecated - use PackageManager instead */
 export class PackageInstaller {
 
     private project: Project;

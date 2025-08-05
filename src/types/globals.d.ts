@@ -245,7 +245,7 @@ declare global {
       openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') => Promise<boolean>;
       
       // Automation Tasks
-      runAutomationTask: (project: Project, task: string, parameters?: { [key: string]: string | boolean | number }) => Promise<boolean>;
+      runAutomationTask: (project: Project, task: string, parameters?: { [key: string]: string | boolean | number | string[] }) => Promise<boolean>;
       
       // Automation progress streaming
       onAutomationProgress: (callback: (data: { projectId: string; taskType: string; message: string; timestamp: string }) => void) => () => void;
