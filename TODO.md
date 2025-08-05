@@ -27,11 +27,9 @@ Having the README.md as a first tab for easy project documentation.
 
 pause button
 
-
-### install quick link for 
+### install quick link for
 
 https://github.com/orbinson/aem-groovy-console
-
 
 ### no wknd
 
@@ -40,3 +38,10 @@ separate wknd from default setup
 ### local install routine
 
 cif and forms require installation in /install folder when AEM is off.
+https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/content-and-commerce/storefront/developing/develop
+
+### file editor
+
+- display package content
+- md view and edit
+- line wrap on / off
