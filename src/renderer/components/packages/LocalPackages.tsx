@@ -295,19 +295,19 @@ export const LocalPackages: React.FC<LocalPackagesProps> = ({ project, isAuthorR
               description="Enter one path per line. These paths will be included in the package."
             />
             
-            <Radio.Group
-              label="Source Instance"
-              description="Select which instance to create the package from"
-              value={selectedInstance}
-              onChange={(value) => setSelectedInstance(value as 'author' | 'publisher')}
-            >
-              <Group mt="xs">
-                <Radio value="author" label={getInstanceLabel('author')} disabled={creating || !isAuthorRunning} />
-                <Radio value="publisher" label={getInstanceLabel('publisher')} disabled={creating || !isPublisherRunning} />
-              </Group>
-            </Radio.Group>
-            
-            <Group justify="flex-end">
+            <Group justify="space-between" align="flex-end">
+              <Radio.Group
+                label="Source Instance"
+                description="Select which instance to create the package from"
+                value={selectedInstance}
+                onChange={(value) => setSelectedInstance(value as 'author' | 'publisher')}
+              >
+                <Group mt="xs">
+                  <Radio value="author" label={getInstanceLabel('author')} disabled={creating || !isAuthorRunning} />
+                  <Radio value="publisher" label={getInstanceLabel('publisher')} disabled={creating || !isPublisherRunning} />
+                </Group>
+              </Radio.Group>
+              
               <Button
                 color="green"
                 loading={creating}
