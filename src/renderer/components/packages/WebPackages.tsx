@@ -45,22 +45,28 @@ export const WebPackages: React.FC<WebPackagesProps> = ({ project, isAuthorRunni
 
     const webPackages: WebPackage[] = [
         {
-            name: "aem-cif-guides-venia",
+            name: "aem-cif-guides-venia.all-2025.04.11.zip",
             displayName: "Venia CIF Demo",
             url: "https://github.com/adobe/aem-cif-guides-venia/releases/download/venia-2025.04.11/aem-cif-guides-venia.all-2025.04.11.zip",
             description: "Adobe Experience Manager CIF Venia demo site"
         },
         {
-            name: "aem-guides-wknd",
+            name: "aem-guides-wknd.all-3.2.0.zip",
             displayName: "WKND Tutorial Site",
             url: "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0.zip",
             description: "AEM WKND tutorial reference implementation"
         },
         {
-            name: "acs-aem-commons",
+            name: "acs-aem-commons-all-6.12.0-cloud.zip",
             displayName: "ACS AEM Commons",
             url: "https://github.com/Adobe-Consulting-Services/acs-aem-commons/releases/download/acs-aem-commons-6.12.0/acs-aem-commons-all-6.12.0-cloud.zip",
             description: "ACS AEM Commons - utilities and features for AEM"
+        },
+        {
+            name: "aem-guides-wknd.all-3.2.0-classic.zip",
+            displayName: "WKND Tutorial Site (Classic)",
+            url: "https://github.com/adobe/aem-guides-wknd/releases/download/aem-guides-wknd-3.2.0/aem-guides-wknd.all-3.2.0-classic.zip",
+            description: "AEM WKND tutorial reference implementation for AEM 6.5 (Classic)"
         }
     ];
 
