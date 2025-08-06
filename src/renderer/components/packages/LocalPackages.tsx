@@ -21,10 +21,12 @@ import {
   Code,
   ButtonGroup,
   Modal,
-  Radio
+  Radio,
+  Tabs,
+  FileInput
 } from '@mantine/core';
 import { Project } from '../../../types/Project';
-import { IconAlertCircle, IconPlus, IconCloudUpload, IconTrash, IconInfoCircle, IconCopy, IconUpload, IconPackage } from '@tabler/icons-react';
+import { IconAlertCircle, IconPlus, IconCloudUpload, IconTrash, IconInfoCircle, IconCopy, IconUpload, IconPackage, IconFileImport, IconDownload } from '@tabler/icons-react';
 import { formatFileSize } from '../../utils/fileUtils';
 
 interface PackageInfo {
@@ -53,6 +55,11 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [installTargets, setInstallTargets] = useState<Record<string, { author: boolean; publisher: boolean }>>({});
+
+  // Import tab state
+  const [selectedFilePath, setSelectedFilePath] = useState<string>('');
+  const [importing, setImporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>('create');
 
 
 
@@ -256,6 +263,104 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
     setPackagePaths(paths.join('\n'));
   };
 
+  const handleSelectPackageFile = async () => {
+    const result = await window.electronAPI.showOpenDialog({
+      properties: ['openFile'],
+      title: 'Select Package File',
+      buttonLabel: 'Select Package',
+      message: 'Select the AEM package file to import',
+      filters: [{ name: 'Package Files', extensions: ['zip'] }]
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      setSelectedFilePath(result.filePaths[0]);
+    }
+  };
+
+  const handleImportOnly = async () => {
+    if (!selectedFilePath) {
+      setError('Please select a package file');
+      return;
+    }
+
+    setImporting(true);
+    setError(null);
+    try {
+      // Use importPackage API to copy the file to packages directory without installing
+      await window.electronAPI.importPackage(project, selectedFilePath);
+      setSelectedFilePath('');
+      await loadPackages();
+    } catch (err: unknown) {
+      setError('Failed to import package file');
+      console.error('Import error:', err);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleImportAndInstallToInstance = async (instance: 'author' | 'publisher') => {
+    if (!selectedFilePath) {
+      setError('Please select a package file');
+      return;
+    }
+
+    if ((instance === 'author' && !isAuthorRunning) || (instance === 'publisher' && !isPublisherRunning)) {
+      setError(`${instance.charAt(0).toUpperCase() + instance.slice(1)} instance is not running. Please start it first.`);
+      return;
+    }
+
+    setImporting(true);
+    setError(null);
+    try {
+      // First import to get the package name, then install
+      const packageName = await window.electronAPI.importPackage(project, selectedFilePath);
+      await window.electronAPI.installPackage(project, instance, packageName);
+      setSelectedFilePath('');
+      await loadPackages();
+    } catch (err: unknown) {
+      setError(`Failed to import and install package to ${instance}`);
+      console.error('Import and install error:', err);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleImportAndInstallToBoth = async () => {
+    if (!selectedFilePath) {
+      setError('Please select a package file');
+      return;
+    }
+
+    if (!isAuthorRunning && !isPublisherRunning) {
+      setError('No AEM instances are running. Please start at least one instance first.');
+      return;
+    }
+
+    setImporting(true);
+    setError(null);
+    try {
+      // First import to get the package name
+      const packageName = await window.electronAPI.importPackage(project, selectedFilePath);
+      
+      // Then install to running instances
+      const promises: Promise<any>[] = [];
+      if (isAuthorRunning) {
+        promises.push(window.electronAPI.installPackage(project, 'author', packageName));
+      }
+      if (isPublisherRunning) {
+        promises.push(window.electronAPI.installPackage(project, 'publisher', packageName));
+      }
+      
+      await Promise.all(promises);
+      setSelectedFilePath('');
+      await loadPackages();
+    } catch (err: unknown) {
+      setError('Failed to import and install package to instances');
+      console.error('Import and install error:', err);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <>
       <Stack gap="lg">
@@ -267,62 +372,157 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
 
         {!isAuthorRunning && !isPublisherRunning && (
           <Alert color="yellow" icon={<IconInfoCircle size={16} />} variant="light">
-            No AEM instances are currently running. You can create packages, but install and rebuild operations require running instances.
+            No AEM instances are currently running. You can display packages, but install operations require running instances.
           </Alert>
         )}
 
-        {/* Create New Package Section */}
+        {/* Package Operations Section */}
         <Card withBorder shadow="sm" padding="lg">
-          <Stack gap="md">
-            <Group gap="sm">
-              <IconCloudUpload size={20} color="var(--mantine-color-green-6)" />
-              <Title order={4} c="green">Create New Package</Title>
-            </Group>
-            
-            <TextInput
-              label="Package Name"
-              placeholder="Enter package name"
-              value={packageName}
-              onChange={(e) => setPackageName(e.currentTarget.value)}
-              disabled={creating}
-              required
-            />
-            
-            <Textarea
-              label="Paths to Include"
-              placeholder="Enter paths, one per line (e.g., /content/mysite, /etc/workflow)"
-              value={packagePaths}
-              onChange={(e) => setPackagePaths(e.currentTarget.value)}
-              disabled={creating}
-              required
-              rows={4}
-              description="Enter one path per line. These paths will be included in the package."
-            />
-            
-            <Group justify="space-between" align="flex-end">
-              <Radio.Group
-                label="Source Instance"
-                description="Select which instance to create the package from"
-                value={selectedInstance}
-                onChange={(value) => setSelectedInstance(value as 'author' | 'publisher')}
-              >
-                <Group mt="xs">
-                  <Radio value="author" label={getInstanceLabel('author')} disabled={creating || !isAuthorRunning} />
-                  <Radio value="publisher" label={getInstanceLabel('publisher')} disabled={creating || !isPublisherRunning} />
+          <Tabs value={activeTab} onChange={setActiveTab}>
+            <Tabs.List>
+              <Tabs.Tab value="create" leftSection={<IconCloudUpload size={16} />}>
+                Create New Package
+              </Tabs.Tab>
+              <Tabs.Tab value="import" leftSection={<IconFileImport size={16} />}>
+                Import Package
+              </Tabs.Tab>
+            </Tabs.List>
+
+            <Tabs.Panel value="create" pt="md">
+              <Stack gap="md">
+                <TextInput
+                  label="Package Name"
+                  placeholder="Enter package name"
+                  value={packageName}
+                  onChange={(e) => setPackageName(e.currentTarget.value)}
+                  disabled={creating}
+                  required
+                />
+                
+                <Textarea
+                  label="Paths to Include"
+                  placeholder="Enter paths, one per line (e.g., /content/mysite, /etc/workflow)"
+                  value={packagePaths}
+                  onChange={(e) => setPackagePaths(e.currentTarget.value)}
+                  disabled={creating}
+                  required
+                  rows={4}
+                  description="Enter one path per line. These paths will be included in the package."
+                />
+                
+                <Group justify="space-between" align="flex-end">
+                  <Radio.Group
+                    label="Source Instance"
+                    description="Select which instance to create the package from"
+                    value={selectedInstance}
+                    onChange={(value) => setSelectedInstance(value as 'author' | 'publisher')}
+                  >
+                    <Group mt="xs">
+                      <Radio value="author" label={getInstanceLabel('author')} disabled={creating || !isAuthorRunning} />
+                      <Radio value="publisher" label={getInstanceLabel('publisher')} disabled={creating || !isPublisherRunning} />
+                    </Group>
+                  </Radio.Group>
+                  
+                  <Button
+                    color="green"
+                    loading={creating}
+                    onClick={handleCreate}
+                    disabled={!packageName.trim() || !packagePaths.trim()}
+                    leftSection={<IconPlus size={16} />}
+                  >
+                    Create Package
+                  </Button>
                 </Group>
-              </Radio.Group>
-              
-              <Button
-                color="green"
-                loading={creating}
-                onClick={handleCreate}
-                disabled={!packageName.trim() || !packagePaths.trim()}
-                leftSection={<IconPlus size={16} />}
-              >
-                Create Package
-              </Button>
-            </Group>
-          </Stack>
+              </Stack>
+            </Tabs.Panel>
+
+            <Tabs.Panel value="import" pt="md">
+              <Stack gap="md">
+                <Group gap="sm" align="flex-end">
+                  <div style={{ flex: 1 }}>
+                    <Text size="sm" fw={500} mb="xs">Package File</Text>
+                    <Text size="xs" c="dimmed" mb="sm">Select an AEM package (.zip) file to import</Text>
+                    {selectedFilePath ? (
+                      <Group gap="xs">
+                        <Text size="sm" style={{ fontFamily: 'monospace', flex: 1 }}>
+                          {selectedFilePath.split('/').pop() || selectedFilePath.split('\\').pop()}
+                        </Text>
+                        <Button 
+                          size="xs" 
+                          variant="light" 
+                          onClick={() => setSelectedFilePath('')}
+                        >
+                          Clear
+                        </Button>
+                      </Group>
+                    ) : (
+                      <Text size="sm" c="dimmed">No file selected</Text>
+                    )}
+                  </div>
+                  <Button
+                    variant="light"
+                    onClick={handleSelectPackageFile}
+                    leftSection={<IconPackage size={16} />}
+                    disabled={importing}
+                  >
+                    Select File
+                  </Button>
+                </Group>
+
+                <ButtonGroup>
+                  <Tooltip label="Import package to local packages directory">
+                    <Button
+                      size="sm"
+                      variant="light"
+                      color="blue"
+                      leftSection={<IconDownload size={14} />}
+                      onClick={handleImportOnly}
+                      loading={importing}
+                      disabled={!selectedFilePath.trim()}
+                    >
+                      Import
+                    </Button>
+                  </Tooltip>
+                  <Tooltip label="Import and install to Author instance">
+                    <Button
+                      size="sm"
+                      color="green"
+                      leftSection={<IconUpload size={14} />}
+                      onClick={() => handleImportAndInstallToInstance('author')}
+                      loading={importing}
+                      disabled={!selectedFilePath.trim() || !isAuthorRunning}
+                    >
+                      Author
+                    </Button>
+                  </Tooltip>
+                  <Tooltip label="Import and install to Publisher instance">
+                    <Button
+                      size="sm"
+                      color="orange"
+                      leftSection={<IconUpload size={14} />}
+                      onClick={() => handleImportAndInstallToInstance('publisher')}
+                      loading={importing}
+                      disabled={!selectedFilePath.trim() || !isPublisherRunning}
+                    >
+                      Publisher
+                    </Button>
+                  </Tooltip>
+                  <Tooltip label="Import and install to both running instances">
+                    <Button
+                      size="sm"
+                      color="violet"
+                      leftSection={<IconPackage size={14} />}
+                      onClick={handleImportAndInstallToBoth}
+                      loading={importing}
+                      disabled={!selectedFilePath.trim() || (!isAuthorRunning && !isPublisherRunning)}
+                    >
+                      Both
+                    </Button>
+                  </Tooltip>
+                </ButtonGroup>
+              </Stack>
+            </Tabs.Panel>
+          </Tabs>
         </Card>
 
         <Divider />
@@ -388,13 +588,18 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
                       <Table.Td style={{ verticalAlign: 'top' }}>
                         {packageInfo.paths.length > 0 ? (
                           <Group gap="xs" align="flex-start">
-                            <Stack gap="xs" style={{ flex: 1 }}>
-                            <Code c="dimmed" style={{ whiteSpace: 'pre-wrap' }}>
-                              {packageInfo.paths.map((path) => (
-                                <React.Fragment key={path}>{path}<br /></React.Fragment>
-                              ))}
+                            <div style={{ 
+                              flex: 1, 
+                              maxWidth: '300px', 
+                              maxHeight: '120px', 
+                              overflow: 'auto' 
+                            }}>
+                              <Code c="dimmed" style={{ whiteSpace: 'pre-wrap', display: 'block' }}>
+                                {packageInfo.paths.map((path) => (
+                                  <React.Fragment key={path}>{path}<br /></React.Fragment>
+                                ))}
                               </Code>
-                            </Stack>
+                            </div>
                             <Tooltip label="Copy paths to form">
                               <ActionIcon
                                 size="xs"

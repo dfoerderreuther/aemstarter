@@ -130,6 +130,7 @@ declare global {
       createPackage: (project: Project, name: string, instance: string, paths: string[]) => Promise<boolean>;
       deletePackage: (project: Project, packageName: string) => Promise<boolean>;
       downloadWebPackage: (project: Project, packageUrl: string) => Promise<string>;
+      importPackage: (project: Project, sourceFilePath: string) => Promise<string>;
 
       // Replication Settings
       setupReplication: (project: Project, instance: 'author' | 'publisher' | 'dispatcher') => Promise<{ success: boolean; output?: string; error?: unknown }>;

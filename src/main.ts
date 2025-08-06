@@ -807,17 +807,18 @@ ipcMain.handle('save-project-settings', async (_, project: Project, settings: Pr
 // Package Installation
 ipcMain.handle('install-package', async (_, project: Project, instance: 'author' | 'publisher', packageUrl: string) => {
   try {
+    const packageManager = new PackageManager(project);
+    
     if (packageUrl.startsWith('http://') || packageUrl.startsWith('https://')) {
-      // Handle URL installation
-      const packageInstaller = new PackageInstaller(project);
-      await packageInstaller.installPackage(instance, packageUrl);
+      // Handle URL installation - download first, then install
+      const packageName = await packageManager.downloadWebPackage(packageUrl);
+      await packageManager.installPackage(instance, packageName);
     } else if (packageUrl.includes('/') || packageUrl.includes('\\')) {
-      // Handle local file path installation
-      const packageInstaller = new PackageInstaller(project);
-      await packageInstaller.installPackage(instance, packageUrl);
+      // Handle local file path installation - import first, then install
+      const packageName = await packageManager.importPackage(packageUrl);
+      await packageManager.installPackage(instance, packageName);
     } else {
       // Handle local package installation by name
-      const packageManager = new PackageManager(project);
       await packageManager.installPackage(instance, packageUrl);
     }
     return true;
@@ -878,6 +879,17 @@ ipcMain.handle('download-web-package', async (_, project: Project, packageUrl: s
     return downloadedPackageName;
   } catch (error) {
     log.error('Error downloading web package:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('import-package', async (_, project: Project, sourceFilePath: string) => {
+  try {
+    const packageManager = new PackageManager(project);
+    const importedPackageName = await packageManager.importPackage(sourceFilePath);
+    return importedPackageName;
+  } catch (error) {
+    log.error('Error importing package:', error);
     throw error;
   }
 });

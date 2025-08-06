@@ -461,6 +461,50 @@ ${filterEntries}
         }
     }
 
+    public async importPackage(sourceFilePath: string): Promise<string> {
+        // Create packages directory if it doesn't exist
+        const packagesDir = path.join(this.project.folderPath, 'packages');
+        if (!fs.existsSync(packagesDir)) {
+            fs.mkdirSync(packagesDir, { recursive: true });
+            log.info(`[PackageManager] Created packages directory: ${packagesDir}`);
+        }
+
+        // Verify source file exists
+        if (!fs.existsSync(sourceFilePath)) {
+            throw new Error(`Source package file not found: ${sourceFilePath}`);
+        }
+
+        // Extract filename from source path
+        const fileName = path.basename(sourceFilePath);
+        const targetFilePath = path.join(packagesDir, fileName);
+
+        log.info(`[PackageManager] Importing package from ${sourceFilePath} to ${targetFilePath}`);
+
+        try {
+            // Check if target file already exists
+            if (fs.existsSync(targetFilePath)) {
+                // Generate unique filename if file already exists
+                const nameWithoutExt = path.basename(fileName, '.zip');
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const uniqueFileName = `${nameWithoutExt}-${timestamp}.zip`;
+                const uniqueTargetPath = path.join(packagesDir, uniqueFileName);
+                
+                log.info(`[PackageManager] Target file exists, using unique name: ${uniqueFileName}`);
+                fs.copyFileSync(sourceFilePath, uniqueTargetPath);
+                log.info(`[PackageManager] Successfully imported package: ${uniqueFileName}`);
+                return path.basename(uniqueTargetPath, '.zip'); // Return package name without extension
+            } else {
+                // Copy the file to packages directory
+                fs.copyFileSync(sourceFilePath, targetFilePath);
+                log.info(`[PackageManager] Successfully imported package: ${fileName}`);
+                return path.basename(targetFilePath, '.zip'); // Return package name without extension
+            }
+        } catch (error) {
+            log.error(`[PackageManager] Error importing package:`, error);
+            throw error;
+        }
+    }
+
 
 
     async installPackage(instance: 'author' | 'publisher', packageName: string): Promise<void> {
