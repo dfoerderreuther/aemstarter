@@ -5,9 +5,8 @@ import { EditorAvailableResults } from '../../types/EditorAvailableResults';
 import { ProjectSettings } from '../../types/Project';
 import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 import { JavaService } from './JavaService';
-import { spawn } from 'child_process';
 import log from 'electron-log';
-
+import { enhancedExecAsync } from '../enhancedExecAsync';
 
 export class SystemCheck {
 
@@ -45,7 +44,7 @@ export class SystemCheck {
         return {
             visualStudioCode: await this.checkAvailability('code --version'),
             cursor: await this.checkAvailability('cursor --version'),
-            idea: await this.checkAvailability('idea --version')
+            idea: await this.checkAvailability('idea --version'), 
         };
     }
 
@@ -55,7 +54,7 @@ export class SystemCheck {
 
     private async checkAvailability(command: string): Promise<boolean> {
         try {
-            await execAsync(command);
+            await enhancedExecAsync(command);
             return true;
         } catch (error) {
             return false;
