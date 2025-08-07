@@ -103,7 +103,9 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
                     This will update the SDK, 
                     configure replication between Author, Publisher, and Dispatcher instances, 
                     load matching oak-run.jar
-                    and can install local packages to Author and/or Publisher instances in the specified order.
+                    and can install local packages to Author and/or Publisher instances.
+                    
+                 
                 </Text>        
                 <Stack gap="xs" mb="md">
                     <Group align="end" gap="xs" mb="md">
@@ -133,7 +135,6 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
                         clearable
                         nothingFoundMessage="No packages found"
                         size="xs"
-                        description="Packages will be installed in the selected order"
                     />
                     <MultiSelect
                         label="Publisher packages"
@@ -146,7 +147,6 @@ export const UpdateSdkAndInstallAndRunTeaser: React.FC<UpdateSdkAndInstallAndRun
                         clearable
                         nothingFoundMessage="No packages found"
                         size="xs"
-                        description="Packages will be installed in the selected order"
                     />
                     <Checkbox
                         label="Replication"

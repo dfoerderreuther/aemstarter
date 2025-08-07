@@ -75,24 +75,31 @@ export class UpdateSdkAndInstallAndRun implements AutoTask {
             await replicationSettings.setReplication(this.project, 'dispatcher');
         }
 
+        // Install packages to both instances in parallel
+        const installationPromises: Promise<void>[] = [];
+
         if (authorPackages.length > 0) {
-            progress(`Installing ${authorPackages.length} package(s) to Author instance in order`);
-            const packageManager = new PackageManager(this.project);
-            for (let i = 0; i < authorPackages.length; i++) {
-                const packageName = authorPackages[i];
-                progress(`Installing Author package ${i + 1}/${authorPackages.length}: ${packageName}`);
-                await packageManager.installPackage('author', packageName);
-            }
+            const authorInstallation = this.installPackagesSequentially(
+                'author', 
+                authorPackages, 
+                (msg) => progress(`Author: ${msg}`)
+            );
+            installationPromises.push(authorInstallation);
         }
 
         if (publisherPackages.length > 0) {
-            progress(`Installing ${publisherPackages.length} package(s) to Publisher instance in order`);
-            const packageManager = new PackageManager(this.project);
-            for (let i = 0; i < publisherPackages.length; i++) {
-                const packageName = publisherPackages[i];
-                progress(`Installing Publisher package ${i + 1}/${publisherPackages.length}: ${packageName}`);
-                await packageManager.installPackage('publisher', packageName);
-            }
+            const publisherInstallation = this.installPackagesSequentially(
+                'publisher', 
+                publisherPackages, 
+                (msg) => progress(`Publisher: ${msg}`)
+            );
+            installationPromises.push(publisherInstallation);
+        }
+
+        if (installationPromises.length > 0) {
+            progress(`Installing packages to ${installationPromises.length === 2 ? 'both Author and Publisher' : installationPromises.length === 1 && authorPackages.length > 0 ? 'Author' : 'Publisher'} instances in parallel...`);
+            await Promise.all(installationPromises);
+            progress('Package installation completed for all instances');
         }
 
         progress('Restarting dispatcher');
@@ -119,6 +126,21 @@ export class UpdateSdkAndInstallAndRun implements AutoTask {
         
         // Timeout reached, file and folders not found
         return false;
+    }
+
+    private async installPackagesSequentially(
+        instanceType: 'author' | 'publisher', 
+        packages: string[], 
+        progress: (message: string) => void
+    ): Promise<void> {
+        progress(`Installing ${packages.length} package(s) to ${instanceType} instance in order`);
+        const packageManager = new PackageManager(this.project);
+        
+        for (let i = 0; i < packages.length; i++) {
+            const packageName = packages[i];
+            progress(`Installing package ${i + 1}/${packages.length}: ${packageName}`);
+            await packageManager.installPackage(instanceType, packageName);
+        }
     }
 
 }

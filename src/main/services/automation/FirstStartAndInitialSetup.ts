@@ -43,7 +43,7 @@ export class FirstStartAndInitialSetup implements AutoTask {
         progress('Stopping all instances in case they were running');
         await this.startStopService.stop();
 
-        progress('Starting all instances again');
+        progress('Starting all instances');
         await this.startStopService.start();
 
         progress('Waiting for all instances to be running');
