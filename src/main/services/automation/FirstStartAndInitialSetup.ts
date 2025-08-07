@@ -7,7 +7,6 @@ import { AemInstanceManager } from "../AemInstanceManager";
 import { AemInstanceManagerRegister } from "../../AemInstanceManagerRegister";
 import { DispatcherManagerRegister } from "../../DispatcherManagerRegister";
 import { ReplicationSettings } from "../ReplicationSettings";
-import { PackageInstaller } from "../PackageInstaller";
 import { PackageManager } from "../PackageManager";
 import { AutoStartStopService } from "../AutoStartStopService";
 import log from 'electron-log';
