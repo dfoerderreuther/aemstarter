@@ -7,7 +7,6 @@ import { AemInstanceManager } from "../AemInstanceManager";
 import { AemInstanceManagerRegister } from "../../AemInstanceManagerRegister";
 import { DispatcherManagerRegister } from "../../DispatcherManagerRegister";
 import { ReplicationSettings } from "../ReplicationSettings";
-import { PackageInstaller } from "../PackageInstaller";
 import { PackageManager } from "../PackageManager";
 import { AutoStartStopService } from "../AutoStartStopService";
 import log from 'electron-log';
@@ -43,7 +42,7 @@ export class FirstStartAndInitialSetup implements AutoTask {
         progress('Stopping all instances in case they were running');
         await this.startStopService.stop();
 
-        progress('Starting all instances again');
+        progress('Starting all instances');
         await this.startStopService.start();
 
         progress('Waiting for all instances to be running');

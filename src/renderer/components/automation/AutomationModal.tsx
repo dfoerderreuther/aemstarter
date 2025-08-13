@@ -298,7 +298,7 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({
         ) : (
           // Show normal task list when no task is running
           <ScrollArea style={{ height: '400px' }}>
-            <Accordion variant="separated" multiple defaultValue={['quick-start', 'backup-restore']}>
+            <Accordion variant="separated" defaultValue="quick-start">
               
               <Accordion.Item value="quick-start">
                 <Accordion.Control>
