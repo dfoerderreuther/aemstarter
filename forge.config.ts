@@ -38,15 +38,19 @@ const config: ForgeConfig = {
     executableName: 'aem-starter',
     // Add extra resources if needed
     extraResource: [],
-    // Ensure native modules are properly handled
+    // Ensure native modules are properly handled across architectures
     ignore: [
       /^\/\.vscode\//,
       /^\/\.git\//,
       /^\/node_modules\/.*\/test\//,
       /^\/node_modules\/.*\/tests\//,
-    ],
+    ]
   },
-  rebuildConfig: {},
+  rebuildConfig: {
+    // Ensure native modules like node-pty are rebuilt for the target architecture
+    force: true,
+    onlyModules: ['node-pty', '@serialport/bindings-cpp'], // Rebuild these architecture-specific modules
+  },
   makers: [
     new MakerSquirrel({ // Windows installer
       // Windows-specific icon
@@ -54,11 +58,12 @@ const config: ForgeConfig = {
       // loadingGif: './icons/icon.gif', // Optional: custom loading animation
     }),
     // DMG is the standard macOS distribution format - provides drag & drop to Applications
-    new MakerDMG({ // macOS installer
+    new MakerDMG({ // macOS installer (supports both Intel and Apple Silicon)
       //background: './icons/icon.png',
-      icon: './icons/icon.icns'
+      icon: './icons/icon.icns',
+      format: 'ULFO' // Use modern APFS format for better compatibility
     }, ['darwin']),
-    new MakerZIP({}, ['darwin']),
+    new MakerZIP({}, ['darwin']), // ZIP format works for both Intel and Apple Silicon
     new MakerRpm({ // Linux installer
       options: {
         icon: './icons/icon.png'
