@@ -40,9 +40,9 @@
     "release": "npm run make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "version:patch": "npm version patch && git push origin main && git push origin $(node -p \"require('./package.json').version\")",
-    "version:minor": "npm version minor && git push origin main && git push origin $(node -p \"require('./package.json').version\")",
-    "version:major": "npm version major && git push origin main && git push origin $(node -p \"require('./package.json').version\")",
+    "version:patch": "npm version patch && git push origin main && git push origin v$(node -p \"require('./package.json').version\")",
+    "version:minor": "npm version minor && git push origin main && git push origin v$(node -p \"require('./package.json').version\")",
+    "version:major": "npm version major && git push origin main && git push origin v$(node -p \"require('./package.json').version\")",
     "version:show": "echo \"Current version: $(node -p \"require('./package.json').version\")\""
   },
   "keywords": [],

@@ -54,9 +54,25 @@ jobs:
         # Clean up
         rm $CERTIFICATE_PATH
     
-    - name: Build for macOS
+    - name: Build for macOS (Apple Silicon)
       if: matrix.os == 'macos-latest'
       run: npm run make:mac
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    
+    - name: Build for macOS (Intel)
+      if: matrix.os == 'macos-latest'
+      run: npm run make:mac:intel
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    
+    - name: Build for macOS (Universal)
+      if: matrix.os == 'macos-latest'
+      run: npm run make:mac:universal
       env:
         APPLE_ID: ${{ secrets.APPLE_ID }}
         APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
