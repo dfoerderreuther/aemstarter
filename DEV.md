@@ -48,6 +48,10 @@ npm run make:verbose
     npm run clean
     npm run make:verbose
 
+    // or
+    npm run make:mac:intel
+    npm run make:mac:universal
+
 ### Make and Publish to GitHub: 
 
     npm run clean
