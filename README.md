@@ -20,7 +20,7 @@ AEM-Starter is a desktop application that streamlines the setup and management o
 
 ## Requirements
 
-- This app currently only runs on Apple Silicon Macs. Please reach out if you want to help with supporting other environments!
+- This app runs on both Intel and Apple Silicon Macs. Download the appropriate version for your Mac's architecture.
 - AEM-SDK (Available for Adobe AEM customers at [experience.adobe.com](https://experience.adobe.com/#/downloads/content/software-distribution/en/aemcloud.html) -> Software Distribution -> AEM as Cloud Service)
 - Oracle JDK (Availalbe for Adobe AEM customers at [experience.adobe.com](https://experience.adobe.com/#/downloads/content/software-distribution/en/general.html) -> Software Distribution -> General)
 - Docker
@@ -31,7 +31,10 @@ AEM-Starter is a desktop application that streamlines the setup and management o
 
 ### Download DMG
 
-1. Go to the latest release page and download the `.dmg` file
+1. Go to the latest release page and download the appropriate `.dmg` file:
+   - **Intel Macs**: Download the `x64` version
+   - **Apple Silicon Macs (M1/M2/M3)**: Download the `arm64` version
+   - **Not sure?**: Open Apple menu → About This Mac. If it shows "Intel", download x64. If it shows "M1", "M2", or "M3", download arm64.
 2. Open the DMG file
 3. Drag AEM-Starter to your Applications folder
 4. Launch AEM-Starter from Applications

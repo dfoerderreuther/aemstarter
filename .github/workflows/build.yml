@@ -70,14 +70,6 @@ jobs:
         APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     
-    - name: Build for macOS (Universal)
-      if: matrix.os == 'macos-latest'
-      run: npm run make:mac:universal
-      env:
-        APPLE_ID: ${{ secrets.APPLE_ID }}
-        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-    
     - name: Build for Windows
       if: matrix.os == 'windows-latest'
       run: npm run make:windows
