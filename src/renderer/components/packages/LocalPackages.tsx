@@ -22,11 +22,10 @@ import {
   ButtonGroup,
   Modal,
   Radio,
-  Tabs,
-  FileInput
+  Tabs
 } from '@mantine/core';
 import { Project } from '../../../types/Project';
-import { IconAlertCircle, IconPlus, IconCloudUpload, IconTrash, IconInfoCircle, IconCopy, IconUpload, IconPackage, IconFileImport, IconDownload } from '@tabler/icons-react';
+import { IconAlertCircle, IconPlus, IconCloudUpload, IconTrash, IconInfoCircle, IconCopy, IconUpload, IconPackage, IconFileImport, IconDownload, IconCheck } from '@tabler/icons-react';
 import { formatFileSize } from '../../utils/fileUtils';
 
 interface PackageInfo {
@@ -47,6 +46,8 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [_deleting, setDeleting] = useState<string | null>(null);
+  const [installing, setInstalling] = useState<Record<string, boolean>>({});
+  const [installSuccess, setInstallSuccess] = useState<Record<string, boolean>>({});
 
 
   const [packageName, setPackageName] = useState('');
@@ -194,6 +195,8 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
 
   const handleInstallSelected = async (packageName: string) => {
     setError(null);
+    setInstalling(prev => ({ ...prev, [packageName]: true }));
+    
     try {
       const targets = installTargets[packageName];
       if (!targets || (!targets.author && !targets.publisher)) {
@@ -221,6 +224,14 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
       
       await Promise.all(promises);
       
+      // Show success feedback
+      setInstallSuccess(prev => ({ ...prev, [packageName]: true }));
+      
+      // Reset success feedback after 3 seconds
+      setTimeout(() => {
+        setInstallSuccess(prev => ({ ...prev, [packageName]: false }));
+      }, 3000);
+      
       // Reset to default state after successful install
       setInstallTargets(prev => ({
         ...prev,
@@ -228,6 +239,8 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
       }));
     } catch (err: unknown) {
       setError(`Failed to install selected packages for ${packageName}`);
+    } finally {
+      setInstalling(prev => ({ ...prev, [packageName]: false }));
     }
   };
 
@@ -638,13 +651,14 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
                             <Tooltip label="Upload and install package to the selected AEM instances">
                               <Button
                                 size="xs"
-                                color="blue"
-                                leftSection={<IconUpload size={14} />}
+                                color={installSuccess[packageInfo.name] ? "green" : "blue"}
+                                leftSection={installSuccess[packageInfo.name] ? <IconCheck size={14} /> : <IconUpload size={14} />}
                                 onClick={() => handleInstallSelected(packageInfo.name)}
                                 variant="filled"
-                                disabled={!installTargets[packageInfo.name]?.author && !installTargets[packageInfo.name]?.publisher}
+                                disabled={(!installTargets[packageInfo.name]?.author && !installTargets[packageInfo.name]?.publisher) || installSuccess[packageInfo.name]}
+                                loading={installing[packageInfo.name] || false}
                               >
-                                Install
+                                {installing[packageInfo.name] ? 'Installing...' : installSuccess[packageInfo.name] ? 'Installed!' : 'Install'}
                               </Button>
                             </Tooltip>
                           </ButtonGroup>

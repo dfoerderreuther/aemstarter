@@ -102,10 +102,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     if (!checked) {
       setLicensePath('');
       setClassicQuickstartPath('');
-    } else {
-      // Uncheck runFirstStartSetup when classic is selected as they're not compatible
-      setRunFirstStartSetup(false);
-    }
+    } 
   };
 
   const handleSelectProjectPath = async () => {

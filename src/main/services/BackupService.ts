@@ -28,7 +28,9 @@ export class BackupService {
         'config'
     ]
 
-    private static aemDeleteBeforeRestorePaths = []
+    private static aemDeleteBeforeRestorePaths = [
+        'crx-quickstart'
+    ]
 
     private static dispatcherDeleteBeforeRestorePaths = [
         'cache', 
