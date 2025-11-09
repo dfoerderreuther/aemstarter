@@ -90,6 +90,8 @@ typings/
 
 # Electron-Forge
 out/
+
+# Vite build output
 dist/
 
 # Environment variables (contains sensitive Apple ID credentials)
