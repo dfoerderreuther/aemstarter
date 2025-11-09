@@ -120,16 +120,18 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
     refreshPackages: loadPackages
   }));
 
-  const handleCreate = async () => {
-    if (!packageName.trim()) {
-      setError('Package name is required');
-      return;
-    }
+  const sanitizePackageName = (input: string): string => {
+    const withoutSlashes = input.replace(/[\\/]/g, '');
+    const withoutSpecial = withoutSlashes.replace(/[^a-zA-Z0-9 _.-]/g, '');
+    const trimmedAndDashed = withoutSpecial.trim().replace(/\s+/g, '-');
+    const collapsed = trimmedAndDashed.replace(/-+/g, '-');
+    return collapsed.replace(/^-+|-+$/g, '');
+  };
 
-    // Validate package name is URL-safe (no spaces, special characters except hyphens and underscores)
-    const urlSafePattern = /^[a-zA-Z0-9_-]+$/;
-    if (!urlSafePattern.test(packageName.trim())) {
-      setError('Package name must only contain letters, numbers, hyphens (-), and underscores (_). No spaces or special characters allowed.');
+  const handleCreate = async () => {
+    const sanitizedName = sanitizePackageName(packageName.trim());
+    if (!sanitizedName) {
+      setError('Package name is required');
       return;
     }
 
@@ -149,8 +151,8 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
     }
 
     // Check if package with this name already exists
-    if (packages.some(pkg => pkg.name === packageName.trim())) {
-      setError(`Package '${packageName.trim()}' already exists. Please choose a different name.`);
+    if (packages.some(pkg => pkg.name === sanitizedName)) {
+      setError(`Package '${sanitizedName}' already exists. Please choose a different name.`);
       return;
     }
 
@@ -163,7 +165,10 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
         .map(path => path.trim())
         .filter(path => path.length > 0);
 
-      await window.electronAPI.createPackage(project, packageName.trim(), selectedInstance, paths);
+      // Ensure UI reflects sanitized name
+      setPackageName(sanitizedName);
+
+      await window.electronAPI.createPackage(project, sanitizedName, selectedInstance, paths);
       
       // Reset form
       setPackageName('');
@@ -408,6 +413,7 @@ export const LocalPackages = forwardRef<{ refreshPackages: () => Promise<void> }
                   placeholder="Enter package name"
                   value={packageName}
                   onChange={(e) => setPackageName(e.currentTarget.value)}
+                  onBlur={() => setPackageName((prev) => sanitizePackageName(prev))}
                   disabled={creating}
                   required
                 />
