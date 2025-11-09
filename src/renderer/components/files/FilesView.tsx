@@ -127,6 +127,26 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project, visible
     handleVisibilityChange();
   }, [visible]); // Removed savedTreeState from dependencies to prevent infinite loop
 
+  useEffect(() => {
+    console.log('📂 Project changed, resetting FilesView state', {
+      projectId: project?.id,
+      rootPath,
+    });
+
+    setSelectedFile(null);
+    setFileContent(null);
+    setIsBinaryFile(false);
+    setSavedTreeState(null);
+
+    const resetTree = async () => {
+      if (fileTreeRef.current) {
+        await fileTreeRef.current.refresh();
+      }
+    };
+
+    resetTree();
+  }, [project?.id, rootPath]);
+
   // Save state when component unmounts
   useEffect(() => {
     return () => {
@@ -140,8 +160,9 @@ export const FilesView: React.FC<FilesViewProps> = ({ rootPath, project, visible
 
   return (
     <Grid style={{ height: '100%', margin: 0 }}>
-      <Grid.Col style={{ height: '100%', padding: 0, width: '400px', maxWidth: '400px', flex: '0 0 400px' }}>
+      <Grid.Col style={{ height: '100%', padding: 0, width: '400px', maxWidth: '400px', flex: '0 0 400px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <FileTreeView 
+            key={`${project?.id ?? 'no-project'}:${rootPath}`}
             rootPath={rootPath} 
             onFileSelect={handleFileSelect}
             project={project}
