@@ -90,6 +90,7 @@ typings/
 
 # Electron-Forge
 out/
+dist/
 
 # Environment variables (contains sensitive Apple ID credentials)
 .env
