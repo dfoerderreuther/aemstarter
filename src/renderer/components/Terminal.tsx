@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 
 interface TerminalProps {
@@ -32,14 +33,9 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     resize: () => {
       if (fitAddonRef.current && xtermRef.current) {
         try {
-          // First, temporarily reduce terminal size to measure true available space
-          xtermRef.current.resize(1, 1);
-          // Now measure the available space
-          setTimeout(() => {
-            if (fitAddonRef.current) {
-              fitAddonRef.current.fit();
-            }
-          }, 10);
+          requestAnimationFrame(() => {
+            fitAddonRef.current?.fit();
+          });
         } catch (error) {
           console.warn('Failed to fit terminal:', error);
         }
@@ -69,13 +65,9 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
       xtermRef.current.options.fontSize = fontSize;
       try {
         if (fitAddonRef.current) {
-          // Reset terminal size before fitting to ensure proper measurement
-          xtermRef.current.resize(1, 1);
-          setTimeout(() => {
-            if (fitAddonRef.current) {
-              fitAddonRef.current.fit();
-            }
-          }, 10);
+          requestAnimationFrame(() => {
+            fitAddonRef.current?.fit();
+          });
         }
       } catch (error) {
         console.warn('Failed to fit terminal:', error);
@@ -99,6 +91,10 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
       fontSize: fontSize,
       allowTransparency: true,
       cursorBlink: true,
+      scrollback: 5000,
+      macOptionIsMeta: true,
+      macOptionClickForcesSelection: true,
+      rightClickSelectsWord: true,
       theme: {
         background: '#1a1a1a',
         foreground: '#ffffff',
@@ -114,9 +110,17 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     fitAddonRef.current = fitAddon;
     xterm.loadAddon(fitAddon);
 
+    // Initialize web links addon for clickable URLs
+    const webLinksAddon = new WebLinksAddon((_event, uri) => {
+      if (uri) {
+        window.electronAPI.openUrl(uri);
+      }
+    });
+    xterm.loadAddon(webLinksAddon);
+
     // Open terminal
     xterm.open(terminalRef.current);
-    
+
     // Add padding to terminal screen
     const xtermScreen = terminalRef.current.querySelector('.xterm-screen');
     if (xtermScreen) {
@@ -202,42 +206,44 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     const handleResize = () => {
       try {
         if (fitAddonRef.current && xtermRef.current) {
-          // Reset terminal size before fitting to ensure proper measurement
-          xtermRef.current.resize(1, 1);
-          setTimeout(() => {
-            if (fitAddonRef.current) {
-              fitAddonRef.current.fit();
-            }
-          }, 10);
+          requestAnimationFrame(() => {
+            fitAddonRef.current?.fit();
+          });
         }
       } catch (error) {
         console.warn('Failed to fit terminal:', error);
       }
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleResize();
+      }
+    };
+
     window.addEventListener('resize', handleResize);
-    document.addEventListener('visibilitychange', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Cleanup function
     return () => {
       window.removeEventListener('resize', handleResize);
-      document.removeEventListener('visibilitychange', handleResize);
-      
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+
       // Clean up event listeners
       cleanupFuncsRef.current.forEach(cleanup => cleanup());
       cleanupFuncsRef.current = [];
-      
+
       // Kill terminal session
       if (terminalId) {
         window.electronAPI.killTerminal(terminalId);
       }
-      
+
       // Dispose xterm
       if (xtermRef.current) {
         xtermRef.current.dispose();
         xtermRef.current = null;
       }
-      
+
       setTerminalId(null);
       setIsConnected(false);
     };
@@ -247,13 +253,9 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
   useEffect(() => {
     if (visible && fitAddonRef.current && xtermRef.current) {
       try {
-        // Reset terminal size before fitting to ensure proper measurement
-        xtermRef.current.resize(1, 1);
-        setTimeout(() => {
-          if (fitAddonRef.current) {
-            fitAddonRef.current.fit();
-          }
-        }, 10);
+        requestAnimationFrame(() => {
+          fitAddonRef.current?.fit();
+        });
       } catch (error) {
         console.warn('Failed to fit terminal on tab visibility change:', error);
       }
@@ -267,7 +269,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
       // Reset terminal state
       setTerminalId(null);
       setIsConnected(false);
-      
+
       // Clean up existing xterm instance
       if (xtermRef.current) {
         xtermRef.current.dispose();

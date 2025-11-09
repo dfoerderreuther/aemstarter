@@ -22,7 +22,7 @@ export default defineConfig({
           // Separate Mantine UI components
           mantine: ['@mantine/core', '@mantine/hooks'],
           // Separate terminal-related dependencies
-          terminal: ['@xterm/xterm', '@xterm/addon-fit', 'xterm', 'xterm-addon-fit'],
+          terminal: ['@xterm/xterm', '@xterm/addon-fit', '@xterm/addon-web-links'],
           // Separate React and related
           react: ['react', 'react-dom'],
           // Keep react-arborist in its own chunk and untouched by aggressive minification

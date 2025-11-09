@@ -1,6 +1,7 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 
 interface LogTerminalProps {
@@ -95,6 +96,13 @@ export const LogTerminal = forwardRef<LogTerminalRef, LogTerminalProps>(({ onRea
     const fitAddon = new FitAddon();
     fitAddonRef.current = fitAddon;
     xterm.loadAddon(fitAddon);
+
+    const webLinksAddon = new WebLinksAddon((_event, uri) => {
+      if (uri) {
+        window.electronAPI.openUrl(uri);
+      }
+    });
+    xterm.loadAddon(webLinksAddon);
 
     // Open terminal
     xterm.open(terminalRef.current);
