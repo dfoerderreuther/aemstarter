@@ -85,8 +85,20 @@ updateService.addBeforeQuitHook({
   }
 });
 
-// Initialize the update service
-updateService.initializeUpdateService('dfoerderreuther/aemstarter', '5 minutes');
+// Initialize the update service (will be updated when settings are loaded)
+const initializeUpdateService = async () => {
+  try {
+    const globalSettings = ProjectManagerRegister.getManager().getGlobalSettings();
+    const autoUpdatesEnabled = globalSettings.autoUpdatesEnabled ?? true; // Default to true if not set
+    updateService.initializeUpdateService('dfoerderreuther/aemstarter', '5 minutes', autoUpdatesEnabled);
+  } catch (error) {
+    log.error('Error initializing update service:', error);
+    // Fallback to default behavior
+    updateService.initializeUpdateService('dfoerderreuther/aemstarter', '5 minutes', true);
+  }
+};
+
+initializeUpdateService();
 
 
 // Store reference to main window for menu actions
@@ -1122,6 +1134,118 @@ ipcMain.handle('get-platform', async () => {
   return process.platform;
 });
 
+// Update management IPC handlers
+ipcMain.handle('set-auto-updates-enabled', async (_, enabled: boolean) => {
+  updateService.setAutoUpdatesEnabled(enabled);
+  const currentSettings = ProjectManagerRegister.getManager().getGlobalSettings();
+  ProjectManagerRegister.getManager().setGlobalSettings({
+    ...currentSettings,
+    autoUpdatesEnabled: enabled
+  });
+  return true;
+});
+
+ipcMain.handle('get-auto-updates-enabled', async () => {
+  return updateService.getAutoUpdatesEnabled();
+});
+
+ipcMain.handle('check-for-updates', async () => {
+  try {
+    const { autoUpdater } = require('electron');
+    await autoUpdater.checkForUpdates();
+    return true;
+  } catch (error) {
+    log.error('Error checking for updates:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('fetch-github-releases', async () => {
+  try {
+    const https = require('https');
+    const repo = 'dfoerderreuther/aemstarter';
+
+    return new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.github.com',
+        path: `/repos/${repo}/releases`,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'AEM-Starter',
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      };
+
+      const req = https.request(options, (res: any) => {
+        let data = '';
+
+        res.on('data', (chunk: any) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const releases = JSON.parse(data);
+            const currentVersion = app.getVersion();
+
+            // Filter and format releases
+            const formattedReleases = releases
+              .filter((release: any) => !release.draft && !release.prerelease)
+              .map((release: any) => ({
+                version: release.tag_name.replace('v', ''),
+                name: release.name || release.tag_name,
+                publishedAt: release.published_at,
+                url: release.html_url,
+                isCurrentVersion: release.tag_name.replace('v', '') === currentVersion
+              }))
+              .sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+            resolve(formattedReleases);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+
+      req.on('error', (error: any) => {
+        reject(error);
+      });
+
+      req.end();
+    });
+  } catch (error) {
+    log.error('Error fetching GitHub releases:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('download-and-install-version', async (_, version: string) => {
+  try {
+    // This is a simplified implementation - in a real scenario you'd need to:
+    // 1. Download the specific version from GitHub releases
+    // 2. Handle the installation process
+    // 3. Provide user feedback
+
+    log.info(`Downloading and installing version: ${version}`);
+
+    // For now, show a message that this feature is not yet fully implemented
+    if (mainWindow) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Version Switching',
+        message: 'Version switching is not yet fully implemented',
+        detail: `You requested to switch to version ${version}. This feature requires additional development to safely download and install specific versions.\n\nFor now, please use the auto-update feature or manually download releases from GitHub.`,
+        buttons: ['OK']
+      });
+    }
+
+    return false; // Not implemented yet
+  } catch (error) {
+    log.error('Error downloading and installing version:', error);
+    throw error;
+  }
+});
+
 // Dev project utilities IPC handler
 ipcMain.handle('open-dev-project', async (_, project: Project, type: 'files' | 'terminal' | 'editor') => {
   try {
@@ -1485,6 +1609,41 @@ const createMenu = () => {
       ]
     }
   ];
+
+  // Add Updates menu after File menu
+  template.splice(1, 0, {
+    label: 'Updates',
+    submenu: [
+      {
+        label: 'Check for Updates',
+        click: async () => {
+          if (!mainWindow) return;
+          try {
+            await updateService.initializeUpdateService('dfoerderreuther/aemstarter', '5 minutes', true);
+            const { autoUpdater } = require('electron');
+            await autoUpdater.checkForUpdates();
+          } catch (error) {
+            log.error('Error checking for updates:', error);
+          }
+        }
+      },
+      {
+        label: 'Open Updates Dialog',
+        click: () => {
+          if (mainWindow) {
+            mainWindow.webContents.send('open-updates-dialog');
+          }
+        }
+      },
+      { type: 'separator' },
+      {
+        label: 'View Release Notes',
+        click: () => {
+          shell.openExternal('https://github.com/dfoerderreuther/aemstarter/releases');
+        }
+      }
+    ]
+  });
 
   // Add standard macOS menu items
   if (process.platform === 'darwin') {

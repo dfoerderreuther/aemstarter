@@ -9,6 +9,7 @@ import AemLogo from './assets/AEM.svg';
 import { SystemCheckView } from './components/SystemCheckView';
 import { AboutModal } from './components/AboutModal';
 import { ShutdownModal } from './components/ShutdownModal';
+import { UpdatesModal } from './components/UpdatesModal';
 
 const theme = createTheme({
   primaryColor: 'blue',
@@ -30,6 +31,7 @@ const App: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [shutdownModalOpen, setShutdownModalOpen] = useState(false);
+  const [updatesModalOpen, setUpdatesModalOpen] = useState(false);
   const [shouldRunAutomation, setShouldRunAutomation] = useState(false);
 
   // Clear terminals when project switches
@@ -105,6 +107,10 @@ const App: React.FC = () => {
       setShutdownModalOpen(true);
     });
 
+    const cleanupUpdatesModal = window.electronAPI.onOpenUpdatesDialog(() => {
+      setUpdatesModalOpen(true);
+    });
+
     const cleanupCloseProject = window.electronAPI.onCloseProject(async () => {
       try {
         setSelectedProject(null);
@@ -121,6 +127,7 @@ const App: React.FC = () => {
       cleanupOpenProject();
       cleanupOpenAbout();
       cleanupShutdownModal();
+      cleanupUpdatesModal();
       cleanupCloseProject();
     };
   }, []);
@@ -318,6 +325,11 @@ const App: React.FC = () => {
         <ShutdownModal
           opened={shutdownModalOpen}
           onForceQuit={handleForceQuit}
+        />
+
+        <UpdatesModal
+          opened={updatesModalOpen}
+          onClose={() => setUpdatesModalOpen(false)}
         />
 
         <AppShell.Main>
