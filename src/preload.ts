@@ -324,6 +324,16 @@ contextBridge.exposeInMainWorld(
       };
     },
 
+    onCloseProject: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on('close-project', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('close-project', handler);
+      };
+    },
+
     onOpenProjectFolder: (callback: (folderPath: string) => void) => {
       const handler = (_: Electron.IpcRendererEvent, folderPath: string) => callback(folderPath);
       ipcRenderer.on('open-project-folder', handler);

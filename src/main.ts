@@ -1445,6 +1445,35 @@ const createMenu = () => {
           label: 'Recent Projects',
           submenu: createRecentProjectsSubmenu()
         },
+        {
+          label: 'Close Project',
+          click: async () => {
+            if (!mainWindow) return;
+            
+            // Get the current project from the main window
+            const currentProject = await getCurrentProject();
+            if (currentProject) {
+              const runningCheck = await checkRunningInstancesForProject(currentProject);
+              if (runningCheck.hasRunning) {
+                const instanceList = runningCheck.runningInstances
+                  .map(instance => `• ${instance.instanceType} (port ${instance.port})`)
+                  .join('\n');
+                
+                dialog.showMessageBox(mainWindow, {
+                  type: 'warning',
+                  title: 'Cannot Close Project',
+                  message: `Cannot close the current project because instances are currently running in "${currentProject.name}".`,
+                  detail: `Running instances:\n${instanceList}\n\nPlease stop all instances before closing the project.`,
+                  buttons: ['OK']
+                });
+                return;
+              }
+            }
+            
+            // Send event to renderer to close the current project (go to start screen)
+            mainWindow.webContents.send('close-project');
+          }
+        },
         { type: 'separator' },
         {
           label: process.platform === 'darwin' ? 'Quit AEM-Starter' : 'Exit',

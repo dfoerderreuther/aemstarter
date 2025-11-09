@@ -105,12 +105,23 @@ const App: React.FC = () => {
       setShutdownModalOpen(true);
     });
 
+    const cleanupCloseProject = window.electronAPI.onCloseProject(async () => {
+      try {
+        setSelectedProject(null);
+        await window.electronAPI.setLastProjectId(null);
+        await window.electronAPI.refreshMenu();
+      } catch (error) {
+        console.error('Failed to close project:', error);
+      }
+    });
+
     // Cleanup function
     return () => {
       cleanupNewProject();
       cleanupOpenProject();
       cleanupOpenAbout();
       cleanupShutdownModal();
+      cleanupCloseProject();
     };
   }, []);
 
