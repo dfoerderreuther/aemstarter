@@ -66,6 +66,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
         }}
         value={activeTab || 'author'}
         onChange={setActiveTab}
+        keepMounted
       >
         <Tabs.List>
           {viewMode === 'columns' ? (
@@ -237,7 +238,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
           <FilesView visible={activeTab === 'files'} rootPath={project.folderPath} project={project} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="terminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Tabs.Panel value="terminal" keepMounted style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <TerminalTab rootPath={project.folderPath}
                 visible={activeTab === 'terminal'} 
                 type="project"
@@ -249,7 +250,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
           <FilesView visible={activeTab === 'devfiles'} rootPath={project.settings?.dev?.path || ''} project={project} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="devterminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Tabs.Panel value="devterminal" keepMounted style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <TerminalTab rootPath={project.settings?.dev?.path || ''} visible={activeTab === 'devterminal'} type="dev" project={project} />
         </Tabs.Panel>
       </Tabs>

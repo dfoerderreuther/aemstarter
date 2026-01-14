@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MantineProvider, AppShell, Title, Container, Center, Text, ThemeIcon, Group, Stack, createTheme, rem, Button, MantineTheme } from '@mantine/core';
+import { MantineProvider, AppShell, Title, Container, Center, Text, ThemeIcon, Group, Stack, createTheme, rem, Button, MantineTheme, Paper } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { ProjectView } from './components/ProjectView';
 import { NewProjectModal } from './components/NewProjectModal';
@@ -9,6 +9,7 @@ import AemLogo from './assets/AEM.svg';
 import { SystemCheckView } from './components/SystemCheckView';
 import { AboutModal } from './components/AboutModal';
 import { ShutdownModal } from './components/ShutdownModal';
+import { UpdatesModal } from './components/UpdatesModal';
 
 const theme = createTheme({
   primaryColor: 'blue',
@@ -30,6 +31,7 @@ const App: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [shutdownModalOpen, setShutdownModalOpen] = useState(false);
+  const [updatesModalOpen, setUpdatesModalOpen] = useState(false);
   const [shouldRunAutomation, setShouldRunAutomation] = useState(false);
 
   // Clear terminals when project switches
@@ -105,12 +107,28 @@ const App: React.FC = () => {
       setShutdownModalOpen(true);
     });
 
+    const cleanupUpdatesModal = window.electronAPI.onOpenUpdatesDialog(() => {
+      setUpdatesModalOpen(true);
+    });
+
+    const cleanupCloseProject = window.electronAPI.onCloseProject(async () => {
+      try {
+        setSelectedProject(null);
+        await window.electronAPI.setLastProjectId(null);
+        await window.electronAPI.refreshMenu();
+      } catch (error) {
+        console.error('Failed to close project:', error);
+      }
+    });
+
     // Cleanup function
     return () => {
       cleanupNewProject();
       cleanupOpenProject();
       cleanupOpenAbout();
       cleanupShutdownModal();
+      cleanupUpdatesModal();
+      cleanupCloseProject();
     };
   }, []);
 
@@ -227,6 +245,33 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle selecting a recent project from the start page
+  const handleSelectRecentProject = async (project: Project) => {
+    try {
+      setSelectedProject(project);
+      await window.electronAPI.setLastProjectId(project.id);
+      await window.electronAPI.refreshMenu();
+    } catch (error) {
+      console.error('Error selecting recent project:', error);
+    }
+  };
+
+  // Browse and open an existing AEM-Starter project folder
+  const handleBrowseExistingProject = async () => {
+    try {
+      const result = await window.electronAPI.showOpenDialog({
+        properties: ['openDirectory'],
+        title: 'Open Existing Project',
+        buttonLabel: 'Open Folder'
+      });
+      if (!result.canceled && result.filePaths.length > 0) {
+        await handleOpenProjectFolder(result.filePaths[0]);
+      }
+    } catch (error) {
+      console.error('Error browsing existing project:', error);
+    }
+  };
+
   if (loading) {
     return (
       <MantineProvider theme={theme} defaultColorScheme="dark">
@@ -282,6 +327,11 @@ const App: React.FC = () => {
           onForceQuit={handleForceQuit}
         />
 
+        <UpdatesModal
+          opened={updatesModalOpen}
+          onClose={() => setUpdatesModalOpen(false)}
+        />
+
         <AppShell.Main>
           {selectedProject ? (
             <ProjectView 
@@ -314,6 +364,34 @@ const App: React.FC = () => {
                 >
                   Create New Project
                 </Button>
+                {projects.length > 0 && (
+                  <Stack gap="sm" align="stretch" style={{ width: '100%', maxWidth: 800 }}>
+                    <Title order={3}>Recent projects</Title>
+                    <Stack gap="xs">
+                      {[...projects]
+                        .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime())
+                        .slice(0, 10)
+                        .map((p) => (
+                          <Paper key={p.id} withBorder p="md" radius="md">
+                            <Group justify="space-between" wrap="nowrap">
+                              <Stack gap={2}>
+                                <Text fw={500}>{p.name}</Text>
+                                <Text size="sm" c="dimmed" lineClamp={1}>{p.folderPath}</Text>
+                              </Stack>
+                              <Button variant="light" onClick={() => handleSelectRecentProject(p)}>
+                                Open
+                              </Button>
+                            </Group>
+                          </Paper>
+                        ))}
+                    </Stack>
+                    <Group justify="flex-end">
+                      <Button variant="subtle" onClick={handleBrowseExistingProject}>
+                        Open existing folder…
+                      </Button>
+                    </Group>
+                  </Stack>
+                )}
               </Stack>
             </Container>
           )}

@@ -10,6 +10,7 @@ export class CustomUpdateService {
   private preUpdateHooks: PreUpdateHook[] = [];
   private preInstallHooks: PreUpdateHook[] = [];
   private beforeQuitHooks: PreUpdateHook[] = [];
+  private autoUpdatesEnabled: boolean = true; // Default to enabled for backward compatibility
 
   constructor() {
     this.setupAutoUpdaterEvents();
@@ -17,18 +18,30 @@ export class CustomUpdateService {
 
   private setupAutoUpdaterEvents() {
     autoUpdater.on('update-available', async () => {
-      log.info('Update available - running pre-update hooks');
-      await this.executeHooks(this.preUpdateHooks);
+      if (this.autoUpdatesEnabled) {
+        log.info('Update available - running pre-update hooks');
+        await this.executeHooks(this.preUpdateHooks);
+      } else {
+        log.info('Update available but auto-updates are disabled');
+      }
     });
 
     autoUpdater.on('update-downloaded', async () => {
-      log.info('Update downloaded - running pre-install hooks');
-      await this.executeHooks(this.preInstallHooks);
+      if (this.autoUpdatesEnabled) {
+        log.info('Update downloaded - running pre-install hooks');
+        await this.executeHooks(this.preInstallHooks);
+      } else {
+        log.info('Update downloaded but auto-updates are disabled');
+      }
     });
 
     autoUpdater.on('before-quit-for-update', async () => {
-      log.info('About to quit for update - running before-quit hooks');
-      await this.executeHooks(this.beforeQuitHooks);
+      if (this.autoUpdatesEnabled) {
+        log.info('About to quit for update - running before-quit hooks');
+        await this.executeHooks(this.beforeQuitHooks);
+      } else {
+        log.info('About to quit for update but auto-updates are disabled');
+      }
     });
   }
 
@@ -56,13 +69,29 @@ export class CustomUpdateService {
     this.beforeQuitHooks.push(hook);
   }
 
-  public initializeUpdateService(repo: string, updateInterval: string = '5 minutes'): void {
-    const { updateElectronApp } = require('update-electron-app');
-    updateElectronApp({
-      repo,
-      updateInterval,
-      logger: log,
-      notifyUser: true
-    });
+  public setAutoUpdatesEnabled(enabled: boolean): void {
+    this.autoUpdatesEnabled = enabled;
+    log.info(`Auto-updates ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  public getAutoUpdatesEnabled(): boolean {
+    return this.autoUpdatesEnabled;
+  }
+
+  public initializeUpdateService(repo: string, updateInterval: string = '5 minutes', autoUpdatesEnabled: boolean = true): void {
+    this.autoUpdatesEnabled = autoUpdatesEnabled;
+
+    if (this.autoUpdatesEnabled) {
+      const { updateElectronApp } = require('update-electron-app');
+      updateElectronApp({
+        repo,
+        updateInterval,
+        logger: log,
+        notifyUser: true
+      });
+      log.info('Auto-updates initialized and enabled');
+    } else {
+      log.info('Auto-updates disabled, skipping initialization');
+    }
   }
 } 

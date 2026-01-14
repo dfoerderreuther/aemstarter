@@ -1,9 +1,10 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useCallback, useRef } from 'react';
 import { Group, Text, Box, Loader, ActionIcon, Divider, Menu, Modal, TextInput, Button } from '@mantine/core';
-import { IconFolder, IconRefresh, IconEye, IconEyeOff, IconCode, IconPlus, IconEdit, IconTrash, IconFile, IconFolderPlus, IconCut, IconClipboard } from '@tabler/icons-react';
+import { IconFolder, IconRefresh, IconEye, IconEyeOff, IconCode, IconPlus, IconEdit, IconTrash, IconFile, IconFolderPlus } from '@tabler/icons-react';
 import { Tree, TreeApi, NodeApi } from 'react-arborist';
 import './FileTreeView.css';
 import { Project } from '../../../types/Project';
+import { useElementSize, useMergedRef } from '@mantine/hooks';
 
 export interface FileTreeState {
   selectedFile: string | null;
@@ -35,7 +36,10 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
   const [treeData, setTreeData] = useState<NodeData[]>([]);
   const [expandedDirectories, setExpandedDirectories] = useState<Set<string>>(new Set());
 
-  const treeApi = React.useRef<TreeApi<NodeData>>(null);
+  const treeApi = useRef<TreeApi<NodeData>>(null);
+  const treeContainerRef = useRef<HTMLDivElement | null>(null);
+  const { ref: elementSizeRef, width: containerWidth, height: containerHeight } = useElementSize<HTMLDivElement>();
+  const treeContainerMergedRef = useMergedRef<HTMLDivElement>(treeContainerRef, elementSizeRef);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showCreateFileModal, setShowCreateFileModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -406,8 +410,13 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
     );
   }
 
+  const fallbackWidth = treeContainerRef.current?.clientWidth || treeContainerRef.current?.offsetWidth || 0;
+  const fallbackHeight = treeContainerRef.current?.clientHeight || treeContainerRef.current?.offsetHeight || 0;
+  const treeWidth = Math.max(containerWidth, fallbackWidth, 1);
+  const treeHeight = Math.max(containerHeight, fallbackHeight, 1);
+
   return (
-    <Box>
+    <Box style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 195px)', minHeight: 0 }}>
       <Box p="xs" style={{ borderBottom: '1px solid #2C2E33' }}>
         <Group justify="space-between" align="center">
           <Text size="xs" fw={700} c="dimmed">FILE TREE</Text>
@@ -492,13 +501,22 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
           </Group>
         </Group>
       </Box>
-      <Box style={{ overflow: 'auto', flex: 1 }}>
+      <Box
+        ref={treeContainerMergedRef}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          position: 'relative',
+          height: '100%',
+        }}
+      >
         <Tree
             ref={treeApi}
             data={treeData}
             openByDefault={false}
-            width="100%"
-            height={1000}
+            width={treeWidth}
+            height={treeHeight}
             indent={24}
             rowHeight={32}
             disableEdit={true}
@@ -546,7 +564,7 @@ export const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(({ ro
                   });
                 }
             }}
-            onMove={async ({ dragIds, parentId, index }) => {
+            onMove={async ({ dragIds, parentId }) => {
                 if (!project) return;
                 const parentNode = treeApi.current?.get(parentId);
                 if (!parentNode) return;

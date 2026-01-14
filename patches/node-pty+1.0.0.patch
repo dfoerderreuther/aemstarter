@@ -1,0 +1,77 @@
+diff --git a/node_modules/node-pty/src/win/winpty.cc b/node_modules/node-pty/src/win/winpty.cc
+index 1234567..abcdef0 100644
+--- a/node_modules/node-pty/src/win/winpty.cc
++++ b/node_modules/node-pty/src/win/winpty.cc
+@@ -115,6 +115,18 @@ static NAN_METHOD(PtyStartProcess) {
+     return;
+   }
+
++  // Declare all variables at the beginning to avoid C2362 errors with goto cleanup
++  int cols = 0;
++  int rows = 0;
++  bool debug = false;
++  winpty_error_ptr_t error_ptr = nullptr;
++  winpty_config_t* winpty_config = nullptr;
++  winpty_t* pc = nullptr;
++  winpty_spawn_config_t* config = nullptr;
++  HANDLE handle = nullptr;
++  BOOL spawnSuccess = FALSE;
++  v8::Local<v8::Object> marshal;
++
+   std::stringstream why;
+
+   const wchar_t *filename = path_util::to_wstring(Nan::Utf8String(info[0]));
+@@ -166,9 +178,6 @@ static NAN_METHOD(PtyStartProcess) {
+   }
+
+   int cols = info[4]->Int32Value(Nan::GetCurrentContext()).FromJust();
+   int rows = info[5]->Int32Value(Nan::GetCurrentContext()).FromJust();
+   bool debug = Nan::To<bool>(info[6]).FromJust();
+
+   // Enable/disable debugging
+   SetEnvironmentVariable(WINPTY_DBG_VARIABLE, debug ? "1" : NULL); // NULL = deletes variable
+
+@@ -175,7 +184,6 @@ static NAN_METHOD(PtyStartProcess) {
+   // Create winpty config
+   winpty_error_ptr_t error_ptr = nullptr;
+   winpty_config_t* winpty_config = winpty_config_new(0, &error_ptr);
+   if (winpty_config == nullptr) {
+     throw_winpty_error("Error creating WinPTY config", error_ptr);
+     goto cleanup;
+@@ -187,7 +195,7 @@ static NAN_METHOD(PtyStartProcess) {
+   winpty_config_set_initial_size(winpty_config, cols, rows);
+
+   // Start the pty agent
+-  winpty_t *pc = winpty_open(winpty_config, &error_ptr);
++  pc = winpty_open(winpty_config, &error_ptr);
+   winpty_config_free(winpty_config);
+   if (pc == nullptr) {
+     throw_winpty_error("Error launching WinPTY agent", error_ptr);
+@@ -200,7 +208,7 @@ static NAN_METHOD(PtyStartProcess) {
+   ptyHandles.insert(ptyHandles.end(), pc);
+
+   // Create winpty spawn config
+-  winpty_spawn_config_t* config = winpty_spawn_config_new(WINPTY_SPAWN_FLAG_AUTO_SHUTDOWN, shellpath.c_str(), cmdline, cwd, env.c_str(), &error_ptr);
++  config = winpty_spawn_config_new(WINPTY_SPAWN_FLAG_AUTO_SHUTDOWN, shellpath.c_str(), cmdline, cwd, env.c_str(), &error_ptr);
+   if (config == nullptr) {
+     throw_winpty_error("Error creating WinPTY spawn config", error_ptr);
+     goto cleanup;
+@@ -216,8 +224,6 @@ static NAN_METHOD(PtyStartProcess) {
+   }
+
+   // Spawn the new process
+-  HANDLE handle = nullptr;
+-  BOOL spawnSuccess = winpty_spawn(pc, config, &handle, nullptr, nullptr, &error_ptr);
++  spawnSuccess = winpty_spawn(pc, config, &handle, nullptr, nullptr, &error_ptr);
+   winpty_spawn_config_free(config);
+   if (!spawnSuccess) {
+     throw_winpty_error("Unable to start terminal process", error_ptr);
+@@ -232,7 +238,7 @@ static NAN_METHOD(PtyStartProcess) {
+   }
+
+   // Set return values
+-  v8::Local<v8::Object> marshal = Nan::New<v8::Object>();
++  marshal = Nan::New<v8::Object>();
+   Nan::Set(marshal, Nan::New<v8::String>("innerPid").ToLocalChecked(), Nan::New<v8::Number>((int)GetProcessId(handle)));
+   Nan::Set(marshal, Nan::New<v8::String>("innerPidHandle").ToLocalChecked(), Nan::New<v8::Number>((int)handle));
+   Nan::Set(marshal, Nan::New<v8::String>("pid").ToLocalChecked(), Nan::New<v8::Number>((int)winpty_agent_process(pc)));

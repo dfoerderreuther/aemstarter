@@ -50,6 +50,9 @@ const config: ForgeConfig = {
     // Ensure native modules like node-pty are rebuilt for the target architecture
     force: true,
     onlyModules: ['node-pty', '@serialport/bindings-cpp'], // Rebuild these architecture-specific modules
+    // Additional Windows-specific rebuild options
+    buildPath: undefined, // Use default build path
+    useCache: false, // Disable cache to ensure clean rebuilds
   },
   makers: [
     new MakerSquirrel({ // Windows installer

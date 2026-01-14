@@ -10,10 +10,11 @@ export class ProjectManager {
   private projects: Project[] = [];
   private readonly projectsFilePath: string;
   private readonly settingsFilePath: string;
-  private settings: { 
+  private settings: {
     lastProjectId?: string;
     aemSdkPath?: string;
     licensePath?: string;
+    autoUpdatesEnabled?: boolean;
   } = {};
 
   constructor() {
@@ -266,7 +267,7 @@ export class ProjectManager {
     return this.settings.lastProjectId;
   }
 
-  setGlobalSettings(settings: { aemSdkPath?: string; licensePath?: string }): void {
+  setGlobalSettings(settings: { aemSdkPath?: string; licensePath?: string; autoUpdatesEnabled?: boolean }): void {
     this.settings = {
       ...this.settings,
       ...settings
@@ -274,10 +275,11 @@ export class ProjectManager {
     this.saveSettings();
   }
 
-  getGlobalSettings(): { aemSdkPath?: string; licensePath?: string } {
+  getGlobalSettings(): { aemSdkPath?: string; licensePath?: string; autoUpdatesEnabled?: boolean } {
     return {
       aemSdkPath: this.settings.aemSdkPath,
-      licensePath: this.settings.licensePath
+      licensePath: this.settings.licensePath,
+      autoUpdatesEnabled: this.settings.autoUpdatesEnabled
     };
   }
 } 

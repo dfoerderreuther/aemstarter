@@ -31,7 +31,7 @@ contextBridge.exposeInMainWorld(
     // Global settings
     getGlobalSettings: () =>
       ipcRenderer.invoke('get-global-settings'),
-    setGlobalSettings: (settings: { aemSdkPath?: string; licensePath?: string }) =>
+    setGlobalSettings: (settings: { aemSdkPath?: string; licensePath?: string; autoUpdatesEnabled?: boolean }) =>
       ipcRenderer.invoke('set-global-settings', settings),
     
     // Menu
@@ -324,6 +324,16 @@ contextBridge.exposeInMainWorld(
       };
     },
 
+    onCloseProject: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on('close-project', handler);
+      
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('close-project', handler);
+      };
+    },
+
     onOpenProjectFolder: (callback: (folderPath: string) => void) => {
       const handler = (_: Electron.IpcRendererEvent, folderPath: string) => callback(folderPath);
       ipcRenderer.on('open-project-folder', handler);
@@ -455,10 +465,33 @@ contextBridge.exposeInMainWorld(
     onShowShutdownModal: (callback: () => void) => {
       const handler = () => callback();
       ipcRenderer.on('show-shutdown-modal', handler);
-      
+
       // Return cleanup function
       return () => {
         ipcRenderer.removeListener('show-shutdown-modal', handler);
+      };
+    },
+
+    // Update management
+    setAutoUpdatesEnabled: (enabled: boolean) =>
+      ipcRenderer.invoke('set-auto-updates-enabled', enabled),
+    getAutoUpdatesEnabled: () =>
+      ipcRenderer.invoke('get-auto-updates-enabled'),
+    checkForUpdates: () =>
+      ipcRenderer.invoke('check-for-updates'),
+    fetchGithubReleases: () =>
+      ipcRenderer.invoke('fetch-github-releases'),
+    downloadAndInstallVersion: (version: string) =>
+      ipcRenderer.invoke('download-and-install-version', version),
+
+    // Update modal event listener
+    onOpenUpdatesDialog: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on('open-updates-dialog', handler);
+
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener('open-updates-dialog', handler);
       };
     },
   }
