@@ -179,6 +179,27 @@ export const AemInstanceView = ({
     }
   };
 
+  const handleOpenAemSsl = async () => {
+    if (!projectSettings) return;
+    const sslSettings = projectSettings.ssl?.[instance];
+    if (!sslSettings?.enabled) return;
+    
+    const port = sslSettings.port;
+    const url = port === 443 ? 'https://localhost/' : `https://localhost:${port}/`;
+    try {
+      await window.electronAPI.openUrl(url);
+    } catch (error) {
+      console.error('Error opening SSL URL:', error);
+    }
+  };
+
+  /**
+   * Check if SSL proxy is enabled for this instance
+   */
+  const isSslProxyEnabled = (): boolean => {
+    return projectSettings?.ssl?.[instance]?.enabled || false;
+  };
+
   // Helper function to highlight filtered text with red background
   const highlightFilteredText = (text: string, filter: string): string => {
     if (!filter) return text;
@@ -473,6 +494,19 @@ export const AemInstanceView = ({
                     >
                       AEM
                     </Button>
+                    {isSslProxyEnabled() && (
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        onClick={handleOpenAemSsl}
+                        disabled={!isRunning}
+                        leftSection={<IconExternalLink size={12} />}
+                        style={buttonStyle}
+                        styles={buttonStyles}
+                      >
+                        AEM (ssl)
+                      </Button>
+                    )}
                     <Button
                       size="xs"
                       variant="subtle"

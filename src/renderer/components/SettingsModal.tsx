@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Tabs, Stack, TextInput, NumberInput, Group, Button, Text, Checkbox, Select, ActionIcon, Tooltip, ButtonGroup, Menu, Box } from '@mantine/core';
 import { IconFolder, IconAlertCircle } from '@tabler/icons-react';
-import { Project, ProjectSettings } from '../../types/Project';
+import { Project, ProjectSettings, SslProxySettings } from '../../types/Project';
 import { EditorAvailableResults } from '../../types/EditorAvailableResults';
 import { JavaHomeSelector } from './JavaHomeSelector';
 
@@ -110,14 +110,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
     });
   };
 
-  const updateHttpsSettings = (field: string, value: any) => {
+  const updateSslSettings = (proxyType: 'author' | 'publisher' | 'dispatcher', field: keyof SslProxySettings, value: any) => {
     if (!settings) return;
-    setSettings({
-      ...settings,
-      https: {
-        ...settings.https,
+    
+    const currentSsl = settings.ssl || {
+      author: { enabled: false, port: 8502 },
+      publisher: { enabled: false, port: 8503 },
+      dispatcher: { enabled: false, port: 443 }
+    };
+    
+    const updatedSsl = {
+      ...currentSsl,
+      [proxyType]: {
+        ...currentSsl[proxyType],
         [field]: value
       }
+    };
+    
+    // Keep https in sync with dispatcher for backward compatibility
+    const updatedHttps = proxyType === 'dispatcher' 
+      ? { enabled: updatedSsl.dispatcher.enabled, port: updatedSsl.dispatcher.port }
+      : settings.https;
+    
+    setSettings({
+      ...settings,
+      ssl: updatedSsl,
+      https: updatedHttps
     });
   };
 
@@ -344,22 +362,84 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
 
         <Tabs.Panel value="https" pt="md">
           <Stack gap="md">
-            <Checkbox
-              label="Enabled"
-              description="Enable SSL proxy"
-              checked={settings.https?.enabled}
-              onChange={(event) => updateHttpsSettings('enabled', event.currentTarget.checked)}
-            />
-            <NumberInput
-              label="Port"
-              description="Port number for the ssl proxy"
-              value={settings.https?.port || 443}
-              onChange={(value) => updateHttpsSettings('port', value)}
-              min={1}
-              max={65535}
-            />
-            <Text>
-              If enabled, the system will start a https proxy to Dispatcher. The proxy will use a self-signed certificate, generated on first start with openssl (requires openssl to be installed).
+            <Text size="sm" c="dimmed">
+              Configure SSL proxies for Author, Publisher, and Dispatcher. Each proxy can be enabled independently and will use a self-signed certificate generated with OpenSSL.
+            </Text>
+            
+            {/* Author SSL Proxy */}
+            <Box style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'var(--mantine-color-dark-6)' }}>
+              <Stack gap="sm">
+                <Text fw={500}>Author SSL Proxy</Text>
+                <Group grow align="flex-start">
+                  <Checkbox
+                    label="Enabled"
+                    description={`Proxy HTTPS → http://localhost:${settings.author?.port || 4502}`}
+                    checked={settings.ssl?.author?.enabled || false}
+                    onChange={(event) => updateSslSettings('author', 'enabled', event.currentTarget.checked)}
+                  />
+                  <NumberInput
+                    label="HTTPS Port"
+                    description="SSL proxy port for Author"
+                    value={settings.ssl?.author?.port || 8502}
+                    onChange={(value) => updateSslSettings('author', 'port', value)}
+                    min={1}
+                    max={65535}
+                    disabled={!settings.ssl?.author?.enabled}
+                  />
+                </Group>
+              </Stack>
+            </Box>
+            
+            {/* Publisher SSL Proxy */}
+            <Box style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'var(--mantine-color-dark-6)' }}>
+              <Stack gap="sm">
+                <Text fw={500}>Publisher SSL Proxy</Text>
+                <Group grow align="flex-start">
+                  <Checkbox
+                    label="Enabled"
+                    description={`Proxy HTTPS → http://localhost:${settings.publisher?.port || 4503}`}
+                    checked={settings.ssl?.publisher?.enabled || false}
+                    onChange={(event) => updateSslSettings('publisher', 'enabled', event.currentTarget.checked)}
+                  />
+                  <NumberInput
+                    label="HTTPS Port"
+                    description="SSL proxy port for Publisher"
+                    value={settings.ssl?.publisher?.port || 8503}
+                    onChange={(value) => updateSslSettings('publisher', 'port', value)}
+                    min={1}
+                    max={65535}
+                    disabled={!settings.ssl?.publisher?.enabled}
+                  />
+                </Group>
+              </Stack>
+            </Box>
+            
+            {/* Dispatcher SSL Proxy */}
+            <Box style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'var(--mantine-color-dark-6)' }}>
+              <Stack gap="sm">
+                <Text fw={500}>Dispatcher SSL Proxy</Text>
+                <Group grow align="flex-start">
+                  <Checkbox
+                    label="Enabled"
+                    description={`Proxy HTTPS → http://localhost:${settings.dispatcher?.port || 80}`}
+                    checked={settings.ssl?.dispatcher?.enabled || false}
+                    onChange={(event) => updateSslSettings('dispatcher', 'enabled', event.currentTarget.checked)}
+                  />
+                  <NumberInput
+                    label="HTTPS Port"
+                    description="SSL proxy port for Dispatcher"
+                    value={settings.ssl?.dispatcher?.port || 443}
+                    onChange={(value) => updateSslSettings('dispatcher', 'port', value)}
+                    min={1}
+                    max={65535}
+                    disabled={!settings.ssl?.dispatcher?.enabled}
+                  />
+                </Group>
+              </Stack>
+            </Box>
+            
+            <Text size="xs" c="dimmed">
+              Note: All SSL proxies share the same self-signed certificate, which is generated on first start in the project's ssl folder.
             </Text>
           </Stack>
         </Tabs.Panel>

@@ -69,7 +69,7 @@ export class BackupService {
                 stopPromises.push(this.dispatcherManager.stopDispatcher());
             }
             if (instances.author || instances.publisher || instances.dispatcher) {
-                if (this.project.settings?.https?.enabled) {
+                if (this.isAnySslProxyEnabled()) {
                     stopPromises.push(this.httpsService.stopSslProxy());
                 }
             }
@@ -137,7 +137,7 @@ export class BackupService {
                 if (wasDispatcherRunning && !this.dispatcherManager.isDispatcherRunning()) {
                     additionalStartPromises.push(this.dispatcherManager.startDispatcher());
                 }
-                if (this.project.settings?.https?.enabled && (wasAuthorRunning || wasPublisherRunning || wasDispatcherRunning)) {
+                if (this.isAnySslProxyEnabled() && (wasAuthorRunning || wasPublisherRunning || wasDispatcherRunning)) {
                     additionalStartPromises.push(this.httpsService.startSslProxy());
                 }
                 
@@ -171,7 +171,7 @@ export class BackupService {
                 stopPromises.push(this.dispatcherManager.stopDispatcher());
             }
             if (instances.author || instances.publisher || instances.dispatcher) {
-                if (this.project.settings?.https?.enabled) {
+                if (this.isAnySslProxyEnabled()) {
                     stopPromises.push(this.httpsService.stopSslProxy());
                 }
             }
@@ -228,7 +228,7 @@ export class BackupService {
                 if (wasDispatcherRunning && !this.dispatcherManager.isDispatcherRunning()) {
                     additionalStartPromises.push(this.dispatcherManager.startDispatcher());
                 }
-                if (this.project.settings?.https?.enabled && (wasAuthorRunning || wasPublisherRunning || wasDispatcherRunning)) {
+                if (this.isAnySslProxyEnabled() && (wasAuthorRunning || wasPublisherRunning || wasDispatcherRunning)) {
                     additionalStartPromises.push(this.httpsService.startSslProxy());
                 }
                 
@@ -467,5 +467,17 @@ export class BackupService {
         } catch (error) {
             return false;
         }
+    }
+
+    /**
+     * Check if any SSL proxy is enabled
+     */
+    private isAnySslProxyEnabled(): boolean {
+        const ssl = this.project.settings?.ssl;
+        if (ssl) {
+            return ssl.author?.enabled || ssl.publisher?.enabled || ssl.dispatcher?.enabled;
+        }
+        // Fallback to old https settings
+        return this.isAnySslProxyEnabled() || false;
     }
 }

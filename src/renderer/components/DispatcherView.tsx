@@ -202,11 +202,13 @@ export const DispatcherView = ({
 
   const handleOpenDispatcherHttps = async () => {
     if (!projectSettings) return;
-    const port = projectSettings.https?.port || 443;
+    // Use new ssl.dispatcher settings, fallback to old https settings
+    const port = projectSettings.ssl?.dispatcher?.port || projectSettings.https?.port || 443;
     try {
-      //await window.electronAPI.openUrl(`https://localhost:${port}`);
-      console.log(`https://localhost:${port}/`);
-      await window.electronAPI.openUrl(`https://localhost/`);
+      // For port 443, don't include port in URL (it's the default)
+      const url = port === 443 ? 'https://localhost/' : `https://localhost:${port}/`;
+      console.log(`Opening: ${url}`);
+      await window.electronAPI.openUrl(url);
     } catch (error) {
       console.error('Error opening Dispatcher URL:', error);
     }

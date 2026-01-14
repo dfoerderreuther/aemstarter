@@ -11,6 +11,11 @@ export interface Project {
   classicQuickstartPath: string;
 }
 
+export interface SslProxySettings {
+  enabled: boolean;
+  port: number;
+}
+
 export interface ProjectSettings {
   version: string;
   general: {
@@ -39,9 +44,16 @@ export interface ProjectSettings {
     config: string;
     healthCheckPath: string;
   };
-  https: {
+  // Legacy https settings - kept for backward compatibility
+  https?: {
     enabled: boolean;
     port: number;
+  };
+  // New SSL proxy settings with separate proxies for author, publisher, and dispatcher
+  ssl?: {
+    author: SslProxySettings;
+    publisher: SslProxySettings;
+    dispatcher: SslProxySettings;
   };
   dev: {
     path: string;

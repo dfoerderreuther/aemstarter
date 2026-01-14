@@ -1,9 +1,16 @@
-import { Project, ProjectSettings } from '../../types/Project';
+import { Project, ProjectSettings, SslProxySettings } from '../../types/Project';
 import fs from 'fs';
 import path from 'path';
 import log from 'electron-log';
 
 export class ProjectSettingsService {
+
+    static getDefaultSslProxySettings(): SslProxySettings {
+        return {
+            enabled: false,
+            port: 443
+        };
+    }
 
     static getDefaultSettings(project: Project): ProjectSettings {
         return {
@@ -34,9 +41,19 @@ export class ProjectSettingsService {
                 config: "./config",
                 healthCheckPath: ""
             },
-            https: {
-                enabled: false,
-                port: 443
+            ssl: {
+                author: {
+                    enabled: false,
+                    port: 8502
+                },
+                publisher: {
+                    enabled: false,
+                    port: 8503
+                },
+                dispatcher: {
+                    enabled: false,
+                    port: 443
+                }
             },
             dev: {
                 path: "",
@@ -89,8 +106,57 @@ export class ProjectSettingsService {
         }
     }
 
+    /**
+     * Migrate old settings format (with https) to new format (with ssl).
+     * Old format: https: { enabled, port } - only dispatcher proxy
+     * New format: ssl: { author: {...}, publisher: {...}, dispatcher: {...} }
+     */
+    private static migrateOldSettings(settings: any, defaults: ProjectSettings): ProjectSettings['ssl'] {
+        // If new ssl settings exist, use them
+        if (settings.ssl) {
+            return {
+                author: {
+                    enabled: settings.ssl.author?.enabled ?? defaults.ssl!.author.enabled,
+                    port: settings.ssl.author?.port ?? defaults.ssl!.author.port
+                },
+                publisher: {
+                    enabled: settings.ssl.publisher?.enabled ?? defaults.ssl!.publisher.enabled,
+                    port: settings.ssl.publisher?.port ?? defaults.ssl!.publisher.port
+                },
+                dispatcher: {
+                    enabled: settings.ssl.dispatcher?.enabled ?? defaults.ssl!.dispatcher.enabled,
+                    port: settings.ssl.dispatcher?.port ?? defaults.ssl!.dispatcher.port
+                }
+            };
+        }
+        
+        // If old https settings exist, migrate them to the new ssl.dispatcher format
+        if (settings.https) {
+            log.info('[ProjectSettingsService] Migrating old https settings to new ssl format');
+            return {
+                author: {
+                    enabled: defaults.ssl!.author.enabled,
+                    port: defaults.ssl!.author.port
+                },
+                publisher: {
+                    enabled: defaults.ssl!.publisher.enabled,
+                    port: defaults.ssl!.publisher.port
+                },
+                dispatcher: {
+                    enabled: settings.https.enabled ?? defaults.ssl!.dispatcher.enabled,
+                    port: settings.https.port ?? defaults.ssl!.dispatcher.port
+                }
+            };
+        }
+        
+        // Return defaults
+        return defaults.ssl!;
+    }
+
     private static mergeWithDefaults(settings: any, defaults: ProjectSettings): ProjectSettings {
         // Deep merge to ensure all required properties exist
+        const mergedSsl = this.migrateOldSettings(settings, defaults);
+        
         return {
             version: settings.version || defaults.version,
             general: {
@@ -119,10 +185,12 @@ export class ProjectSettingsService {
                 config: settings.dispatcher?.config ?? defaults.dispatcher.config,
                 healthCheckPath: settings.dispatcher?.healthCheckPath ?? defaults.dispatcher.healthCheckPath
             },
+            // Keep old https settings for backward compatibility (read-only, synced from ssl.dispatcher)
             https: {
-                enabled: settings.https?.enabled ?? defaults.https.enabled,
-                port: settings.https?.port ?? defaults.https.port
+                enabled: mergedSsl.dispatcher.enabled,
+                port: mergedSsl.dispatcher.port
             },
+            ssl: mergedSsl,
             dev: {
                 path: settings.dev?.path ?? defaults.dev.path,
                 editor: settings.dev?.editor ?? defaults.dev.editor,

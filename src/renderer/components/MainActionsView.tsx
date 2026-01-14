@@ -199,7 +199,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
       if (publisherReady) {
         try {
           await window.electronAPI.startDispatcher(project);
-          if (project.settings?.https?.enabled || false) {
+          if (isAnySslProxyEnabled()) {
             await window.electronAPI.startSslProxy(project);
           }
         } catch (err) {
@@ -232,7 +232,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
         window.electronAPI.stopAemInstance(project, 'author'),
         window.electronAPI.stopAemInstance(project, 'publisher'),
         window.electronAPI.stopDispatcher(project),
-        project.settings?.https?.enabled || false ? window.electronAPI.stopSslProxy(project) : Promise.resolve()
+        isAnySslProxyEnabled() ? window.electronAPI.stopSslProxy(project) : Promise.resolve()
       ]);
     } catch (error) {
       console.error('Error stopping all instances:', error);
@@ -327,9 +327,21 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
     }
   };
 
+  /**
+   * Check if any SSL proxy is enabled (author, publisher, or dispatcher)
+   */
+  const isAnySslProxyEnabled = (): boolean => {
+    const ssl = project.settings?.ssl;
+    if (ssl) {
+      return ssl.author?.enabled || ssl.publisher?.enabled || ssl.dispatcher?.enabled;
+    }
+    // Fallback to old https settings
+    return project.settings?.https?.enabled || false;
+  };
+
   const handleStartSslProxy = async () => {
-    if (!project.settings?.https?.enabled || false) {
-      console.error('SSL proxy is not enabled in settings');
+    if (!isAnySslProxyEnabled()) {
+      console.error('No SSL proxy is enabled in settings');
       return;
     }
     try {
@@ -340,10 +352,6 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
   };
 
   const handleStopSslProxy = async () => {
-    if (!project.settings?.https?.enabled || false) {
-      console.error('SSL proxy is not enabled in settings');
-      return;
-    }
     try {
       await window.electronAPI.stopSslProxy(project);
     } catch (error) {
@@ -646,13 +654,18 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
 
         <Divider orientation="vertical" />
 
-        {project.settings?.https?.enabled && (
+        {isAnySslProxyEnabled() && (
           <Paper style={sectionStyles}>
             <Stack gap="xs">
-              <Text size="sm" fw={500} c="dimmed">SSL Proxy</Text>
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500} c="dimmed">SSL Proxy</Text>
+                <Badge variant="light" color={isSslProxyRunningState ? "green" : "red"} size="sm">
+                  {isSslProxyRunningState ? "Running" : "Stopped"}
+                </Badge>
+              </Group>
               <Group gap="xs" style={{ flexWrap: 'nowrap' }}>
                 <Button.Group>
-                  <Tooltip label="Start SSL Proxy">
+                  <Tooltip label="Start all enabled SSL Proxies">
                     <Button 
                       color="green" 
                       variant="filled"  
@@ -664,7 +677,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
                       <IconPlayerPlay size={16} />    
                     </Button>
                   </Tooltip>
-                  <Tooltip label="Stop SSL Proxy">
+                  <Tooltip label="Stop all SSL Proxies">
                     <Button 
                       color="red" 
                       variant="filled" 
@@ -682,7 +695,7 @@ export const MainActionsView: React.FC<MainActionsViewProps> = ({ project, shoul
           </Paper>
         )}
 
-        {project.settings?.https?.enabled && <Divider orientation="vertical" />}
+        {isAnySslProxyEnabled() && <Divider orientation="vertical" />}
 
         <Paper style={sectionStyles}>
           <Stack gap="xs">

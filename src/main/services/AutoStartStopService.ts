@@ -45,7 +45,7 @@ export class AutoStartStopService {
         // Now start dispatcher and SSL proxy after publisher is running
         const dispatcherStartPromises: Promise<void>[] = [];
         dispatcherStartPromises.push(this.dispatcherManager.startDispatcher())
-        if (this.project.settings?.https?.enabled || false) {
+        if (this.isAnySslProxyEnabled()) {
             dispatcherStartPromises.push(this.httpsService.startSslProxy());
         }
         await Promise.all(dispatcherStartPromises);
@@ -75,7 +75,7 @@ export class AutoStartStopService {
         // Now start dispatcher and SSL proxy after publisher is running
         const dispatcherStartPromises: Promise<void>[] = [];
         dispatcherStartPromises.push(this.dispatcherManager.startDispatcher())
-        if (this.project.settings?.https?.enabled || false) {
+        if (this.isAnySslProxyEnabled()) {
             dispatcherStartPromises.push(this.httpsService.startSslProxy());
         }
         await Promise.all(dispatcherStartPromises);
@@ -94,10 +94,22 @@ export class AutoStartStopService {
         if (this.dispatcherManager.isDispatcherRunning()) {
             stopPromises.push(this.dispatcherManager.stopDispatcher());
         }
-        if (this.project.settings?.https?.enabled || false) {
+        if (this.isAnySslProxyEnabled()) {
             stopPromises.push(this.httpsService.stopSslProxy());
         }
         await Promise.all(stopPromises);
+    }
+    
+    /**
+     * Check if any SSL proxy is enabled
+     */
+    private isAnySslProxyEnabled(): boolean {
+        const ssl = this.project.settings?.ssl;
+        if (ssl) {
+            return ssl.author?.enabled || ssl.publisher?.enabled || ssl.dispatcher?.enabled;
+        }
+        // Fallback to old https settings
+        return this.project.settings?.https?.enabled || false;
     }
 
     public async restartDispatcher() {
