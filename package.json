@@ -104,7 +104,7 @@
     "extract-zip": "^2.0.1",
     "http-proxy": "^1.18.1",
     "monaco-editor": "^0.52.2",
-    "node-pty": "^1.0.0",
+    "node-pty": "^1.1.0",
     "react": "^19.1.0",
     "react-arborist": "^3.4.3",
     "react-dom": "^19.1.0",
