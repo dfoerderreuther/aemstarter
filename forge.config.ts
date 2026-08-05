@@ -37,7 +37,11 @@ const config: ForgeConfig = {
     },
     executableName: 'aem-starter',
     // Add extra resources if needed
-    extraResource: [],
+    extraResource: [
+      // Pre-built, self-contained MCP server bundles (one folder per SDK major).
+      // Copied into a project's ./mcp folder when Claude Code is enabled.
+      './resources/mcp-server/v1',
+    ],
     // Ensure native modules are properly handled across architectures
     ignore: [
       /^\/\.vscode\//,

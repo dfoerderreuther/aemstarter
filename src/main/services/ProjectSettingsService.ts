@@ -56,9 +56,16 @@ export class ProjectSettingsService {
                 }
             },
             dev: {
-                path: "",
+                path: path.join(project.folderPath, 'dev'),
                 editor: "",
-                customEditorPath: ""
+                customEditorPath: "",
+                claudeCodeEnabled: false,
+                claudeCodeMcpSdkVersion: "^1.0.0",
+                claudeCodeMcpTargets: {
+                    author: true,
+                    publisher: true,
+                    dispatcher: true
+                }
             }
         };
     }
@@ -77,9 +84,21 @@ export class ProjectSettingsService {
                 // Validate and merge with defaults to ensure all required fields exist
                 const defaultSettings = this.getDefaultSettings(project);
                 const mergedSettings = this.mergeWithDefaults(parsedSettings, defaultSettings);
-                
+
                 log.info('[ProjectSettingsService] Final javaHome after merge:', mergedSettings.general.javaHome);
-                
+
+                // Mandatory dev path: ensure the dev folder exists on disk, and if it was
+                // backfilled from an empty/legacy value, persist it so it becomes visible/editable.
+                const devPathWasEmpty = !parsedSettings.dev?.path;
+                this.ensureDevFolder(mergedSettings.dev.path);
+                if (devPathWasEmpty) {
+                    try {
+                        this.saveSettings(project, mergedSettings);
+                    } catch (error) {
+                        log.error('[ProjectSettingsService] Failed to persist backfilled dev path:', error);
+                    }
+                }
+
                 return mergedSettings;
             } catch (error) {
                 log.error('Error parsing settings file:', error);
@@ -87,9 +106,26 @@ export class ProjectSettingsService {
                 return this.getDefaultSettings(project);
             }
         }
-        
+
         log.info('[ProjectSettingsService] No settings file found, using defaults');
-        return this.getDefaultSettings(project);
+        const defaults = this.getDefaultSettings(project);
+        this.ensureDevFolder(defaults.dev.path);
+        return defaults;
+    }
+
+    /**
+     * Ensure the development folder exists on disk. Best-effort: failures (e.g. read-only
+     * parent) are logged but never block project loading.
+     */
+    private static ensureDevFolder(devPath: string): void {
+        try {
+            if (devPath && !fs.existsSync(devPath)) {
+                fs.mkdirSync(devPath, { recursive: true });
+                log.info('[ProjectSettingsService] Created dev folder:', devPath);
+            }
+        } catch (error) {
+            log.error('[ProjectSettingsService] Failed to create dev folder:', devPath, error);
+        }
     }
 
     static saveSettings(project: Project, settings: ProjectSettings): void {
@@ -192,9 +228,18 @@ export class ProjectSettingsService {
             },
             ssl: mergedSsl,
             dev: {
-                path: settings.dev?.path ?? defaults.dev.path,
+                // Empty string falls back to the default (<folderPath>/dev), so a blanked
+                // Development Path is re-resolved instead of staying empty.
+                path: settings.dev?.path || defaults.dev.path,
                 editor: settings.dev?.editor ?? defaults.dev.editor,
-                customEditorPath: settings.dev?.customEditorPath ?? defaults.dev.customEditorPath
+                customEditorPath: settings.dev?.customEditorPath ?? defaults.dev.customEditorPath,
+                claudeCodeEnabled: settings.dev?.claudeCodeEnabled ?? defaults.dev.claudeCodeEnabled,
+                claudeCodeMcpSdkVersion: settings.dev?.claudeCodeMcpSdkVersion || defaults.dev.claudeCodeMcpSdkVersion,
+                claudeCodeMcpTargets: {
+                    author: settings.dev?.claudeCodeMcpTargets?.author ?? defaults.dev.claudeCodeMcpTargets.author,
+                    publisher: settings.dev?.claudeCodeMcpTargets?.publisher ?? defaults.dev.claudeCodeMcpTargets.publisher,
+                    dispatcher: settings.dev?.claudeCodeMcpTargets?.dispatcher ?? defaults.dev.claudeCodeMcpTargets.dispatcher
+                }
             }
         };
     }

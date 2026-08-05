@@ -16,6 +16,7 @@ AEM-Starter is a desktop application that streamlines the setup and management o
 - **SDK Update Automation** for quick update or change of SDK with automated setup
 - **SSL Proxy** for quick setup of https support with a self signed certificate (openssl required)
 - **Connection to AEM development project** for quick access to configurations, code and build tasks
+- **Claude Code integration** with MCP connections to the running Author, Publisher and Dispatcher
 - Limited **Classic AEM support** by leveraging Cloud SDK dispatcher
 
 ## Requirements
@@ -112,6 +113,16 @@ This is a simple file management view. The purpose of this function is to provid
 Terminal application that starts in your specific project folder. The left column contains common commands that might be useful. Clicking a command only writes it to the prompt; you must execute it manually.
 
 AEM-Starter Logging lets you follow the logs of this application, which might be useful if something goes wrong.
+
+### Development Path
+
+Every project has a Development Path (Settings -> Dev). If left empty, a `./dev` folder is created inside the project and used automatically. This is where the Dev Files, Dev Terminal and Claude Code tabs operate.
+
+### Claude Code
+
+Enable in Settings -> Dev -> Claude Code (requires the [Claude Code CLI](https://docs.claude.com/en/docs/claude-code/setup)). Adds a Claude Code tab that runs `claude` in a terminal and connects it, via MCP, to your running AEM instances so Claude can read and write against them.
+
+Each target (Author, Publisher, Dispatcher) is a separate MCP connection you can toggle on or off. Author/Publisher expose JCR content read/write and queries (using the AEM SDK default `admin`/`admin`); Dispatcher exposes config, cache and container inspection. A pre-built MCP server ships with the app — no install step.
 
 ## Thank you for using AEM-Starter
 

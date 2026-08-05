@@ -59,5 +59,13 @@ export interface ProjectSettings {
     path: string;
     editor: string;
     customEditorPath: string;
+    // Claude Code integration
+    claudeCodeEnabled: boolean;
+    claudeCodeMcpSdkVersion: string;
+    claudeCodeMcpTargets: {
+      author: boolean;
+      publisher: boolean;
+      dispatcher: boolean;
+    };
   };
 } 

@@ -144,10 +144,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
     setSettings({
       ...settings,
       dev: {
-        ...(settings.dev || { path: '', editor: 'code', customEditorPath: '' }),
+        ...(settings.dev || {
+          path: '', editor: 'code', customEditorPath: '',
+          claudeCodeEnabled: false, claudeCodeMcpSdkVersion: '^1.0.0',
+          claudeCodeMcpTargets: { author: true, publisher: true, dispatcher: true }
+        }),
         [field]: value
       }
     });
+  };
+
+  const updateClaudeTarget = (target: 'author' | 'publisher' | 'dispatcher', value: boolean) => {
+    if (!settings) return;
+    const currentTargets = settings.dev?.claudeCodeMcpTargets || { author: true, publisher: true, dispatcher: true };
+    updateDevSettings('claudeCodeMcpTargets', { ...currentTargets, [target]: value });
   };
 
   const handleSelectDevPath = async () => {
@@ -495,6 +505,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
                 </ActionIcon>
               </Group>
             )}
+
+            {/* Claude Code integration */}
+            <Box style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'var(--mantine-color-dark-6)' }}>
+              <Stack gap="sm">
+                <Text fw={500}>Claude Code</Text>
+                <Checkbox
+                  label="Enable Claude Code integration"
+                  description="Adds a Claude Code tab with MCP connections to the running AEM instances."
+                  checked={settings.dev?.claudeCodeEnabled || false}
+                  onChange={(event) => updateDevSettings('claudeCodeEnabled', event.currentTarget.checked)}
+                />
+
+                {settings.dev?.claudeCodeEnabled && (
+                  <>
+                    <Select
+                      label="MCP SDK Version"
+                      description="Version of @modelcontextprotocol/sdk the bundled MCP server uses."
+                      value={settings.dev?.claudeCodeMcpSdkVersion || '^1.0.0'}
+                      onChange={(value) => value && updateDevSettings('claudeCodeMcpSdkVersion', value)}
+                      data={[
+                        { value: '^1.0.0', label: '1.x (@modelcontextprotocol/sdk ^1.0.0)' }
+                      ]}
+                    />
+                    <Text size="sm" fw={500}>MCP Connections</Text>
+                    <Text size="xs" c="dimmed">
+                      Each enabled target becomes an MCP connection Claude can use against the running instance. Author uses admin/admin.
+                    </Text>
+                    <Checkbox
+                      label="aem-author"
+                      description={`Content read/write against http://localhost:${settings.author?.port || 4502}`}
+                      checked={settings.dev?.claudeCodeMcpTargets?.author ?? true}
+                      onChange={(event) => updateClaudeTarget('author', event.currentTarget.checked)}
+                    />
+                    <Checkbox
+                      label="aem-publisher"
+                      description={`Content read/write against http://localhost:${settings.publisher?.port || 4503}`}
+                      checked={settings.dev?.claudeCodeMcpTargets?.publisher ?? true}
+                      onChange={(event) => updateClaudeTarget('publisher', event.currentTarget.checked)}
+                    />
+                    <Checkbox
+                      label="aem-dispatcher"
+                      description="Cache, config and container inspection for the dispatcher"
+                      checked={settings.dev?.claudeCodeMcpTargets?.dispatcher ?? true}
+                      onChange={(event) => updateClaudeTarget('dispatcher', event.currentTarget.checked)}
+                    />
+                  </>
+                )}
+              </Stack>
+            </Box>
           </Stack>
         </Tabs.Panel>
       </Tabs>

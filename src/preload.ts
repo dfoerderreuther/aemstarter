@@ -233,6 +233,12 @@ contextBridge.exposeInMainWorld(
     openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') =>
       ipcRenderer.invoke('open-dev-project', project, type),
 
+    // Claude Code integration
+    checkClaudeCode: () =>
+      ipcRenderer.invoke('check-claude-code'),
+    setupClaudeCodeMcp: (project: Project) =>
+      ipcRenderer.invoke('setup-claude-code-mcp', project),
+
     // Terminal event listeners
     onTerminalData: (callback: (terminalId: string, data: string) => void) => {
       const handler = (_: Electron.IpcRendererEvent, terminalId: string, data: string) => callback(terminalId, data);

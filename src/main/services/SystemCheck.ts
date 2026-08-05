@@ -48,6 +48,19 @@ export class SystemCheck {
         };
     }
 
+    /**
+     * Returns the installed Claude Code CLI version string, or null if `claude` is not
+     * on the PATH. Used to gate the Claude Code tab and offer an install link instead.
+     */
+    async checkClaudeCodeVersion(): Promise<string | null> {
+        try {
+            const { stdout } = await execAsync('claude --version');
+            return stdout.trim() || 'installed';
+        } catch (error) {
+            return null;
+        }
+    }
+
     private async checkJavaAvailability(): Promise<boolean> {
         return this.checkAvailability('java -version');
     }

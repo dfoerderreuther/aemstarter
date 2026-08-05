@@ -249,6 +249,15 @@ declare global {
 
       // Dev project utilities
       openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') => Promise<boolean>;
+
+      // Claude Code integration
+      checkClaudeCode: () => Promise<{ available: boolean; version?: string }>;
+      setupClaudeCodeMcp: (project: Project) => Promise<{
+        mcpDir: string;
+        mcpConfigPath: string;
+        serverPath: string;
+        targets: string[];
+      }>;
       
       // Automation Tasks
       runAutomationTask: (project: Project, task: string, parameters?: { [key: string]: string | boolean | number | string[] }) => Promise<boolean>;

@@ -1,0 +1,13 @@
+{
+  "name": "aem-starter-mcp-server",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Bundled MCP server that exposes a running AEM instance (author/publisher/dispatcher) to Claude Code. Built into self-contained bundles under ./v1, ./v2, ... — no node_modules shipped.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

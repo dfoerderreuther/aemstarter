@@ -4,15 +4,17 @@ import {
   IconColumns3, 
   IconColumns1, 
   IconServer, 
-  IconFolder, 
+  IconFolder,
   IconTerminal
 } from '@tabler/icons-react';
+import { ClaudeIcon } from './icons/ClaudeIcon';
 import { Project } from '../../types/Project';
 import { AemInstanceView } from './AemInstanceView';
 import { FilesView } from './files/FilesView';
 import { DispatcherView } from './DispatcherView';
 import { MainActionsView } from './MainActionsView';
 import { TerminalTab } from './TerminalTab';
+import { ClaudeCodeTab } from './ClaudeCodeTab';
 
 interface ProjectViewProps {
   project: Project;
@@ -88,8 +90,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
           <Divider orientation='vertical' />
           <Tabs.Tab value="devfiles" color="green" leftSection={<IconFolder size={16} />} disabled={!project.settings?.dev?.path}>Dev Files</Tabs.Tab>
           <Tabs.Tab value="devterminal" color="green" leftSection={<IconTerminal size={16} />} disabled={!project.settings?.dev?.path}>Dev Terminal</Tabs.Tab>
-          
-          
+          {project.settings?.dev?.claudeCodeEnabled && (
+            <Tabs.Tab value="claudecode" color="green" leftSection={<ClaudeIcon size={16} />} disabled={!project.settings?.dev?.path}>Claude Code</Tabs.Tab>
+          )}
+
+
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
             <Button.Group>
               <Tooltip label="Columns">
@@ -253,6 +258,12 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
         <Tabs.Panel value="devterminal" keepMounted style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <TerminalTab rootPath={project.settings?.dev?.path || ''} visible={activeTab === 'devterminal'} type="dev" project={project} />
         </Tabs.Panel>
+
+        {project.settings?.dev?.claudeCodeEnabled && (
+          <Tabs.Panel value="claudecode" keepMounted style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <ClaudeCodeTab project={project} visible={activeTab === 'claudecode'} onProjectUpdated={onProjectUpdated} />
+          </Tabs.Panel>
+        )}
       </Tabs>
 
     </Stack>

@@ -11,6 +11,7 @@ import { Project, ProjectSettings } from './types/Project';
 import { BackupService } from './main/services/BackupService';
 import { SystemCheck } from './main/services/SystemCheck';
 import { DevProjectUtils } from './main/services/DevProjectUtils';
+import { ClaudeCodeService } from './main/services/ClaudeCodeService';
 import { AemInstanceManagerRegister } from './main/AemInstanceManagerRegister';
 import { DispatcherManagerRegister } from './main/DispatcherManagerRegister';
 import { ProjectManagerRegister } from './main/ProjectManagerRegister';
@@ -737,6 +738,25 @@ ipcMain.handle('check-editor-availability', async () => {
     return await systemCheck.checkEditorAvailability();
   } catch (error) {
     log.error('Error checking editor availability:', error);
+    throw error;
+  }
+});
+
+// Claude Code integration
+ipcMain.handle('check-claude-code', async () => {
+  try {
+    return await ClaudeCodeService.checkAvailability();
+  } catch (error) {
+    log.error('Error checking Claude Code availability:', error);
+    return { available: false };
+  }
+});
+
+ipcMain.handle('setup-claude-code-mcp', async (_, project: Project) => {
+  try {
+    return ClaudeCodeService.setup(project);
+  } catch (error) {
+    log.error('Error setting up Claude Code MCP:', error);
     throw error;
   }
 });
