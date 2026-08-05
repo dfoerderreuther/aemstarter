@@ -13,8 +13,11 @@ jobs:
     environment: build
     
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        # windows-2022 pinned: windows-latest ships Visual Studio 18, which the
+        # node-gyp bundled with node-pty cannot detect (native build fails).
+        os: [macos-latest, windows-2022, ubuntu-latest]
         
     steps:
     - uses: actions/checkout@v4
@@ -71,7 +74,7 @@ jobs:
         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     
     - name: Build for Windows
-      if: matrix.os == 'windows-latest'
+      if: matrix.os == 'windows-2022'
       run: npm run make:windows
     
     - name: Build for Linux
@@ -86,7 +89,7 @@ jobs:
         path: out/make/**/*
     
     - name: Upload Windows artifacts
-      if: matrix.os == 'windows-latest'
+      if: matrix.os == 'windows-2022'
       uses: actions/upload-artifact@v4
       with:
         name: windows-build
