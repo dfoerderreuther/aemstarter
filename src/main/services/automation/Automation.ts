@@ -42,6 +42,11 @@ export class Automation {
         await automation.run(type, mainWindow, parameters);
     }
 
+    /** The registered automation task types (used by the MCP control endpoint). */
+    static getTaskTypes(): string[] {
+        return [...Automation.taskRegistry.keys()];
+    }
+
     private async run(type: string, mainWindow?: BrowserWindow, parameters?: { [key: string]: string | boolean | number }) : Promise<void> {
         const TaskConstructor = Automation.taskRegistry.get(type);
         if (TaskConstructor) {

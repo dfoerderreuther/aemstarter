@@ -67,5 +67,8 @@ export interface ProjectSettings {
       publisher: boolean;
       dispatcher: boolean;
     };
+    // When false, the MCP control endpoint refuses mutating tools (start/stop,
+    // settings, restore, package install). Defaults to allowed when unset.
+    claudeCodeControl?: boolean;
   };
 } 

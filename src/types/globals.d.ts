@@ -253,10 +253,11 @@ declare global {
       // Claude Code integration
       checkClaudeCode: () => Promise<{ available: boolean; version?: string }>;
       setupClaudeCodeMcp: (project: Project) => Promise<{
-        mcpDir: string;
         mcpConfigPath: string;
-        serverPath: string;
+        port: number;
+        url: string;
         targets: string[];
+        endpoints: Record<string, { type: string; url: string }>;
       }>;
       
       // Automation Tasks

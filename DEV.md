@@ -4,8 +4,13 @@
 
 ### release: 
 
+Patch version
 ```
 npm run version:patch
+```
+Minor version: 
+```
+npm run version:minor
 ```
 
 ### uninstall

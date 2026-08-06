@@ -12,6 +12,7 @@ import { BackupService } from './main/services/BackupService';
 import { SystemCheck } from './main/services/SystemCheck';
 import { DevProjectUtils } from './main/services/DevProjectUtils';
 import { ClaudeCodeService } from './main/services/ClaudeCodeService';
+import { McpServerRegister } from './main/services/mcp/McpServerRegister';
 import { AemInstanceManagerRegister } from './main/AemInstanceManagerRegister';
 import { DispatcherManagerRegister } from './main/DispatcherManagerRegister';
 import { ProjectManagerRegister } from './main/ProjectManagerRegister';
@@ -754,7 +755,7 @@ ipcMain.handle('check-claude-code', async () => {
 
 ipcMain.handle('setup-claude-code-mcp', async (_, project: Project) => {
   try {
-    return ClaudeCodeService.setup(project);
+    return await ClaudeCodeService.setup(project);
   } catch (error) {
     log.error('Error setting up Claude Code MCP:', error);
     throw error;
@@ -1848,6 +1849,10 @@ app.on('ready', () => {
         log.info('[app] before-quit: Cleaning up terminals...');
         terminalService.cleanup();
       }
+
+      // Shut down the in-app MCP servers.
+      log.info('[app] before-quit: Stopping MCP servers...');
+      await McpServerRegister.stopAll();
   
       const project = await getCurrentProject();
       if (project) {

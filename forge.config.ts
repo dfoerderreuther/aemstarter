@@ -36,12 +36,9 @@ const config: ForgeConfig = {
       teamId: process.env.APPLE_TEAM_ID || '',
     },
     executableName: 'aem-starter',
-    // Add extra resources if needed
-    extraResource: [
-      // Pre-built, self-contained MCP server bundles (one folder per SDK major).
-      // Copied into a project's ./mcp folder when Claude Code is enabled.
-      './resources/mcp-server/v1',
-    ],
+    // The MCP server now runs in-app (Electron main process); no external
+    // bundle is shipped or copied into projects.
+    extraResource: [],
     // Ensure native modules are properly handled across architectures
     ignore: [
       /^\/\.vscode\//,

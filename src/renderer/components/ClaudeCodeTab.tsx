@@ -1,8 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Stack, Group, Text, Checkbox, Button, Anchor, Loader, ActionIcon } from '@mantine/core';
-import { IconChevronLeft, IconChevronRight, IconReload, IconRefresh, IconExternalLink } from '@tabler/icons-react';
+import { Box, Stack, Group, Text, Checkbox, Button, Anchor, Loader, ActionIcon, Code, CopyButton, Tooltip } from '@mantine/core';
+import { IconChevronLeft, IconChevronRight, IconReload, IconRefresh, IconExternalLink, IconCopy, IconCheck } from '@tabler/icons-react';
 import { Terminal, TerminalRef } from './Terminal';
 import { Project, ProjectSettings } from '../../types/Project';
+
+interface McpInfo {
+  port: number;
+  url: string;
+  endpoints: Record<string, { type: string; url: string }>;
+}
 
 interface ClaudeCodeTabProps {
   project: Project;
@@ -11,6 +17,10 @@ interface ClaudeCodeTabProps {
 }
 
 const CLAUDE_INSTALL_URL = 'https://docs.claude.com/en/docs/claude-code/setup';
+
+// Launch Claude in auto permission mode so MCP-driven steering runs without
+// per-action prompts.
+const CLAUDE_LAUNCH_CMD = 'claude --permission-mode auto';
 
 type ClaudeState = 'checking' | 'missing' | 'ready';
 
@@ -21,6 +31,7 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
   const [activated, setActivated] = useState(false);
   const [applying, setApplying] = useState(false);
   const [statusNote, setStatusNote] = useState<string | null>(null);
+  const [mcpInfo, setMcpInfo] = useState<McpInfo | null>(null);
 
   // Local, editable copy of the Claude Code connection toggles for the sidebar.
   const dev = project.settings.dev;
@@ -52,8 +63,9 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
           setClaudeState('missing');
           return;
         }
-        await window.electronAPI.setupClaudeCodeMcp(project);
+        const result = await window.electronAPI.setupClaudeCodeMcp(project);
         if (cancelled) return;
+        setMcpInfo(result);
         setClaudeState('ready');
       } catch (error) {
         console.error('Failed to initialize Claude Code:', error);
@@ -68,7 +80,7 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
     if (launchedRef.current) return;
     launchedRef.current = true;
     setTimeout(() => {
-      terminalRef.current?.writeToShell('claude\n');
+      terminalRef.current?.writeToShell(`${CLAUDE_LAUNCH_CMD}\n`);
       terminalRef.current?.focus();
     }, 400);
   }, []);
@@ -78,7 +90,7 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
     terminalRef.current?.writeToShell('\x03');
     setTimeout(() => {
       terminalRef.current?.clear();
-      terminalRef.current?.writeToShell('claude\n');
+      terminalRef.current?.writeToShell(`${CLAUDE_LAUNCH_CMD}\n`);
       terminalRef.current?.focus();
     }, 150);
   }, []);
@@ -96,8 +108,9 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
       };
       const updated = await window.electronAPI.saveProjectSettings(project, updatedSettings);
       if (updated && onProjectUpdated) onProjectUpdated(updated);
-      await window.electronAPI.setupClaudeCodeMcp(updated || project);
-      setStatusNote('MCP config updated. Start a new Claude session (type "claude") to pick it up.');
+      const result = await window.electronAPI.setupClaudeCodeMcp(updated || project);
+      setMcpInfo(result);
+      setStatusNote('MCP config updated. Restart the Claude session (icon top-right) to pick it up.');
     } catch (error) {
       console.error('Failed to update MCP config:', error);
       setStatusNote('Failed to update MCP config. See console.');
@@ -221,8 +234,49 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
                 <Text size="xs" c="dimmed">{statusNote}</Text>
               )}
               <Text size="xs" c="dimmed">
-                Changes apply to new Claude sessions. Type <code>claude</code> in the terminal to start one.
+                Changes apply to new Claude sessions. The tab launches <code>claude --permission-mode auto</code>; use the restart icon (top-right) to start a fresh one.
               </Text>
+
+              {mcpInfo && (
+                <Stack gap={6} mt="sm" pt="sm" style={{ borderTop: '1px solid #2C2E33' }}>
+                  <Group justify="space-between" align="center" wrap="nowrap">
+                    <Text size="xs" fw={700} c="dimmed">CONNECTION</Text>
+                    <Text size="xs" c="teal">● 127.0.0.1:{mcpInfo.port}</Text>
+                  </Group>
+                  <Text size="xs" c="dimmed">
+                    In-app MCP server (loopback). Connect another Claude session with the config below.
+                  </Text>
+
+                  <Group justify="space-between" align="center" wrap="nowrap">
+                    <Text size="xs" c="dimmed">.mcp.json</Text>
+                    <CopyButton value={JSON.stringify({ mcpServers: mcpInfo.endpoints }, null, 2)}>
+                      {({ copied, copy }) => (
+                        <Tooltip label={copied ? 'Copied' : 'Copy .mcp.json'} withArrow>
+                          <ActionIcon size="xs" variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                            {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                    </CopyButton>
+                  </Group>
+                  <Code block style={{ fontSize: 10, maxHeight: 160, overflow: 'auto' }}>
+                    {JSON.stringify({ mcpServers: mcpInfo.endpoints }, null, 2)}
+                  </Code>
+
+                  <Group justify="space-between" align="center" wrap="nowrap">
+                    <Text size="xs" c="dimmed">claude mcp add</Text>
+                    <CopyButton value={Object.entries(mcpInfo.endpoints).map(([name, e]) => `claude mcp add --transport http ${name} ${e.url}`).join('\n')}>
+                      {({ copied, copy }) => (
+                        <Tooltip label={copied ? 'Copied' : 'Copy commands'} withArrow>
+                          <ActionIcon size="xs" variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                            {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                    </CopyButton>
+                  </Group>
+                </Stack>
+              )}
             </Stack>
           )}
         </Box>
