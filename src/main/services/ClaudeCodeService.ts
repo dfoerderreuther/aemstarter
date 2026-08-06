@@ -26,20 +26,15 @@ export interface ClaudeCodeSetupResult {
  */
 export class ClaudeCodeService {
 
-    /** Map an @modelcontextprotocol/sdk version range to a bundled build folder name. */
-    private static versionFolder(sdkVersion: string): string {
-        const match = /(\d+)/.exec(sdkVersion || '');
-        const major = match ? match[1] : '1';
-        return `v${major}`;
-    }
+    /** Folder name of the latest bundled MCP server build (ships in resources). */
+    private static readonly LATEST_BUILD = 'v1';
 
-    /** Absolute path to a bundled MCP server build, resolved for dev vs packaged app. */
-    private static vendorDir(sdkVersion: string): string {
-        const folder = this.versionFolder(sdkVersion);
+    /** Absolute path to the bundled MCP server build, resolved for dev vs packaged app. */
+    private static vendorDir(): string {
         const base = process.env.NODE_ENV === 'development'
             ? path.join(__dirname, '../../resources/mcp-server')
             : process.resourcesPath;
-        return path.join(base, folder);
+        return path.join(base, this.LATEST_BUILD);
     }
 
     static async checkAvailability(): Promise<ClaudeCodeAvailability> {
@@ -59,14 +54,13 @@ export class ClaudeCodeService {
             throw new Error('Development Path is not set for this project');
         }
 
-        const sdkVersion = settings.dev?.claudeCodeMcpSdkVersion || '^1.0.0';
         const mcpDir = path.join(project.folderPath, 'mcp');
         const serverPath = path.join(mcpDir, 'server.cjs');
         const versionMarker = path.join(mcpDir, '.version');
 
-        // Copy the bundled server if it's missing or the selected version changed.
-        const vendorServer = path.join(this.vendorDir(sdkVersion), 'server.cjs');
-        const folder = this.versionFolder(sdkVersion);
+        // Copy the bundled server if it's missing or an older build is installed.
+        const folder = this.LATEST_BUILD;
+        const vendorServer = path.join(this.vendorDir(), 'server.cjs');
         const currentMarker = fs.existsSync(versionMarker)
             ? fs.readFileSync(versionMarker, 'utf8').trim()
             : '';

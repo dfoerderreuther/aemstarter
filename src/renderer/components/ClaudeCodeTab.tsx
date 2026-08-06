@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Stack, Group, Text, Checkbox, Select, Button, Anchor, Loader, Divider, ActionIcon } from '@mantine/core';
+import { Box, Stack, Group, Text, Checkbox, Button, Anchor, Loader, ActionIcon } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight, IconReload, IconRefresh, IconExternalLink } from '@tabler/icons-react';
 import { Terminal, TerminalRef } from './Terminal';
 import { Project, ProjectSettings } from '../../types/Project';
@@ -22,9 +22,8 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
   const [applying, setApplying] = useState(false);
   const [statusNote, setStatusNote] = useState<string | null>(null);
 
-  // Local, editable copy of the Claude Code settings for the sidebar.
+  // Local, editable copy of the Claude Code connection toggles for the sidebar.
   const dev = project.settings.dev;
-  const [sdkVersion, setSdkVersion] = useState(dev?.claudeCodeMcpSdkVersion || '^1.0.0');
   const [targets, setTargets] = useState(dev?.claudeCodeMcpTargets || { author: true, publisher: true, dispatcher: true });
 
   const terminalRef = useRef<TerminalRef>(null);
@@ -84,7 +83,7 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
     }, 150);
   }, []);
 
-  const persistAndReapply = useCallback(async (nextSdkVersion: string, nextTargets: typeof targets) => {
+  const persistAndReapply = useCallback(async (nextTargets: typeof targets) => {
     setApplying(true);
     setStatusNote(null);
     try {
@@ -92,7 +91,6 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
         ...project.settings,
         dev: {
           ...project.settings.dev,
-          claudeCodeMcpSdkVersion: nextSdkVersion,
           claudeCodeMcpTargets: nextTargets,
         },
       };
@@ -111,13 +109,7 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
   const handleTargetChange = (target: 'author' | 'publisher' | 'dispatcher', value: boolean) => {
     const next = { ...targets, [target]: value };
     setTargets(next);
-    persistAndReapply(sdkVersion, next);
-  };
-
-  const handleSdkVersionChange = (value: string | null) => {
-    if (!value) return;
-    setSdkVersion(value);
-    persistAndReapply(value, targets);
+    persistAndReapply(next);
   };
 
   if (claudeState === 'missing') {
@@ -192,19 +184,7 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
 
           {!isCollapsed && (
             <Stack gap="sm" p="md" pt={44}>
-              <Text size="xs" fw={700} c="dimmed">MCP SERVER</Text>
-              <Select
-                label="SDK Version"
-                size="xs"
-                value={sdkVersion}
-                onChange={handleSdkVersionChange}
-                disabled={applying}
-                data={[{ value: '^1.0.0', label: '@modelcontextprotocol/sdk ^1.0.0' }]}
-                comboboxProps={{ withinPortal: true }}
-              />
-
-              <Divider my="xs" />
-              <Text size="xs" fw={700} c="dimmed">CONNECTIONS</Text>
+              <Text size="xs" fw={700} c="dimmed">MCP CONNECTIONS</Text>
               <Checkbox
                 size="xs"
                 label="aem-author"
@@ -232,7 +212,7 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
                 variant="light"
                 leftSection={<IconRefresh size={14} />}
                 loading={applying}
-                onClick={() => persistAndReapply(sdkVersion, targets)}
+                onClick={() => persistAndReapply(targets)}
               >
                 Re-apply MCP config
               </Button>

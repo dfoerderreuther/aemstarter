@@ -22,6 +22,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [aemSdkPath, setAemSdkPath] = useState('');
   const [licensePath, setLicensePath] = useState('');
   const [runFirstStartSetup, setRunFirstStartSetup] = useState(true);
+  const [claudeCodeEnabled, setClaudeCodeEnabled] = useState(true);
   const [classic, setClassic] = useState(false);
   const [classicQuickstartPath, setClassicQuickstartPath] = useState('');
   const [javaHome, setJavaHome] = useState('');
@@ -133,20 +134,22 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         classicQuickstartPath
       );
       
-      // Update project settings with the selected Java home
+      // Persist creation-time settings: selected Java home and Claude Code toggle.
       let finalProject = project;
-      if (javaHome) {
-        const updatedSettings = {
-          ...project.settings,
-          general: {
-            ...project.settings.general,
-            javaHome: javaHome
-          }
-        };
-        const updatedProject = await window.electronAPI.saveProjectSettings(project, updatedSettings);
-        if (updatedProject) {
-          finalProject = updatedProject;
+      const updatedSettings = {
+        ...project.settings,
+        general: {
+          ...project.settings.general,
+          javaHome: javaHome || project.settings.general.javaHome
+        },
+        dev: {
+          ...project.settings.dev,
+          claudeCodeEnabled
         }
+      };
+      const updatedProject = await window.electronAPI.saveProjectSettings(project, updatedSettings);
+      if (updatedProject) {
+        finalProject = updatedProject;
       }
       
               // Start the installation procedure and wait for it to complete
@@ -403,7 +406,14 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               checked={runFirstStartSetup}
               onChange={(e) => setRunFirstStartSetup(e.target.checked)}
               description="This will start all instances, configure replication between Author, Publisher, and Dispatcher instances and load matching oak-run.jar."
-              
+
+            />
+
+            <Checkbox
+              label="Enable Claude Code integration"
+              checked={claudeCodeEnabled}
+              onChange={(e) => setClaudeCodeEnabled(e.target.checked)}
+              description="Adds a Claude Code tab with MCP connections to the running AEM instances. Requires the Claude Code CLI."
             />
           </Stack>
         </Paper>

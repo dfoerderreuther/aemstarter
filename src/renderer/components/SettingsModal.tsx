@@ -519,15 +519,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
 
                 {settings.dev?.claudeCodeEnabled && (
                   <>
-                    <Select
-                      label="MCP SDK Version"
-                      description="Version of @modelcontextprotocol/sdk the bundled MCP server uses."
-                      value={settings.dev?.claudeCodeMcpSdkVersion || '^1.0.0'}
-                      onChange={(value) => value && updateDevSettings('claudeCodeMcpSdkVersion', value)}
-                      data={[
-                        { value: '^1.0.0', label: '1.x (@modelcontextprotocol/sdk ^1.0.0)' }
-                      ]}
-                    />
                     <Text size="sm" fw={500}>MCP Connections</Text>
                     <Text size="xs" c="dimmed">
                       Each enabled target becomes an MCP connection Claude can use against the running instance. Author uses admin/admin.

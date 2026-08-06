@@ -7,6 +7,10 @@ import { enhancedExecAsync as execAsync } from '../enhancedExecAsync';
 import { JavaService } from './JavaService';
 import log from 'electron-log';
 import { enhancedExecAsync } from '../enhancedExecAsync';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+const execFileAsync = promisify(execFile);
 
 export class SystemCheck {
 
@@ -53,8 +57,23 @@ export class SystemCheck {
      * on the PATH. Used to gate the Claude Code tab and offer an install link instead.
      */
     async checkClaudeCodeVersion(): Promise<string | null> {
+        // A packaged .app launched from Finder/Dock inherits only a minimal PATH,
+        // so `claude` (typically under nvm/volta/~/.local/bin or ~/.claude/local) is
+        // invisible to a plain exec. Resolve it through the user's interactive login
+        // shell — the same context the Dev Terminal (a pty) already uses — so detection
+        // matches where the CLI actually runs.
+        if (process.platform !== 'win32') {
+            const shell = process.env.SHELL || '/bin/zsh';
+            try {
+                const { stdout } = await execFileAsync(shell, ['-ilc', 'claude --version'], { timeout: 8000 });
+                const line = stdout.split('\n').map(l => l.trim()).filter(Boolean).pop();
+                if (line) return line;
+            } catch (error) {
+                // Fall through to the enhanced-PATH attempt below.
+            }
+        }
         try {
-            const { stdout } = await execAsync('claude --version');
+            const { stdout } = await enhancedExecAsync('claude --version');
             return stdout.trim() || 'installed';
         } catch (error) {
             return null;
