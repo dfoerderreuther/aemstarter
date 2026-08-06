@@ -36,9 +36,14 @@ const config: ForgeConfig = {
       teamId: process.env.APPLE_TEAM_ID || '',
     },
     executableName: 'aem-starter',
-    // The MCP server now runs in-app (Electron main process); no external
-    // bundle is shipped or copied into projects.
-    extraResource: [],
+    // The MCP server now runs in-app (Electron main process) and is no longer
+    // copied into projects. We still ship this folder as an app resource: an
+    // empty extraResource leaves Contents/Resources with nothing to seal, which
+    // breaks hardened-runtime codesign on macOS ("code has no resources but
+    // signature indicates they must be present").
+    extraResource: [
+      './resources/mcp-server/v1',
+    ],
     // Ensure native modules are properly handled across architectures
     ignore: [
       /^\/\.vscode\//,
