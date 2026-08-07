@@ -66,6 +66,9 @@ export interface ProjectSettings {
       author: boolean;
       publisher: boolean;
       dispatcher: boolean;
+      // The aem-starter control endpoint. Optional for backward compat; treated
+      // as enabled when unset.
+      starter?: boolean;
     };
     // When false, the MCP control endpoint refuses mutating tools (start/stop,
     // settings, restore, package install). Defaults to allowed when unset.

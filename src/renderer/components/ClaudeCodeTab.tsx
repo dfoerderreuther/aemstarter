@@ -1,14 +1,62 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Stack, Group, Text, Checkbox, Button, Anchor, Loader, ActionIcon, Code, CopyButton, Tooltip } from '@mantine/core';
-import { IconChevronLeft, IconChevronRight, IconReload, IconRefresh, IconExternalLink, IconCopy, IconCheck } from '@tabler/icons-react';
+import { Box, Stack, Group, Text, Button, Anchor, Loader, ActionIcon, Code, CopyButton, Tooltip, HoverCard } from '@mantine/core';
+import { IconChevronLeft, IconChevronRight, IconExternalLink, IconCopy, IconCheck, IconInfoCircle } from '@tabler/icons-react';
 import { Terminal, TerminalRef } from './Terminal';
-import { Project, ProjectSettings } from '../../types/Project';
+import { Project } from '../../types/Project';
 
 interface McpInfo {
   port: number;
   url: string;
   endpoints: Record<string, { type: string; url: string }>;
 }
+
+type McpTargetKey = 'author' | 'publisher' | 'dispatcher' | 'starter';
+
+// Example prompts shown in the (i) popover for each MCP connection. Just mention
+// the connection by name in the Claude prompt — no slash syntax for tools.
+const MCP_CONNECTIONS: { key: McpTargetKey; label: string; hint: string; examples: string[] }[] = [
+  {
+    key: 'author', label: 'aem-author', hint: 'Read/write JCR content on the author instance.',
+    examples: [
+      'aem-author read node /content/wknd/us/en',
+      'aem-author list children of /content',
+      'aem-author query cq:Page under /content limit 10',
+      'aem-author list all live copy configs in /content/wknd',
+      'aem-author create node /content/wknd/foo type cq:Page',
+      'aem-author system info',
+    ],
+  },
+  {
+    key: 'publisher', label: 'aem-publisher', hint: 'Read/write JCR content on the publisher instance.',
+    examples: [
+      'aem-publisher read node /content/wknd',
+      'aem-publisher list children of /content',
+      'aem-publisher query cq:Page under /content',
+      'aem-publisher system info',
+    ],
+  },
+  {
+    key: 'dispatcher', label: 'aem-dispatcher', hint: 'Inspect dispatcher config files and the Docker container.',
+    examples: [
+      'aem-dispatcher read config default.farm',
+      'aem-dispatcher read config dispatcher.any',
+      'aem-dispatcher list files under conf.d',
+      'aem-dispatcher container status',
+    ],
+  },
+  {
+    key: 'starter', label: 'aem-starter', hint: 'Control AEM-Starter itself: start/stop, logs, SSL, packages, backups.',
+    examples: [
+      'aem-starter status',
+      'aem-starter start author in debug, wait until healthy',
+      'aem-starter find "ERROR" in author error.log',
+      'aem-starter enable ssl for author',
+      'aem-starter install package /path/to/pkg.zip on author',
+      'aem-starter backup before I try something risky',
+      'aem-starter screenshot author',
+    ],
+  },
+];
 
 interface ClaudeCodeTabProps {
   project: Project;
@@ -24,18 +72,12 @@ const CLAUDE_LAUNCH_CMD = 'claude --permission-mode auto';
 
 type ClaudeState = 'checking' | 'missing' | 'ready';
 
-export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: ClaudeCodeTabProps) => {
+export const ClaudeCodeTab = ({ project, visible = true }: ClaudeCodeTabProps) => {
   const [claudeState, setClaudeState] = useState<ClaudeState>('checking');
   const [claudeVersion, setClaudeVersion] = useState<string | undefined>();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activated, setActivated] = useState(false);
-  const [applying, setApplying] = useState(false);
-  const [statusNote, setStatusNote] = useState<string | null>(null);
   const [mcpInfo, setMcpInfo] = useState<McpInfo | null>(null);
-
-  // Local, editable copy of the Claude Code connection toggles for the sidebar.
-  const dev = project.settings.dev;
-  const [targets, setTargets] = useState(dev?.claudeCodeMcpTargets || { author: true, publisher: true, dispatcher: true });
 
   const terminalRef = useRef<TerminalRef>(null);
   const launchedRef = useRef(false);
@@ -50,7 +92,8 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
     if (visible) setIsCollapsed(false);
   }, [visible]);
 
-  // Preflight + MCP scaffolding when the tab is first activated.
+  // Preflight + MCP scaffolding when the tab is first activated. All four MCP
+  // connections are always enabled — the server writes them all into .mcp.json.
   useEffect(() => {
     if (!activated) return;
     let cancelled = false;
@@ -85,46 +128,6 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
     }, 400);
   }, []);
 
-  const handleReloadClaude = useCallback(() => {
-    // Interrupt whatever is running, clear the scrollback, and start a fresh session.
-    terminalRef.current?.writeToShell('\x03');
-    setTimeout(() => {
-      terminalRef.current?.clear();
-      terminalRef.current?.writeToShell(`${CLAUDE_LAUNCH_CMD}\n`);
-      terminalRef.current?.focus();
-    }, 150);
-  }, []);
-
-  const persistAndReapply = useCallback(async (nextTargets: typeof targets) => {
-    setApplying(true);
-    setStatusNote(null);
-    try {
-      const updatedSettings: ProjectSettings = {
-        ...project.settings,
-        dev: {
-          ...project.settings.dev,
-          claudeCodeMcpTargets: nextTargets,
-        },
-      };
-      const updated = await window.electronAPI.saveProjectSettings(project, updatedSettings);
-      if (updated && onProjectUpdated) onProjectUpdated(updated);
-      const result = await window.electronAPI.setupClaudeCodeMcp(updated || project);
-      setMcpInfo(result);
-      setStatusNote('MCP config updated. Restart the Claude session (icon top-right) to pick it up.');
-    } catch (error) {
-      console.error('Failed to update MCP config:', error);
-      setStatusNote('Failed to update MCP config. See console.');
-    } finally {
-      setApplying(false);
-    }
-  }, [project, onProjectUpdated]);
-
-  const handleTargetChange = (target: 'author' | 'publisher' | 'dispatcher', value: boolean) => {
-    const next = { ...targets, [target]: value };
-    setTargets(next);
-    persistAndReapply(next);
-  };
-
   if (claudeState === 'missing') {
     return (
       <Stack gap="md" p="xl" align="center" justify="center" style={{ height: 'calc(100vh - 146px)' }}>
@@ -154,9 +157,6 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
             CLAUDE CODE{claudeVersion ? ` — ${claudeVersion}` : ''}
           </Text>
           <Box style={{ flex: 1 }} />
-          <ActionIcon size="xs" variant="subtle" title="Restart Claude session" onClick={handleReloadClaude}>
-            <IconReload size={14} />
-          </ActionIcon>
         </Group>
       </Box>
 
@@ -198,44 +198,26 @@ export const ClaudeCodeTab = ({ project, visible = true, onProjectUpdated }: Cla
           {!isCollapsed && (
             <Stack gap="sm" p="md" pt={44}>
               <Text size="xs" fw={700} c="dimmed">MCP CONNECTIONS</Text>
-              <Checkbox
-                size="xs"
-                label="aem-author"
-                checked={targets.author}
-                disabled={applying}
-                onChange={(e) => handleTargetChange('author', e.currentTarget.checked)}
-              />
-              <Checkbox
-                size="xs"
-                label="aem-publisher"
-                checked={targets.publisher}
-                disabled={applying}
-                onChange={(e) => handleTargetChange('publisher', e.currentTarget.checked)}
-              />
-              <Checkbox
-                size="xs"
-                label="aem-dispatcher"
-                checked={targets.dispatcher}
-                disabled={applying}
-                onChange={(e) => handleTargetChange('dispatcher', e.currentTarget.checked)}
-              />
-
-              <Button
-                size="xs"
-                variant="light"
-                leftSection={<IconRefresh size={14} />}
-                loading={applying}
-                onClick={() => persistAndReapply(targets)}
-              >
-                Re-apply MCP config
-              </Button>
-
-              {statusNote && (
-                <Text size="xs" c="dimmed">{statusNote}</Text>
-              )}
-              <Text size="xs" c="dimmed">
-                Changes apply to new Claude sessions. The tab launches <code>claude --permission-mode auto</code>; use the restart icon (top-right) to start a fresh one.
-              </Text>
+              {MCP_CONNECTIONS.map((conn) => (
+                <Group key={conn.key} gap={6} wrap="nowrap" align="center">
+                  <Text size="xs" style={{ flex: 1 }}>{conn.label}</Text>
+                  <HoverCard width={450} shadow="md" withArrow position="left" openDelay={100}>
+                    <HoverCard.Target>
+                      <ActionIcon size="xs" variant="subtle" color="gray" aria-label={`${conn.label} examples`}>
+                        <IconInfoCircle size={14} />
+                      </ActionIcon>
+                    </HoverCard.Target>
+                    <HoverCard.Dropdown>
+                      <Text size="xs" fw={700}>{conn.label}</Text>
+                      <Text size="xs" c="dimmed" mb={6}>{conn.hint}</Text>
+                      <Text size="xs" c="dimmed" mb={4}>Example prompts (just mention it):</Text>
+                      <Code block style={{ fontSize: 10, lineHeight: 1.5 }}>
+                        {[...conn.examples, `${conn.label} ...`].join('\n')}
+                      </Code>
+                    </HoverCard.Dropdown>
+                  </HoverCard>
+                </Group>
+              ))}
 
               {mcpInfo && (
                 <Stack gap={6} mt="sm" pt="sm" style={{ borderTop: '1px solid #2C2E33' }}>

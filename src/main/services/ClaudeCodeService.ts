@@ -65,16 +65,15 @@ export class ClaudeCodeService {
         const baseUrl = `http://${this.HOST}:${port}`;
         const endpoint = (endpointPath: string): McpEndpointConfig => ({ type: 'http', url: `${baseUrl}/mcp/${endpointPath}` });
 
-        const targetsSetting = settings.dev?.claudeCodeMcpTargets || { author: true, publisher: true, dispatcher: true };
-        const mcpServers: Record<string, McpEndpointConfig> = {};
-        const enabled: string[] = [];
-
-        if (targetsSetting.author) { mcpServers['aem-author'] = endpoint('author'); enabled.push('aem-author'); }
-        if (targetsSetting.publisher) { mcpServers['aem-publisher'] = endpoint('publisher'); enabled.push('aem-publisher'); }
-        if (targetsSetting.dispatcher) { mcpServers['aem-dispatcher'] = endpoint('dispatcher'); enabled.push('aem-dispatcher'); }
-        // Control endpoint is always exposed — it drives AEM-Starter itself.
-        mcpServers['aem-starter'] = endpoint('control');
-        enabled.push('aem-starter');
+        // All four connections are always exposed: the three AEM content/dispatcher
+        // endpoints plus the aem-starter control endpoint.
+        const mcpServers: Record<string, McpEndpointConfig> = {
+            'aem-author': endpoint('author'),
+            'aem-publisher': endpoint('publisher'),
+            'aem-dispatcher': endpoint('dispatcher'),
+            'aem-starter': endpoint('control'),
+        };
+        const enabled = Object.keys(mcpServers);
 
         const mcpConfigPath = path.join(devPath, '.mcp.json');
         fs.mkdirSync(devPath, { recursive: true });
