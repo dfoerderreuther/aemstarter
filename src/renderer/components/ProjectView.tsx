@@ -90,9 +90,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
           <Divider orientation='vertical' />
           <Tabs.Tab value="devfiles" color="green" leftSection={<IconFolder size={16} />} disabled={!project.settings?.dev?.path}>Dev Files</Tabs.Tab>
           <Tabs.Tab value="devterminal" color="green" leftSection={<IconTerminal size={16} />} disabled={!project.settings?.dev?.path}>Dev Terminal</Tabs.Tab>
-          {project.settings?.dev?.claudeCodeEnabled && (
-            <Tabs.Tab value="claudecode" color="green" leftSection={<ClaudeIcon size={16} />} disabled={!project.settings?.dev?.path}>Claude Code</Tabs.Tab>
-          )}
+          <Tabs.Tab value="claudecode" color="green" leftSection={<ClaudeIcon size={16} />} disabled={!project.settings?.dev?.path || !project.settings?.dev?.claudeCodeEnabled}>Claude Code</Tabs.Tab>
 
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
@@ -261,7 +259,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
 
         {project.settings?.dev?.claudeCodeEnabled && (
           <Tabs.Panel value="claudecode" keepMounted style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <ClaudeCodeTab project={project} visible={activeTab === 'claudecode'} onProjectUpdated={onProjectUpdated} />
+            <ClaudeCodeTab project={project} visible={activeTab === 'claudecode'} />
           </Tabs.Panel>
         )}
       </Tabs>

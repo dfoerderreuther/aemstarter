@@ -224,10 +224,39 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     window.addEventListener('resize', handleResize);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // Refit whenever the container itself changes size (tab reveal, panel
+    // collapse, window maximize) — avoids relying on one-shot fit timing.
+    const resizeObserver = new ResizeObserver(() => handleResize());
+    if (terminalRef.current) {
+      resizeObserver.observe(terminalRef.current);
+    }
+
+    // The first fit() is a no-op until xterm has measured its cell size (font
+    // ready + element laid out); proposeDimensions() returns undefined until
+    // then. Because the container size never changes afterwards, the terminal
+    // stays at the default 80 columns until a manual window resize. Retry fit
+    // until the measurement is available, then fit once.
+    const ensureInitialFit = (tries = 0) => {
+      try {
+        const dims = fitAddon.proposeDimensions();
+        if (dims && dims.cols > 0 && dims.rows > 0) {
+          fitAddon.fit();
+          return;
+        }
+      } catch {
+        // measurement not ready yet — fall through to retry
+      }
+      if (tries < 40) {
+        setTimeout(() => ensureInitialFit(tries + 1), 75);
+      }
+    };
+    requestAnimationFrame(() => ensureInitialFit());
+
     // Cleanup function
     return () => {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      resizeObserver.disconnect();
 
       // Clean up event listeners
       cleanupFuncsRef.current.forEach(cleanup => cleanup());

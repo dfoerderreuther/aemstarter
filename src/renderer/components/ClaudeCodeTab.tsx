@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Stack, Group, Text, Button, Anchor, Loader, ActionIcon, Code, CopyButton, Tooltip, HoverCard } from '@mantine/core';
+import { useState, useRef, useEffect } from 'react';
+import { Box, Stack, Group, Text, Button, Anchor, ActionIcon, Code, CopyButton, Tooltip, HoverCard } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight, IconExternalLink, IconCopy, IconCheck, IconInfoCircle } from '@tabler/icons-react';
 import { Terminal, TerminalRef } from './Terminal';
 import { Project } from '../../types/Project';
@@ -61,7 +61,6 @@ const MCP_CONNECTIONS: { key: McpTargetKey; label: string; hint: string; example
 interface ClaudeCodeTabProps {
   project: Project;
   visible?: boolean;
-  onProjectUpdated?: (updatedProject: Project) => void;
 }
 
 const CLAUDE_INSTALL_URL = 'https://docs.claude.com/en/docs/claude-code/setup';
@@ -76,26 +75,28 @@ export const ClaudeCodeTab = ({ project, visible = true }: ClaudeCodeTabProps) =
   const [claudeState, setClaudeState] = useState<ClaudeState>('checking');
   const [claudeVersion, setClaudeVersion] = useState<string | undefined>();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [activated, setActivated] = useState(false);
   const [mcpInfo, setMcpInfo] = useState<McpInfo | null>(null);
+  const [terminalReady, setTerminalReady] = useState(false);
 
   const terminalRef = useRef<TerminalRef>(null);
   const launchedRef = useRef(false);
   const devPath = project.settings.dev?.path || '';
 
-  // Only spin up the terminal / MCP setup once the tab has actually been shown.
-  useEffect(() => {
-    if (visible) setActivated(true);
-  }, [visible]);
-
+  // Show the collapsible panel when the tab is revealed.
   useEffect(() => {
     if (visible) setIsCollapsed(false);
   }, [visible]);
 
-  // Preflight + MCP scaffolding when the tab is first activated. All four MCP
-  // connections are always enabled — the server writes them all into .mcp.json.
+  // Resize the terminal after the collapse transition completes (same as the
+  // Dev terminal — the CSS transition is 300ms).
   useEffect(() => {
-    if (!activated) return;
+    const timer = setTimeout(() => terminalRef.current?.resize(), 350);
+    return () => clearTimeout(timer);
+  }, [isCollapsed]);
+
+  // Preflight (is `claude` installed?) + write .mcp.json with all four MCP
+  // connections. Runs once the tab is mounted.
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -116,17 +117,23 @@ export const ClaudeCodeTab = ({ project, visible = true }: ClaudeCodeTabProps) =
       }
     })();
     return () => { cancelled = true; };
-  }, [activated]);
+  }, []);
 
-  const handleTerminalReady = useCallback(() => {
-    // Auto-launch the Claude Code CLI once, in the dev path where .mcp.json lives.
-    if (launchedRef.current) return;
+  const handleTerminalReady = () => {
+    setTerminalReady(true);
+  };
+
+  // Auto-launch the Claude CLI once, but only after the terminal is live AND
+  // .mcp.json has been written, so the new session picks up the MCP servers.
+  useEffect(() => {
+    if (launchedRef.current || !terminalReady || !mcpInfo) return;
     launchedRef.current = true;
     setTimeout(() => {
+      terminalRef.current?.resize();
       terminalRef.current?.writeToShell(`${CLAUDE_LAUNCH_CMD}\n`);
       terminalRef.current?.focus();
     }, 400);
-  }, []);
+  }, [terminalReady, mcpInfo]);
 
   if (claudeState === 'missing') {
     return (
@@ -160,48 +167,39 @@ export const ClaudeCodeTab = ({ project, visible = true }: ClaudeCodeTabProps) =
         </Group>
       </Box>
 
+      {/* Main content area with collapsible sidebar — mirrors the Dev terminal:
+          panel on the left, terminal on the right. */}
       <Box style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
-        {/* Big column: Claude Code terminal */}
-        <Box style={{ flex: 1, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', backgroundColor: '#1A1A1A' }}>
-          <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
-            {activated && claudeState === 'ready' && devPath ? (
-              <Terminal ref={terminalRef} onReady={handleTerminalReady} visible={visible} fontSize={12} cwd={devPath} />
-            ) : (
-              <Group justify="center" align="center" style={{ height: '100%' }}>
-                <Loader size="sm" />
-                <Text c="dimmed" size="sm">Preparing MCP connections…</Text>
-              </Group>
-            )}
-          </div>
-        </Box>
-
-        {/* Thin column: MCP server config */}
+        {/* Collapsible Column - Left */}
         <Box style={{
-          width: isCollapsed ? '40px' : '280px',
+          width: isCollapsed ? '40px' : '300px',
           transition: 'width 0.3s ease',
-          borderLeft: '1px solid #2C2E33',
+          borderRight: '1px solid #2C2E33',
           backgroundColor: '#1E1E1E',
-          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
           overflow: 'hidden',
+          position: 'relative',
         }}>
-          <Box style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 10 }}>
+          {/* Collapse/Expand Button - Integrated */}
+          <Box style={{ position: 'absolute', top: '50%', right: '8px', transform: 'translateY(-50%)', zIndex: 10 }}>
             <ActionIcon
               variant="subtle"
               size="sm"
               onClick={() => setIsCollapsed((c) => !c)}
               style={{ backgroundColor: 'rgba(58,58,58,1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px' }}
             >
-              {isCollapsed ? <IconChevronLeft size={14} /> : <IconChevronRight size={14} />}
+              {isCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
             </ActionIcon>
           </Box>
 
           {!isCollapsed && (
-            <Stack gap="sm" p="md" pt={44}>
+            <Stack gap="sm" p="md" style={{ overflowY: 'auto', height: '100%' }}>
               <Text size="xs" fw={700} c="dimmed">MCP CONNECTIONS</Text>
               {MCP_CONNECTIONS.map((conn) => (
                 <Group key={conn.key} gap={6} wrap="nowrap" align="center">
                   <Text size="xs" style={{ flex: 1 }}>{conn.label}</Text>
-                  <HoverCard width={450} shadow="md" withArrow position="left" openDelay={100}>
+                  <HoverCard width={450} shadow="md" withArrow position="right" openDelay={100}>
                     <HoverCard.Target>
                       <ActionIcon size="xs" variant="subtle" color="gray" aria-label={`${conn.label} examples`}>
                         <IconInfoCircle size={14} />
@@ -261,6 +259,15 @@ export const ClaudeCodeTab = ({ project, visible = true }: ClaudeCodeTabProps) =
               )}
             </Stack>
           )}
+        </Box>
+
+        {/* Terminal Section - Right */}
+        <Box style={{ flex: 1, height: 'calc(100vh - 252px)', display: 'flex', flexDirection: 'column', backgroundColor: '#1A1A1A' }}>
+          <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
+            {devPath && (
+              <Terminal ref={terminalRef} onReady={handleTerminalReady} visible={visible} fontSize={12} cwd={devPath} />
+            )}
+          </div>
         </Box>
       </Box>
     </Stack>
