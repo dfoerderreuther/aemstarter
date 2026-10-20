@@ -239,6 +239,11 @@ contextBridge.exposeInMainWorld(
     setupClaudeCodeMcp: (project: Project) =>
       ipcRenderer.invoke('setup-claude-code-mcp', project),
 
+    checkCopilot: () =>
+      ipcRenderer.invoke('check-copilot'),
+    setupCopilotMcp: (project: Project) =>
+      ipcRenderer.invoke('setup-copilot-mcp', project),
+
     // Terminal event listeners
     onTerminalData: (callback: (terminalId: string, data: string) => void) => {
       const handler = (_: Electron.IpcRendererEvent, terminalId: string, data: string) => callback(terminalId, data);

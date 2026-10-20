@@ -59,8 +59,9 @@ export interface ProjectSettings {
     path: string;
     editor: string;
     customEditorPath: string;
-    // Claude Code integration
+    // Code assistant integrations
     claudeCodeEnabled: boolean;
+    copilotEnabled: boolean;
     claudeCodeMcpSdkVersion: string;
     claudeCodeMcpTargets: {
       author: boolean;

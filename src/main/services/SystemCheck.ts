@@ -57,6 +57,18 @@ export class SystemCheck {
      * on the PATH. Used to gate the Claude Code tab and offer an install link instead.
      */
     async checkClaudeCodeVersion(): Promise<string | null> {
+        return this.checkCodeAssistantVersion('claude');
+    }
+
+    async checkCopilotVersion(): Promise<string | null> {
+        return this.checkCodeAssistantVersion('copilot');
+    }
+
+    private async checkCodeAssistantVersion(command: 'claude' | 'copilot'): Promise<string | null> {
+        const versionLine = (stdout: string): string | undefined => {
+            const lines = stdout.split('\n').map(line => line.trim()).filter(Boolean);
+            return lines.find(line => /\d+\.\d+\.\d+/.test(line)) || lines[lines.length - 1];
+        };
         // A packaged .app launched from Finder/Dock inherits only a minimal PATH,
         // so `claude` (typically under nvm/volta/~/.local/bin or ~/.claude/local) is
         // invisible to a plain exec. Resolve it through the user's interactive login
@@ -65,16 +77,16 @@ export class SystemCheck {
         if (process.platform !== 'win32') {
             const shell = process.env.SHELL || '/bin/zsh';
             try {
-                const { stdout } = await execFileAsync(shell, ['-ilc', 'claude --version'], { timeout: 8000 });
-                const line = stdout.split('\n').map(l => l.trim()).filter(Boolean).pop();
+                const { stdout } = await execFileAsync(shell, ['-ilc', `${command} --version`], { timeout: 8000 });
+                const line = versionLine(stdout);
                 if (line) return line;
             } catch (error) {
                 // Fall through to the enhanced-PATH attempt below.
             }
         }
         try {
-            const { stdout } = await enhancedExecAsync('claude --version');
-            return stdout.trim() || 'installed';
+            const { stdout } = await enhancedExecAsync(`${command} --version`);
+            return versionLine(stdout) || 'installed';
         } catch (error) {
             return null;
         }

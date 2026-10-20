@@ -8,8 +8,16 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import { execFileSync } from 'node:child_process';
 import dotenv from 'dotenv';
 dotenv.config();
+
+if (process.platform === 'darwin' && !process.env.SDKROOT) {
+  process.env.SDKROOT = execFileSync('xcrun', ['--sdk', 'macosx', '--show-sdk-path'], {
+    encoding: 'utf8',
+    timeout: 10000,
+  }).trim();
+}
 
 const config: ForgeConfig = {
   packagerConfig: {

@@ -60,6 +60,7 @@ export class ProjectSettingsService {
                 editor: "",
                 customEditorPath: "",
                 claudeCodeEnabled: false,
+                copilotEnabled: false,
                 claudeCodeMcpSdkVersion: "^1.0.0",
                 claudeCodeMcpTargets: {
                     author: true,
@@ -234,6 +235,8 @@ export class ProjectSettingsService {
                 editor: settings.dev?.editor ?? defaults.dev.editor,
                 customEditorPath: settings.dev?.customEditorPath ?? defaults.dev.customEditorPath,
                 claudeCodeEnabled: settings.dev?.claudeCodeEnabled ?? defaults.dev.claudeCodeEnabled,
+                copilotEnabled: settings.dev?.copilotEnabled ?? defaults.dev.copilotEnabled,
+                claudeCodeControl: settings.dev?.claudeCodeControl,
                 claudeCodeMcpSdkVersion: settings.dev?.claudeCodeMcpSdkVersion || defaults.dev.claudeCodeMcpSdkVersion,
                 claudeCodeMcpTargets: {
                     author: settings.dev?.claudeCodeMcpTargets?.author ?? defaults.dev.claudeCodeMcpTargets.author,

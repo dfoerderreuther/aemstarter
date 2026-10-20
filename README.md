@@ -17,6 +17,7 @@ AEM-Starter is a desktop application that streamlines the setup and management o
 - **SSL Proxy** for quick setup of https support with a self signed certificate (openssl required)
 - **Connection to AEM development project** for quick access to configurations, code and build tasks
 - **Claude Code integration** with MCP connections to the running Author, Publisher and Dispatcher
+- **GitHub Copilot CLI integration** with the same AEM and AEM-Starter MCP tools
 - Limited **Classic AEM support** by leveraging Cloud SDK dispatcher
 
 ## Requirements
@@ -116,13 +117,23 @@ AEM-Starter Logging lets you follow the logs of this application, which might be
 
 ### Development Path
 
-Every project has a Development Path (Settings -> Dev). If left empty, a `./dev` folder is created inside the project and used automatically. This is where the Dev Files, Dev Terminal and Claude Code tabs operate.
+Every project has a Development Path (Settings -> Dev). If left empty, a `./dev` folder is created inside the project and used automatically. This is where the Dev Files, Dev Terminal and code assistant tabs operate.
 
 ### Claude Code
 
 Enable in Settings -> Dev -> Claude Code (requires the [Claude Code CLI](https://docs.claude.com/en/docs/claude-code/setup)). Adds a Claude Code tab that runs `claude` in a terminal and connects it, via MCP, to your running AEM instances so Claude can read and write against them.
 
 Each target (Author, Publisher, Dispatcher) is a separate MCP connection you can toggle on or off. Author/Publisher expose JCR content read/write and queries (using the AEM SDK default `admin`/`admin`); Dispatcher exposes config, cache and container inspection. A pre-built MCP server ships with the app — no install step.
+
+### GitHub Copilot
+
+Enable **GitHub Copilot integration** in Settings -> Dev or when creating a project. Install the [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/cli-getting-started) so the `copilot` command is available in your shell. The GitHub Copilot tab launches it in the Development Path. Complete the CLI's sign-in and folder-trust prompts on first use.
+
+Copilot connects to the same four loopback MCP endpoints as Claude Code: `aem-author`, `aem-publisher`, `aem-dispatcher` and `aem-starter`. These provide AEM content access, dispatcher inspection and AEM-Starter controls such as instance startup, logs and backups. Both integrations can be enabled independently and used together.
+
+AEM-Starter writes `.aem-starter-copilot-mcp.json` in the Development Path and passes it with `copilot --additional-mcp-config @.aem-starter-copilot-mcp.json`. Your existing `.mcp.json` and global `~/.copilot/mcp-config.json` are unchanged by Copilot setup. The launch command pre-approves tools from these four AEM MCP servers; other tools retain Copilot's permission prompts.
+
+The tab includes connection details, copyable configuration and example prompts. Use its reload button to refresh the MCP port and restart Copilot after connection changes. Keep AEM-Starter open while using its MCP connections. Exclude the generated configuration file from version control because it contains a local, temporary port.
 
 ## Thank you for using AEM-Starter
 

@@ -1,7 +1,7 @@
 /**
  * Per-project registry of in-app MCP servers, mirroring the other *Register
  * singletons. One AemStarterMcpServer per project, keyed by project id, so each
- * project's Claude session connects to its own loopback port.
+ * project's code assistant sessions connect to its own loopback port.
  */
 import log from 'electron-log';
 import { Project } from '../../../types/Project';

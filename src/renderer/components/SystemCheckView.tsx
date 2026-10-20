@@ -190,7 +190,11 @@ export const SystemCheckView: React.FC<SystemCheckViewProps> = ({ project, stric
       dev: {
         path: "",
         editor: "",
-        customEditorPath: ""
+        customEditorPath: "",
+        claudeCodeEnabled: false,
+        copilotEnabled: false,
+        claudeCodeMcpSdkVersion: "^1.0.0",
+        claudeCodeMcpTargets: { author: true, publisher: true, dispatcher: true }
       }
     };
   };

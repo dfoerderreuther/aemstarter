@@ -12,6 +12,7 @@ import { BackupService } from './main/services/BackupService';
 import { SystemCheck } from './main/services/SystemCheck';
 import { DevProjectUtils } from './main/services/DevProjectUtils';
 import { ClaudeCodeService } from './main/services/ClaudeCodeService';
+import { CopilotService } from './main/services/CopilotService';
 import { McpServerRegister } from './main/services/mcp/McpServerRegister';
 import { AemInstanceManagerRegister } from './main/AemInstanceManagerRegister';
 import { DispatcherManagerRegister } from './main/DispatcherManagerRegister';
@@ -758,6 +759,24 @@ ipcMain.handle('setup-claude-code-mcp', async (_, project: Project) => {
     return await ClaudeCodeService.setup(project);
   } catch (error) {
     log.error('Error setting up Claude Code MCP:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('check-copilot', async () => {
+  try {
+    return await CopilotService.checkAvailability();
+  } catch (error) {
+    log.error('Error checking GitHub Copilot availability:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('setup-copilot-mcp', async (_, project: Project) => {
+  try {
+    return await CopilotService.setup(project);
+  } catch (error) {
+    log.error('Error setting up GitHub Copilot MCP:', error);
     throw error;
   }
 });

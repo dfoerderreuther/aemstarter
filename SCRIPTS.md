@@ -12,6 +12,12 @@ npm run dev
 npm start
 ```
 
+On macOS, Forge selects the SDK from the active Xcode installation with `xcrun --sdk macosx --show-sdk-path`. This keeps native `node-pty` builds compatible when Command Line Tools provides a newer SDK than the selected Xcode linker. An explicitly set `SDKROOT` takes precedence.
+
+## Integration checks
+
+Run `npm run test:assistants` for CLI detection, project settings and the Claude Code/Copilot MCP integrations. These checks use a temporary loopback server and do not require installed CLIs or running AEM instances.
+
 ## Building
 
 ```bash

@@ -23,6 +23,7 @@ export type EndpointMap = Record<string, () => McpTool[]>;
 export class AemStarterMcpServer {
     private server: http.Server | null = null;
     private port = 0;
+    private starting: Promise<number> | null = null;
     private readonly endpoints = new Map<string, McpEndpoint>();
 
     constructor(
@@ -43,8 +44,15 @@ export class AemStarterMcpServer {
         return this.port;
     }
 
-    async start(): Promise<number> {
-        if (this.server) return this.port;
+    start(): Promise<number> {
+        if (this.server) return Promise.resolve(this.port);
+        if (!this.starting) {
+            this.starting = this.listen().finally(() => { this.starting = null; });
+        }
+        return this.starting;
+    }
+
+    private async listen(): Promise<number> {
         const server = http.createServer((req, res) => {
             this.onRequest(req, res).catch((err) => {
                 log.error('[AemStarterMcpServer] unhandled request error:', err);
@@ -65,6 +73,7 @@ export class AemStarterMcpServer {
     }
 
     async stop(): Promise<void> {
+        if (this.starting) await this.starting;
         const server = this.server;
         if (!server) return;
         this.server = null;

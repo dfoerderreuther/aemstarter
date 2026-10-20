@@ -146,7 +146,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
       dev: {
         ...(settings.dev || {
           path: '', editor: 'code', customEditorPath: '',
-          claudeCodeEnabled: false, claudeCodeMcpSdkVersion: '^1.0.0',
+          claudeCodeEnabled: false, copilotEnabled: false, claudeCodeMcpSdkVersion: '^1.0.0',
           claudeCodeMcpTargets: { author: true, publisher: true, dispatcher: true }
         }),
         [field]: value
@@ -505,6 +505,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ opened, onClose, p
                 </ActionIcon>
               </Group>
             )}
+
+            <Box style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'var(--mantine-color-dark-6)' }}>
+              <Stack gap="sm">
+                <Text fw={500}>GitHub Copilot</Text>
+                <Checkbox
+                  label="Enable GitHub Copilot integration"
+                  description="Adds a Copilot CLI tab with MCP connections to Author, Publisher, Dispatcher and AEM-Starter. Requires GitHub Copilot CLI."
+                  checked={settings.dev?.copilotEnabled || false}
+                  onChange={(event) => updateDevSettings('copilotEnabled', event.currentTarget.checked)}
+                />
+              </Stack>
+            </Box>
 
             {/* Claude Code integration */}
             <Box style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'var(--mantine-color-dark-6)' }}>

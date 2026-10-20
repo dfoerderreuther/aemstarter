@@ -23,6 +23,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [licensePath, setLicensePath] = useState('');
   const [runFirstStartSetup, setRunFirstStartSetup] = useState(true);
   const [claudeCodeEnabled, setClaudeCodeEnabled] = useState(true);
+  const [copilotEnabled, setCopilotEnabled] = useState(false);
   const [classic, setClassic] = useState(false);
   const [classicQuickstartPath, setClassicQuickstartPath] = useState('');
   const [javaHome, setJavaHome] = useState('');
@@ -134,7 +135,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         classicQuickstartPath
       );
       
-      // Persist creation-time settings: selected Java home and Claude Code toggle.
+      // Persist creation-time settings for Java and code assistant integrations.
       let finalProject = project;
       const updatedSettings = {
         ...project.settings,
@@ -144,7 +145,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         },
         dev: {
           ...project.settings.dev,
-          claudeCodeEnabled
+          claudeCodeEnabled,
+          copilotEnabled
         }
       };
       const updatedProject = await window.electronAPI.saveProjectSettings(project, updatedSettings);
@@ -414,6 +416,12 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               checked={claudeCodeEnabled}
               onChange={(e) => setClaudeCodeEnabled(e.target.checked)}
               description="Adds a Claude Code tab with MCP connections to the running AEM instances. Requires the Claude Code CLI."
+            />
+            <Checkbox
+              label="Enable GitHub Copilot integration"
+              checked={copilotEnabled}
+              onChange={(e) => setCopilotEnabled(e.target.checked)}
+              description="Adds a Copilot CLI tab with MCP connections to the running AEM instances. Requires GitHub Copilot CLI."
             />
           </Stack>
         </Paper>

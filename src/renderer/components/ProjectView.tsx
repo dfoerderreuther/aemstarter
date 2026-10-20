@@ -5,7 +5,8 @@ import {
   IconColumns1, 
   IconServer, 
   IconFolder,
-  IconTerminal
+  IconTerminal,
+  IconBrandGithubCopilot
 } from '@tabler/icons-react';
 import { ClaudeIcon } from './icons/ClaudeIcon';
 import { Project } from '../../types/Project';
@@ -15,6 +16,7 @@ import { DispatcherView } from './DispatcherView';
 import { MainActionsView } from './MainActionsView';
 import { TerminalTab } from './TerminalTab';
 import { ClaudeCodeTab } from './ClaudeCodeTab';
+import { CodeAssistantTab } from './CodeAssistantTab';
 
 interface ProjectViewProps {
   project: Project;
@@ -91,6 +93,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
           <Tabs.Tab value="devfiles" color="green" leftSection={<IconFolder size={16} />} disabled={!project.settings?.dev?.path}>Dev Files</Tabs.Tab>
           <Tabs.Tab value="devterminal" color="green" leftSection={<IconTerminal size={16} />} disabled={!project.settings?.dev?.path}>Dev Terminal</Tabs.Tab>
           <Tabs.Tab value="claudecode" color="green" leftSection={<ClaudeIcon size={16} />} disabled={!project.settings?.dev?.path || !project.settings?.dev?.claudeCodeEnabled}>Claude Code</Tabs.Tab>
+          <Tabs.Tab value="copilot" color="green" leftSection={<IconBrandGithubCopilot size={16} />} disabled={!project.settings?.dev?.path || !project.settings?.dev?.copilotEnabled}>GitHub Copilot</Tabs.Tab>
 
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
@@ -259,7 +262,12 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ project, shouldRunAuto
 
         {project.settings?.dev?.claudeCodeEnabled && (
           <Tabs.Panel value="claudecode" keepMounted style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <ClaudeCodeTab project={project} visible={activeTab === 'claudecode'} />
+            <ClaudeCodeTab key={`${project.id}:${project.settings.dev.path}`} project={project} visible={activeTab === 'claudecode'} />
+          </Tabs.Panel>
+        )}
+        {project.settings?.dev?.copilotEnabled && (
+          <Tabs.Panel value="copilot" keepMounted style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <CodeAssistantTab key={`${project.id}:${project.settings.dev.path}`} assistant="copilot" project={project} visible={activeTab === 'copilot'} />
           </Tabs.Panel>
         )}
       </Tabs>

@@ -3,6 +3,7 @@ import { BackupInfo } from './BackupInfo';
 import { SystemCheckResults } from './SystemCheckResults';
 import { EditorAvailableResults } from './EditorAvailableResults';
 import { InstanceStartData } from './InstanceStartData';
+import { CodeAssistantAvailability, CodeAssistantSetupResult } from './CodeAssistant';
 
 declare global {
   // App version injected by Vite
@@ -251,14 +252,10 @@ declare global {
       openDevProject: (project: Project, type: 'files' | 'terminal' | 'editor') => Promise<boolean>;
 
       // Claude Code integration
-      checkClaudeCode: () => Promise<{ available: boolean; version?: string }>;
-      setupClaudeCodeMcp: (project: Project) => Promise<{
-        mcpConfigPath: string;
-        port: number;
-        url: string;
-        targets: string[];
-        endpoints: Record<string, { type: string; url: string }>;
-      }>;
+      checkClaudeCode: () => Promise<CodeAssistantAvailability>;
+      setupClaudeCodeMcp: (project: Project) => Promise<CodeAssistantSetupResult>;
+      checkCopilot: () => Promise<CodeAssistantAvailability>;
+      setupCopilotMcp: (project: Project) => Promise<CodeAssistantSetupResult>;
       
       // Automation Tasks
       runAutomationTask: (project: Project, task: string, parameters?: { [key: string]: string | boolean | number | string[] }) => Promise<boolean>;

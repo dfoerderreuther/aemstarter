@@ -5,7 +5,7 @@
  * tools/call, ping, plus the initialized notification. Responses are plain
  * JSON-RPC objects — the HTTP layer (AemStarterMcpServer) returns them as
  * `application/json`, the "JSON response" mode of MCP Streamable HTTP, so no SSE
- * stream is required. We control the client (Claude Code), which supports this.
+ * stream is required. Claude Code and Copilot CLI support this response mode.
  */
 import log from 'electron-log';
 import { McpTool } from './McpTypes';

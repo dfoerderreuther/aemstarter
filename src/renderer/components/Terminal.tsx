@@ -134,14 +134,22 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
       console.warn('Failed to fit terminal on initialization:', error);
     }
 
+    let disposed = false;
+    let sessionId: string | null = null;
+
     // Create backend terminal session
     const initializeTerminal = async () => {
       try {
         console.log('Initializing terminal with cwd:', cwd);
         const result = await window.electronAPI.createTerminal({ cwd });
 
+        if (disposed) {
+          if (result.success) window.electronAPI.killTerminal(result.terminalId);
+          return;
+        }
         
         if (result.success) {
+          sessionId = result.terminalId;
           setTerminalId(result.terminalId);
           setIsConnected(true);
           
@@ -171,6 +179,20 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
           
           cleanupFuncsRef.current = [cleanupData, cleanupExit, cleanupError];
           
+          // Shift+Enter → newline in TUIs like Claude Code. xterm sends the same
+          // CR for Enter and Shift+Enter, so the app can't tell them apart. Send
+          // ESC+CR (Meta+Enter) instead — the sequence Claude's /terminal-setup
+          // binds — and swallow the default CR so it doesn't also submit.
+          xterm.attachCustomKeyEventHandler((ev) => {
+            if (ev.type === 'keydown' && ev.key === 'Enter' && ev.shiftKey) {
+              if (result.terminalId) {
+                window.electronAPI.writeTerminal(result.terminalId, '\x1b\r');
+              }
+              return false;
+            }
+            return true;
+          });
+
           // Handle user input
           xterm.onData((data) => {
             if (result.terminalId) {
@@ -194,7 +216,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
         }
       } catch (error) {
         console.error('Failed to initialize terminal:', error);
-        if (xtermRef.current) {
+        if (!disposed && xtermRef.current) {
           xtermRef.current.writeln('\x1b[31mFailed to connect to terminal backend\x1b[0m');
         }
       }
@@ -237,6 +259,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
     // stays at the default 80 columns until a manual window resize. Retry fit
     // until the measurement is available, then fit once.
     const ensureInitialFit = (tries = 0) => {
+      if (disposed) return;
       try {
         const dims = fitAddon.proposeDimensions();
         if (dims && dims.cols > 0 && dims.rows > 0) {
@@ -254,6 +277,7 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
 
     // Cleanup function
     return () => {
+      disposed = true;
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       resizeObserver.disconnect();
@@ -263,8 +287,8 @@ export const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onReady, visib
       cleanupFuncsRef.current = [];
 
       // Kill terminal session
-      if (terminalId) {
-        window.electronAPI.killTerminal(terminalId);
+      if (sessionId) {
+        window.electronAPI.killTerminal(sessionId);
       }
 
       // Dispose xterm
